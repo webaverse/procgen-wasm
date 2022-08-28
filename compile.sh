@@ -19,12 +19,12 @@ emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=104857600 -
   tracker.cc \
   octree.cc \
   -I. \
-  -o bin/procgen.js
+  -o bin/pg.js
 
   #sed -Ei 's/var Module=typeof Module!="undefined"\?Module:\{\};/var Module = globalThis.Module??{};/g' bin/dc.js
   # sed -Ei 's/var asm=createWasm\(\);/asmLibraryArg.__cxa_atexit=()=>{};var asm=createWasm();/g' bin/dc.js
-  sed -Ei 's/importScripts\(e.data.urlOrBlob\)/e.data.urlOrBlob="\/dc.js";importScripts(e.data.urlOrBlob)/g' bin/procgen.worker.js
-  echo 'let accept, reject;const p = new Promise((a, r) => {accept = a;  reject = r;});Module.postRun = () => {accept();};Module.waitForLoad = () => p;' >> bin/procgen.js
-  cp bin/procgen.js bin/procgen.module.js
-  echo 'export default Module;' >>bin/procgen.module.js
+  sed -Ei 's/importScripts\(e.data.urlOrBlob\)/e.data.urlOrBlob="\/dc.js";importScripts(e.data.urlOrBlob)/g' bin/pg.worker.js
+  echo 'let accept, reject;const p = new Promise((a, r) => {accept = a;  reject = r;});Module.postRun = () => {accept();};Module.waitForLoad = () => p;' >> bin/pg.js
+  cp bin/pg.js bin/pg.module.js
+  echo 'export default Module;' >>bin/pg.module.js
 echo done
