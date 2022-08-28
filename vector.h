@@ -663,6 +663,25 @@ class Sphere {
     }
 };
 
+class Box3 {
+  public:
+    Box3() : min(), max() {}
+
+    Vec min;
+    Vec max;
+
+    Box3(const Vec &min, const Vec &max) : min(min), max(max) {}
+    Box3(const Box3 &box) : min(box.min), max(box.max) {}
+
+    Vec getCenter() const {
+      return (min + max) * 0.5;
+    }
+
+    operator bool() const {
+      return (max - min).magnitude_sqr() > 0;
+    }
+};
+
 class Ray {
   public:
     Vec origin;
@@ -999,16 +1018,29 @@ class Frustum {
       const Vec &center = sphere.center;
       const float negRadius = - sphere.radius;
 
-      for ( unsigned int i = 0; i < 6; i ++ ) {
-
-        const float distance = planes[ i ].distanceToPoint( center );
-
-        if ( distance < negRadius ) {
-
+      for (int i = 0; i < 6; i ++) {
+        const float distance = planes[i].distanceToPoint(center);
+        if (distance < negRadius) {
           return false;
-
         }
+      }
 
+      return true;
+    }
+
+    bool intersectsBox(const Box3 &box) const {
+      Vec _vector;
+      for (int i = 0; i < 6; i ++) {
+        const auto &plane = planes[i];
+
+        // corner at max distance
+        _vector.x = plane.normal.x > 0 ? box.max.x : box.min.x;
+        _vector.y = plane.normal.y > 0 ? box.max.y : box.min.y;
+        _vector.z = plane.normal.z > 0 ? box.max.z : box.min.z;
+
+        if (plane.distanceToPoint(_vector) < 0) {
+          return false;
+        }
       }
 
       return true;
@@ -1034,14 +1066,6 @@ class Frustum {
     static Frustum fromMatrix(const Matrix &m) {
       return Frustum().setFromMatrix(m);
     }
-};
-
-class Box3 {
-public:
-  Vec min;
-  Vec max;
-
-  Box3(const Vec &min, const Vec &max);
 };
 
 #endif

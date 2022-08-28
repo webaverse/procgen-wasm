@@ -19,7 +19,7 @@ class DistanceSpec {
 public:
     PointerType node;
     int priority;
-    float distance;
+    double distance;
     bool intersectsFrustum;
 
     // sort by priority (low to high), then by intersectsFrustum (true to false), then by distance (low to high)
@@ -41,16 +41,25 @@ public:
 template<typename PointerType>
 DistanceSpec<PointerType> getDistanceSpec(PointerType node, const vm::vec3 &worldPosition, const Frustum &frustum) {
     const int &priority = node->getPriority();
-    const Sphere &sphere = node->getSphere();
+    // const Sphere &sphere = node->getSphere();
+    const Box3 &box = node->getBox();
 
-    const bool hasRadius = (bool)sphere;
-    const bool intersectsFrustum = hasRadius ? frustum.intersectsSphere(sphere) : true;
-    vm::vec3 center{
+    // const bool hasRadius = (bool)sphere;
+    // const bool intersectsFrustum = hasRadius ? frustum.intersectsSphere(sphere) : true;
+    const bool hasLod = (bool)box;
+    const bool intersectsFrustum = hasLod ? frustum.intersectsBox(box) : true;
+    /* vm::vec3 center{
         sphere.center.x,
         sphere.center.y,
         sphere.center.z
+    }; */
+    const Vec &center = box.getCenter();
+    const vm::vec3 &center2{
+        center.x,
+        center.y,
+        center.z
     };
-    float distance = vm::length(center - worldPosition);
+    double distance = vm::length(center2 - worldPosition);
 
     DistanceSpec<PointerType> distanceSpec{
         node,
@@ -59,24 +68,6 @@ DistanceSpec<PointerType> getDistanceSpec(PointerType node, const vm::vec3 &worl
         intersectsFrustum
     };
     return distanceSpec;
-
-    /* Sphere sphere(
-        Vec{
-            task->worldPosition.x,
-            task->worldPosition.y,
-            task->worldPosition.z
-        },
-        (float)std::sqrt(
-            task->halfSize.x * task->halfSize.x +
-            task->halfSize.y * task->halfSize.y +
-            task->halfSize.z * task->halfSize.z
-        )
-    );
-    if (!frustum.intersectsSphere(sphere)) {
-        distance += frustumCullDistancePenalty;
-    }
-    distance += task->priority * priorityDistancePenalty;
-    return distance; */
 }
 
 template<typename PointerType, typename ArrayType>

@@ -1,25 +1,26 @@
 #include <emscripten.h>
-#include "DualContouring/tracker.h"
-#include "DualContouring/main.h"
+// #include "DualContouring/tracker.h"
+// #include "DualContouring/main.h"
+#include "procgen.h"
 
 extern "C" {
 
 EMSCRIPTEN_KEEPALIVE void initialize(int chunkSize, int seed) {
-    DualContouring::initialize(chunkSize, seed);
+    ProcGen::initialize(chunkSize, seed);
 }
 
 // 
 
-EMSCRIPTEN_KEEPALIVE DCInstance *createInstance() {
-    return DualContouring::createInstance();
+EMSCRIPTEN_KEEPALIVE PGInstance *createInstance(int seed, int chunkSize) {
+    return ProcGen::createInstance(seed, chunkSize);
 }
-EMSCRIPTEN_KEEPALIVE void destroyInstance(DCInstance *instance) {
-    DualContouring::destroyInstance(instance);
+EMSCRIPTEN_KEEPALIVE void destroyInstance(PGInstance *instance) {
+    ProcGen::destroyInstance(instance);
 }
 
 //
 
-EMSCRIPTEN_KEEPALIVE void getHeightfieldRangeAsync(DCInstance *inst, uint32_t taskId, int x, int z, int w, int h, int lod, float *heights, int priority) {
+/* EMSCRIPTEN_KEEPALIVE void getHeightfieldRangeAsync(DCInstance *inst, uint32_t taskId, int x, int z, int w, int h, int lod, float *heights, int priority) {
     vm::ivec2 worldPositionXZ{x, z};
     vm::ivec2 sizeXZ{w, h};
     inst->getHeightfieldRangeAsync(taskId, worldPositionXZ, sizeXZ, lod, heights, priority);
@@ -28,33 +29,11 @@ EMSCRIPTEN_KEEPALIVE void getLightRangeAsync(DCInstance *inst, uint32_t taskId, 
     vm::ivec3 worldPosition{x, y, z};
     vm::ivec3 size{w, h, d};
     inst->getLightRangeAsync(taskId, worldPosition, size, lod, skylights, aos, priority);
-}
-
-//
-
-/* EMSCRIPTEN_KEEPALIVE void getChunkHeightfieldAsync(DCInstance *inst, uint32_t taskId, int x, int z, int lod, int priority) {
-    inst->getChunkHeightfieldAsync(taskId, vm::ivec2{x, z}, lod, priority);
-}
-EMSCRIPTEN_KEEPALIVE void getChunkSkylightAsync(DCInstance *inst, uint32_t taskId, int x, int y, int z, int lod, int priority) {
-    inst->getChunkSkylightAsync(taskId, vm::ivec3{x, y, z}, lod, priority);
-}
-EMSCRIPTEN_KEEPALIVE void getChunkAoAsync(DCInstance *inst, uint32_t taskId, int x, int y, int z, int lod, int priority) {
-    inst->getChunkAoAsync(taskId, vm::ivec3{x, y, z}, lod, priority);
-} */
-
-/* EMSCRIPTEN_KEEPALIVE void getSkylightFieldRange(DCInstance *inst, int x, int y, int z, int w, int h, int d, int lod, unsigned char *skylights) {
-    return inst->getSkylightFieldRange(x, y, z, w, h, d, lod, skylights);
-}
-EMSCRIPTEN_KEEPALIVE void getAoFieldRange(DCInstance *inst, int x, int y, int z, int w, int h, int d, int lod, unsigned char *aos) {
-    return inst->getAoFieldRange(x, y, z, w, h, d, lod, aos);
-} */
-/* EMSCRIPTEN_KEEPALIVE void getBiomesContainedInChunk(DCInstance *inst, int x, int z, unsigned char *biomes, unsigned int *biomesCount) {
-    return inst->getBiomesContainedInChunk(x, z, biomes, biomesCount, 1);        
 } */
 
 // 
 
-EMSCRIPTEN_KEEPALIVE void createGrassSplatAsync(DCInstance *inst, uint32_t taskId, int x, int z, int lod, int priority) {
+/* EMSCRIPTEN_KEEPALIVE void createGrassSplatAsync(DCInstance *inst, uint32_t taskId, int x, int z, int lod, int priority) {
     inst->createGrassSplatAsync(taskId, vm::ivec2{x, z}, lod, priority);
 }
 EMSCRIPTEN_KEEPALIVE void createVegetationSplatAsync(DCInstance *inst, uint32_t taskId, int x, int z, int lod, int priority) {
@@ -62,25 +41,21 @@ EMSCRIPTEN_KEEPALIVE void createVegetationSplatAsync(DCInstance *inst, uint32_t 
 }
 EMSCRIPTEN_KEEPALIVE void createMobSplatAsync(DCInstance *inst, uint32_t taskId, int x, int z, int lod, int priority) {
     inst->createMobSplatAsync(taskId, vm::ivec2{x, z}, lod, priority);
-}
-
-/* EMSCRIPTEN_KEEPALIVE void clearChunkRootDualContouring(float x, float y, float z) {
-    return DualContouring::clearChunkRoot(x, y, z);
 } */
 
 //
 
-EMSCRIPTEN_KEEPALIVE void createTerrainChunkMeshAsync(DCInstance *inst, uint32_t taskId, int x, int y, int z, int *lodArray) {
-    inst->createTerrainChunkMeshAsync(taskId, vm::ivec3{x, y, z}, lodArray);
+EMSCRIPTEN_KEEPALIVE void createTerrainChunkMeshAsync(PGInstance *inst, uint32_t taskId, int x, int z, int lod) {
+    inst->createTerrainChunkMeshAsync(taskId, vm::ivec2{x, z}, lod);
 }
 
-EMSCRIPTEN_KEEPALIVE void createLiquidChunkMeshAsync(DCInstance *inst, uint32_t taskId, int x, int y, int z, int *lodArray) {
+/* EMSCRIPTEN_KEEPALIVE void createLiquidChunkMeshAsync(DCInstance *inst, uint32_t taskId, int x, int y, int z, int *lodArray) {
     inst->createLiquidChunkMeshAsync(taskId, vm::ivec3{x, y, z}, lodArray);
-}
+} */
 
 //
 
-EMSCRIPTEN_KEEPALIVE bool drawSphereDamage(DCInstance *inst, float x, float y, float z, float radius, float *outPositions, unsigned int *outPositionsCount) {
+/* EMSCRIPTEN_KEEPALIVE bool drawSphereDamage(DCInstance *inst, float x, float y, float z, float radius, float *outPositions, unsigned int *outPositionsCount) {
     return inst->drawSphereDamage(x, y, z, radius, outPositions, outPositionsCount, 1);
 }
 
@@ -126,7 +101,7 @@ EMSCRIPTEN_KEEPALIVE bool eraseCubeDamage(
         outDamages,
         1
     );
-}
+} */
 
 /* EMSCRIPTEN_KEEPALIVE void injectDamage(DCInstance *inst, float x, float y, float z, float *damageBuffer) {
     inst->injectDamage(x, y, z, damageBuffer, 1);
@@ -134,18 +109,18 @@ EMSCRIPTEN_KEEPALIVE bool eraseCubeDamage(
 
 //
 
-EMSCRIPTEN_KEEPALIVE void setClipRange(DCInstance *inst, float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
-    inst->setClipRange(vm::vec3{minX, minY, minZ}, vm::vec3{maxX, maxY, maxZ});
+EMSCRIPTEN_KEEPALIVE void setClipRange(PGInstance *inst, float minX, float minZ, float maxX, float maxZ) {
+    inst->setClipRange(vm::vec2{minX, minZ}, vm::vec2{maxX, maxZ});
 }
 
-EMSCRIPTEN_KEEPALIVE void cancelTask(DCInstance *inst, uint32_t taskId) {
-    DualContouring::taskQueue.cancelTask(taskId);
-    DualContouring::resultQueue.cancelPromise(taskId);
+EMSCRIPTEN_KEEPALIVE void cancelTask(PGInstance *inst, uint32_t taskId) {
+    ProcGen::taskQueue.cancelTask(taskId);
+    ProcGen::resultQueue.cancelPromise(taskId);
 }
 
 //
 
-EMSCRIPTEN_KEEPALIVE void setCamera(DCInstance *inst, float *worldPosition, float *cameraPosition, float *cameraQuaternion, float *projectionMatrix) {
+EMSCRIPTEN_KEEPALIVE void setCamera(PGInstance *inst, float *worldPosition, float *cameraPosition, float *cameraQuaternion, float *projectionMatrix) {
     vm::vec3 _worldPosition{
         worldPosition[0],
         worldPosition[1],
@@ -174,21 +149,21 @@ EMSCRIPTEN_KEEPALIVE void setCamera(DCInstance *inst, float *worldPosition, floa
 
 //
 
-EMSCRIPTEN_KEEPALIVE Tracker *createTracker(DCInstance *inst, int lod, int minLodRange, bool trackY) {
-    Tracker *tracker = new Tracker(lod, minLodRange, trackY, inst);
+EMSCRIPTEN_KEEPALIVE Tracker *createTracker(PGInstance *inst, int lods, int lod1Range) {
+    Tracker *tracker = new Tracker(inst, lods, lod1Range);
     return tracker;
 }
 
-EMSCRIPTEN_KEEPALIVE void trackerUpdateAsync(DCInstance *inst, uint32_t taskId, Tracker *tracker, float *position, int priority) {
+EMSCRIPTEN_KEEPALIVE void trackerUpdateAsync(PGInstance *inst, uint32_t taskId, Tracker *tracker, float *position, int priority) {
     vm::vec3 worldPosition{
         position[0],
         position[1],
-        position[2]
+        position[2],
     };
     inst->trackerUpdateAsync(taskId, tracker, worldPosition, priority);
 }
 
-EMSCRIPTEN_KEEPALIVE void destroyTracker(DCInstance *inst, Tracker *tracker) {
+EMSCRIPTEN_KEEPALIVE void destroyTracker(PGInstance *inst, Tracker *tracker) {
     delete tracker;
 }
 
@@ -205,20 +180,13 @@ EMSCRIPTEN_KEEPALIVE void doFree(void *ptr) {
 //
 
 EMSCRIPTEN_KEEPALIVE void runLoop() {
-    DualContouring::runLoop();
+    ProcGen::runLoop();
 }
 
 //
 
 int main() {
-    /* EM_ASM({
-        console.log('run main 1');
-    }); */
-    DualContouring::start();
-    /* EM_ASM({
-        console.log('run main 2');
-    }); */
-    // std::cout << "run " << emscripten_wasm_worker_self_id() << " " << std::endl;
+    ProcGen::start();
     return 0;
 }
 

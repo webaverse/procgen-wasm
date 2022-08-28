@@ -19,36 +19,15 @@ constexpr size_t numCachedOctreeNodes = 64 * 1024;
 typedef std::shared_ptr<OctreeNode> OctreeNodePtr;
 
 class OctreeNodeAllocator {
-public:
-//   std::array<OctreeNode, numCachedOctreeNodes> rawNodes;
-//   std::deque<OctreeNode *> nodes;
-//   std::function<void (void *)> deleter;
-
-  // OctreeNodeAllocator();
-  static OctreeNodePtr alloc(const vm::ivec3 &min, int lod, bool isLeaf);
+public: 
+  static OctreeNodePtr alloc(const vm::ivec2 &min, int lod);
 };
 
 class OctreeContext {
 public:
   std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>> nodeMap;
 
-  OctreeContext();
-
-  OctreeNodePtr alloc(const vm::ivec3 &min, int lod, bool isLeaf) {
-    auto node = OctreeNodeAllocator::alloc(min, lod, isLeaf);
-    if (node) {
-      node->min = min;
-      node->size = lod;
-      node->type = isLeaf ? Node_Leaf : Node_Internal;
-      
-      uint64_t hash = hashOctreeMinLod(min, lod);
-      nodeMap[hash] = node;
-    }
-    return node;
-  }
-  OctreeNodePtr alloc(const vm::ivec3 &min, int lod) {
-    return alloc(min, lod, lod == 1);
-  }
+  OctreeNodePtr alloc(const vm::ivec2 &min, int lod);
 };
 
 //
@@ -88,7 +67,7 @@ public:
 
 extern std::atomic<int> nextTrackerId;
 
-enum TrackerTaskType {
+/* enum TrackerTaskType {
   ADD = 1,
   REMOVE = 2,
   OUTRANGE = 3
@@ -106,7 +85,7 @@ public:
 
   std::vector<uint8_t> getBuffer() const;
 };
-typedef std::shared_ptr<TrackerTask> TrackerTaskPtr;
+typedef std::shared_ptr<TrackerTask> TrackerTaskPtr; */
 
 class TrackerUpdate {
 public:
@@ -116,7 +95,7 @@ public:
   std::vector<DataRequestPtr> keepDataRequests;
   std::vector<DataRequestPtr> cancelDataRequests;
 
-  std::unordered_map<uint64_t, Dominator> dominators;
+  // std::unordered_map<uint64_t, Dominator> dominators;
 
   uint8_t *getBuffer() const;
 };
@@ -131,7 +110,7 @@ bool equalsNodeLod(const OctreeNode &node, const OctreeNode &other);
 
 //
 
-extern std::array<vm::ivec3, 8> lodOffsets;
+/* extern std::array<vm::ivec3, 8> lodOffsets;
 extern OctreeNodeAllocator octreeNodeAllocator;
 
 //
@@ -140,40 +119,41 @@ enum ConstructTreeFlags {
   ConstructTreeFlags_None = 0,
   ConstructTreeFlags_Children = 1,
   ConstructTreeFlags_Peers = 2,
-};
+}; */
 
-OctreeNodePtr getLeafNodeFromPoint(const std::vector<OctreeNode *> &leafNodes, const vm::ivec3 &p);
-OctreeNodePtr getNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod);
-OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod, bool isLeaf);
-OctreeNodePtr getOrCreateNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod, bool isLeaf);
-void ensureChildren(OctreeContext &octreeContext, OctreeNode *parentNode);
-void ensurePeers(OctreeContext &octreeContext, OctreeNode *node, int maxLod);
-void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPosition, int minLod, int maxLod, int flags);
+// OctreeNodePtr getLeafNodeFromPoint(const std::vector<OctreeNode *> &leafNodes, const vm::ivec2 &p);
+// OctreeNodePtr getNode(OctreeContext &octreeContext, const vm::ivec2 &min, int lod);
+// OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec2 &min, int lod, bool isLeaf);
+// OctreeNodePtr getOrCreateNode(OctreeContext &octreeContext, const vm::ivec2 &min, int lod, bool isLeaf);
+// void ensureChildren(OctreeContext &octreeContext, OctreeNode *parentNode);
+// void ensurePeers(OctreeContext &octreeContext, OctreeNode *node, int maxLod);
+// void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &leafPosition, int minLod, int maxLod, int flags);
 
-std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec3 &position, int lod1Range, int maxLod);
+std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec2 &position, int lod1Range, int maxLod);
 OctreeNodePtr getMaxLodNode(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes, const vm::ivec3 &min);
-std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes);
+// std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes);
 // std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTaskPtr> &tasks, const vm::vec3 &worldPosition);
-std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(const std::vector<OctreeNodePtr> &oldChunks, const std::vector<TrackerTaskPtr> &tasks);
+// std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(const std::vector<OctreeNodePtr> &oldChunks, const std::vector<TrackerTaskPtr> &tasks);
 
 //
 
 class Tracker {
 public:
+  PGInstance *inst;
   int lods;
-  int minLodRange;
-  bool trackY;
-  DCInstance *inst;
+  int lod1Range;
   
-  vm::ivec3 lastCoord;
-  std::vector<OctreeNodePtr> chunks;
+  vm::ivec2 lastCoord;
+  std::vector<OctreeNodePtr> leafNodes;
   std::unordered_map<uint64_t, DataRequestPtr> dataRequests;
 
-  Tracker(int lods, int minLodRange, bool trackY, DCInstance *inst);
+  //
+
+  Tracker(PGInstance *inst, int lods, int lod1Range);
 
   // static methods
 
-  vm::ivec3 getCurrentCoord(const vm::vec3 &position);
+  vm::ivec2 getCurrentCoord(const vm::vec3 &position);
 
   // dynamic methods
 
@@ -182,12 +162,12 @@ public:
     std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
     const std::vector<OctreeNodePtr> &leafNodes
   );
-  std::unordered_map<uint64_t, Dominator> updateDominators(
+  /* std::unordered_map<uint64_t, Dominator> updateDominators(
     const std::vector<OctreeNodePtr> &oldRenderedChunks,
     std::unordered_map<uint64_t, DataRequestPtr> &dataRequests
-  );
-  TrackerUpdate updateCoord(const vm::ivec3 &currentCoord, const std::vector<OctreeNodePtr> &oldRenderedChunks);
-  TrackerUpdate update(const vm::vec3 &position, const std::vector<OctreeNodePtr> &oldRenderedChunks);
+  ); */
+  TrackerUpdate updateCoord(const vm::ivec2 &currentCoord);
+  TrackerUpdate update(const vm::vec3 &position);
 };
 
 #endif // _TRACKER_H_

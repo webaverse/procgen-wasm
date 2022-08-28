@@ -1,8 +1,8 @@
 #ifndef _UTIL_H_
 #define _UTIL_H_
 
-#include "./DualContouring/cache.h"
-#include "./DualContouring/instance.h"
+// #include "./DualContouring/cache.h"
+// #include "./DualContouring/instance.h"
 #include <functional>
 
 // utils

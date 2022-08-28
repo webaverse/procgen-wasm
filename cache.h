@@ -10,7 +10,7 @@
 
 //
 
-class DCInstance;
+class PGInstance;
 
 //
 
@@ -36,15 +36,6 @@ public:
 };
 
 //
-
-/* template <typename T>
-class ChunkCacheValue {
-public:
-    T value;
-    Mutex mutex;
-
-    ChunkCacheValue() : mutex(true) {}
-}; */
 
 template<typename T>
 class HashValue {
@@ -220,104 +211,5 @@ uint32_t getCacheIndexWorld(int x, int y, int z);
 
 uint32_t getCacheIndexLocal(int x, int y);
 uint32_t getCacheIndexLocal(int x, int y, int z);
-
-//
-
-template <
-    typename T,
-    typename ChunkType,
-    T(fn)(DCInstance *, int, int)
->
-class ChunkCache2D {
-public:
-    DCInstance *inst;
-    // std::unordered_map<uint64_t, ChunkCacheValue<T>> values;
-    // std::vector<std::atomic<int>> valueSources;
-    // std::array<int16_t, cacheWidth * cacheWidth> valueSources;
-    std::array<ChunkCacheValue<T>, cacheWidth * cacheWidth> values;
-    // Mutex mutex;
-
-    ChunkCache2D(DCInstance *inst) : inst(inst) {
-        // values.resize(cacheWidth * cacheWidth);
-        // valueSources.resize(cacheWidth * cacheWidth);
-        /* for (size_t i = 0; i < valueSources.size(); i++) {
-            valueSources[i] = 128;
-        } */
-    }
-    ~ChunkCache2D() {}
-
-    T get(int x, int y) {
-        uint32_t localIndex = getCacheIndexLocal(x, y);
-        uint32_t hash = getCacheIndexWorld(x, y);
-
-        ChunkCacheValue<T> &slot = values[localIndex];
-        const HashValue<T> &hashValue = slot.get();
-
-        if (hashValue.hash == hash) {
-            return hashValue.value;
-        } else {
-            const T &newValue = fn(inst, x, y);
-            slot.set(hash, newValue);
-            return newValue;
-        }
-    }
-    void set(DCInstance *inst, ChunkType *chunk, int x, int z, const T &value) {
-        uint32_t localIndex = getCacheIndexLocal(x, z);
-        uint32_t hash = getCacheIndexWorld(x, z);
-
-        ChunkCacheValue<T> &slot = values[localIndex];
-        slot.set(hash, value);
-    }
-};
-template <
-    typename T,
-    typename ChunkType,
-    T(fn)(DCInstance *, int, int, int)
->
-class ChunkCache3D {
-public:
-    DCInstance *inst;
-    std::array<ChunkCacheValue<T>, cacheWidth * cacheWidth * cacheWidth> values;
-    Mutex mutex;
-
-    ChunkCache3D(DCInstance *inst) : inst(inst) {
-        /* if (!mutex.test()) {
-          EM_ASM({
-            console.log('mutex test failed');
-          });
-          abort();
-        } */
-        // values.reserve(RESERVE_SIZE);
-        // values.resize(cacheWidth * cacheWidth * cacheWidth);
-        // valueSources.resize(cacheWidth * cacheWidth * cacheWidth);
-        /* for (size_t i = 0; i < valueSources.size(); i++) {
-            valueSources[i] = 128;
-        } */
-    }
-    ~ChunkCache3D() {}
-
-    T get(int x, int y, int z) {
-        uint32_t localIndex = getCacheIndexLocal(x, y, z);
-        uint32_t hash = getCacheIndexWorld(x, y, z);
-
-        ChunkCacheValue<T> &slot = values[localIndex];
-        const HashValue<T> &hashValue = slot.get();
-
-        if (hashValue.hash == hash) {
-            return hashValue.value;
-        } else {
-            const T &newValue = fn(inst, x, y, z);
-            slot.set(hash, newValue);
-            return newValue;
-        }
-    }
-    void set(int x, int y, int z, const T &value) {
-        uint32_t localIndex = getCacheIndexLocal(x, y, z);
-        uint32_t hash = getCacheIndexWorld(x, y, z);
-
-        ChunkCacheValue<T> &slot = values[localIndex];
-        slot.set(hash, value);
-    }
-};
 
 #endif // _CACHE_H_

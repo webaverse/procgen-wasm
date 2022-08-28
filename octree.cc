@@ -1,5 +1,5 @@
 #include "octree.h"
-#include "main.h"
+#include "procgen.h"
 #include <cmath>
 
 const vm::ivec3 CHILD_MIN_OFFSETS[] =
@@ -88,7 +88,7 @@ const vm::ivec3 EDGE_OFFSETS[12] =
 
 typedef std::function<bool(const vm::ivec3 &, const vm::ivec3 &)> FilterNodesFunc;
 
-const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p, const int &lod)
+/* const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p, const int &lod)
 {
     const int mask = ~(chunkSize * lod - 1);
     return vm::ivec3{p.x & mask, p.y & mask, p.z & mask};
@@ -97,7 +97,7 @@ const vm::ivec3 chunkMinForPosition(const vm::vec3 &p, const int &lod)
 {
     const vm::vec3 v = p / (chunkSize * lod);
     return vm::ivec3{(int)std::floor(v.x), (int)std::floor(v.y), (int)std::floor(v.z)} * chunkSize;
-}
+} */
 
 uint64_t hashOctreeMin(const vm::ivec2 &min)
 {
@@ -134,7 +134,7 @@ uint64_t hashOctreeMinLod(const vm::ivec3 &min, int lod)
 // VertexData::VertexData() : index(-1), corners(0) {}
 
 //
-void clampPositionToMassPoint(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &vertexPosition)
+/* void clampPositionToMassPoint(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &vertexPosition)
 {
 
     const vm::vec3 min = vm::vec3{(float)voxelNode->min.x, (float)voxelNode->min.y, (float)voxelNode->min.z};
@@ -148,4 +148,4 @@ void clampPositionToMassPoint(OctreeNode *voxelNode, svd::QefSolver &qef, vm::ve
         const auto &mp = qef.getMassPoint();
         vertexPosition = vm::vec3{mp.x, mp.y, mp.z};
     }
-}
+} */

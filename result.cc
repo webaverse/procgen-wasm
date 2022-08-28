@@ -1,5 +1,5 @@
 #include "result.h"
-#include "main.h"
+#include "procgen.h"
 #include "promise.h"
 #include <iostream>
 #include <emscripten/threading.h>

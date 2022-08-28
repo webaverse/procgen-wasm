@@ -1,9 +1,9 @@
-#include "main.h"
+#include "procgen.h"
 #include "octree.h"
 #include "instance.h"
 #include "noises.h"
 // #include "result.h"
-#include "../worley.h"
+#include "worley.h"
 #include <pthread.h>
 #include <thread>
 
@@ -15,7 +15,7 @@
 //     OctreeNode *seamRoot;
 // };
 
-namespace DualContouring
+namespace ProcGen
 {
     /* int getGridPoints(int chunkSize) {
        return chunkSize + 3 + 1;
@@ -79,18 +79,15 @@ namespace DualContouring
 
     void initialize(int newChunkSize, int seed)
     {
-        // chunkSize = newChunkSize;
-        // gridPoints = getGridPoints(chunkSize);
-        // cacheWidth = chunkSize * CHUNK_CACHE_RANGE;
         noises = new Noises(seed);
         parentThreadId = pthread_self();
     }
 
-    DCInstance *createInstance() {
-        DCInstance *instance = new DCInstance();
+    PGInstance *createInstance(int seed, int chunkSize) {
+        PGInstance *instance = new PGInstance(seed, chunkSize);
         return instance;
     }
-    void destroyInstance(DCInstance *instance) {
+    void destroyInstance(PGInstance *instance) {
         delete instance;
     }
 
@@ -101,9 +98,9 @@ namespace DualContouring
         float az = worldPosition.y;
 
         float biomeHeight = biome.baseHeight +
-            DualContouring::noises->elevationNoise1.in2D(ax * biome.amps[0][0], az * biome.amps[0][0]) * biome.amps[0][1] +
-            DualContouring::noises->elevationNoise2.in2D(ax * biome.amps[1][0], az * biome.amps[1][0]) * biome.amps[1][1] +
-            DualContouring::noises->elevationNoise3.in2D(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1];
+            ProcGen::noises->elevationNoise1.in2D(ax * biome.amps[0][0], az * biome.amps[0][0]) * biome.amps[0][1] +
+            ProcGen::noises->elevationNoise2.in2D(ax * biome.amps[1][0], az * biome.amps[1][0]) * biome.amps[1][1] +
+            ProcGen::noises->elevationNoise3.in2D(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1];
         return biomeHeight;
     }
 

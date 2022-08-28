@@ -20,14 +20,6 @@
   lod(0),
   priority(0)
 {} */
-Task::Task(uint32_t id, const vm::vec3 &worldPosition, const vm::vec3 &halfSize, std::function<void()> fn) :
-  id(id),
-  fn(fn),
-  live(true),
-  worldPosition(worldPosition),
-  halfSize(halfSize),
-  priority(0)
-{}
 Task::Task(uint32_t id, int priority, std::function<void()> fn) :
   id(id),
   fn(fn),
@@ -37,19 +29,23 @@ Task::Task(uint32_t id, int priority, std::function<void()> fn) :
     0,
     0
   },
-  halfSize{
-    0,
-    0,
-    0
-  },
+  lod(0),
   priority(priority)
 {}
-Task::Task(uint32_t id, const vm::vec3 &worldPosition, const vm::vec3 &halfSize, int priority, std::function<void()> fn) :
+Task::Task(uint32_t id, const vm::vec3 &worldPosition, int lod, std::function<void()> fn) :
   id(id),
   fn(fn),
   live(true),
   worldPosition(worldPosition),
-  halfSize(halfSize),
+  lod(lod),
+  priority(0)
+{}
+Task::Task(uint32_t id, const vm::vec3 &worldPosition, int lod, int priority, std::function<void()> fn) :
+  id(id),
+  fn(fn),
+  live(true),
+  worldPosition(worldPosition),
+  lod(lod),
   priority(priority)
 {}
 
@@ -62,10 +58,10 @@ void Task::cancel() {
   live.store(false);
 }
 
-int Task::getPriority() {
+int Task::getPriority() const {
   return priority;
 }
-Sphere Task::getSphere() {
+/* Sphere Task::getSphere() const {
   return Sphere{
     Vec{
       worldPosition.x,
@@ -77,6 +73,20 @@ Sphere Task::getSphere() {
       halfSize.y * halfSize.y +
       halfSize.z * halfSize.z
     )
+  };
+} */
+Box3 Task::getBox() const {
+  return Box3{
+    Vec{
+      worldPosition.x,
+      worldPosition.y,
+      worldPosition.z
+    },
+    Vec{
+      worldPosition.x + lod,
+      worldPosition.y + lod,
+      worldPosition.z + lod
+    }
   };
 }
 
@@ -256,23 +266,25 @@ Frustum TaskQueue::getFrustum() {
   return frustum;
 }
 float TaskQueue::getTaskDistance(Task *task, const Frustum &frustum) {
-  float distance = vm::length(task->worldPosition - worldPosition);
+  double distance = vm::length(task->worldPosition - worldPosition);
 
-  Sphere sphere(
+  const float halfLod = (float)task->lod / 2.0f;
+  Box3 box(
     Vec{
-      task->worldPosition.x,
-      task->worldPosition.y,
-      task->worldPosition.z
+      task->worldPosition.x - halfLod,
+      task->worldPosition.y - halfLod,
+      task->worldPosition.z - halfLod
     },
-    (float)std::sqrt(
-      task->halfSize.x * task->halfSize.x +
-      task->halfSize.y * task->halfSize.y +
-      task->halfSize.z * task->halfSize.z
-    )
+    Vec{
+      task->worldPosition.x + halfLod,
+      task->worldPosition.y + halfLod,
+      task->worldPosition.z + halfLod
+    }
   );
-  if (!frustum.intersectsSphere(sphere)) {
+  if (!frustum.intersectsBox(box)) {
     distance += frustumCullDistancePenalty;
   }
+
   distance += task->priority * priorityDistancePenalty;
   return distance;
 }

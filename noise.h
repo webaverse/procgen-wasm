@@ -1,7 +1,7 @@
 #ifndef NOISE_H
 #define NOISE_H
 
-#include "../FastNoise.h"
+#include "FastNoise.h"
 
 class Noise {
  public:
