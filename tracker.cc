@@ -425,7 +425,7 @@ void ensureChildLayer(OctreeContext &octreeContext, OctreeNodePtr parentNode) {
     // }
   }
 }
-void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &position, int _lod1Range, int _maxLod) {
+void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &position, int lod1Range, int _maxLod) {
     auto &nodeMap = octreeContext.nodeMap;
 
     constexpr int minLod = 1;
@@ -434,7 +434,7 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &positio
       (int)std::floor((float)position.x / (float)maxLod) * maxLod,
       (int)std::floor((float)position.y / (float)maxLod) * maxLod
     };
-    vm::ivec2 minRange{
+    /* vm::ivec2 minRange{
       maxLodCenter.x - lod1Range * maxLod,
       maxLodCenter.y - lod1Range * maxLod
     };
@@ -464,8 +464,8 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &positio
 
       minRange += lod;
       maxRange -= lod / 2;
-    }
-    /* for (int dx = -lod1Range * maxLod; dx <= lod1Range * maxLod; dx += maxLod) {
+    } */
+    for (int dx = -lod1Range * maxLod; dx <= lod1Range * maxLod; dx += maxLod) {
       for (int dy = -lod1Range * maxLod; dy <= lod1Range * maxLod; dy += maxLod) {
         vm::ivec2 childPosition{
           maxLodCenter.x + dx,
@@ -478,7 +478,7 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &positio
         );
         // childNode->parent = parentNode;
       }
-    } */
+    }
 }
 /* // ensure that every neighbor of this lod also is at least at this lod (it could be a lower/more detailed leaf)
 void ensurePeers(OctreeContext &octreeContext, OctreeNode *node, int maxLod) {
