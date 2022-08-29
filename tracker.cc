@@ -425,105 +425,60 @@ void ensureChildLayer(OctreeContext &octreeContext, OctreeNodePtr parentNode) {
     // }
   }
 }
-void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &position, int lod1Range, int maxLod) {
+void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &position, int _lod1Range, int _maxLod) {
     auto &nodeMap = octreeContext.nodeMap;
 
-    // 1x lod
     constexpr int minLod = 1;
-    vm::ivec2 center2xMin{
-      (int)std::floor((float)position.x / 2.f) * 2,
-      (int)std::floor((float)position.y / 2.f) * 2
+    constexpr int maxLod = (1 << 6);
+    vm::ivec2 maxLodCenter{
+      (int)std::floor((float)position.x / (float)maxLod) * maxLod,
+      (int)std::floor((float)position.y / (float)maxLod) * maxLod
     };
     vm::ivec2 minRange{
-      center2xMin.x - 2,
-      center2xMin.y - 2
+      maxLodCenter.x - lod1Range * maxLod,
+      maxLodCenter.y - lod1Range * maxLod
     };
     vm::ivec2 maxRange{
-      center2xMin.x + 4,
-      center2xMin.y + 4
+      maxLodCenter.x + lod1Range * maxLod,
+      maxLodCenter.y + lod1Range * maxLod
     };
-    for (int x = minRange.x; x < maxRange.x; x++) {
-      for (int y = minRange.y; y < maxRange.y; y++) {
-        vm::ivec2 leafPosition{
-          x,
-          y
+    for (int lod = maxLod; lod >= maxLod / 64; lod /= 2) {
+      for (int dx = minRange.x; dx <= maxRange.x; dx += lod) {
+        for (int dy = minRange.y; dy <= maxRange.y; dy += lod) {
+          if (
+            (dx == minRange.x) || (dx == maxRange.x) ||
+            (dy == minRange.y) || (dy == maxRange.y)
+          ) { // if it's an edge
+            vm::ivec2 childPosition{
+              dx,
+              dy
+            };
+            OctreeNodePtr childNode = getOrCreateNode(
+              octreeContext,
+              childPosition,
+              lod
+            );
+          }
+        }
+      }
+
+      minRange += lod;
+      maxRange -= lod / 2;
+    }
+    /* for (int dx = -lod1Range * maxLod; dx <= lod1Range * maxLod; dx += maxLod) {
+      for (int dy = -lod1Range * maxLod; dy <= lod1Range * maxLod; dy += maxLod) {
+        vm::ivec2 childPosition{
+          maxLodCenter.x + dx,
+          maxLodCenter.y + dy
         };
-        OctreeNodePtr leafNode = getOrCreateNode(octreeContext, leafPosition, minLod);
+        OctreeNodePtr childNode = getOrCreateNode(
+          octreeContext,
+          childPosition,
+          maxLod
+        );
+        // childNode->parent = parentNode;
       }
-    }
-
-    // remaining edge lods
-    for (int lod = minLod * 2; lod <= maxLod; lod *= 2) {
-      // top side
-      {
-        int baseZ = minRange.y - lod * 2;
-        for (int baseX = minRange.x - lod * 2; baseX < maxRange.x; baseX += lod * 2) {
-          // draw box
-          for (int dx = 0; dx < 2; dx++) {
-            for (int dz = 0; dz < 2; dz++) {
-              vm::ivec2 leafPosition{
-                baseX + dx * lod,
-                baseZ + dz * lod
-              };
-              OctreeNodePtr leafNode = getOrCreateNode(octreeContext, leafPosition, lod);
-            }
-          }
-        }
-      }
-      // left side
-      /* {
-        int baseX = minRange.x;
-        for (int baseZ = minRange.y + lod * 2; baseZ < maxRange.y; baseZ += lod * 2) {
-          // draw box
-          for (int dx = 0; dx < 2; dx++) {
-            for (int dz = 0; dz < 2; dz++) {
-              vm::ivec2 leafPosition{
-                baseX + dx * lod,
-                baseZ + dz * lod
-              };
-              OctreeNodePtr leafNode = getOrCreateNode(octreeContext, leafPosition, lod);
-            }
-          }
-        }
-      } */
-      // right side
-      /* {
-        int baseX = maxRange.x - lod * 2;
-        for (int baseZ = minRange.y; baseZ < maxRange.y - lod * 2; baseZ += lod * 2) {
-          // draw box
-          for (int dx = 0; dx < 2; dx++) {
-            for (int dz = 0; dz < 2; dz++) {
-              vm::ivec2 leafPosition{
-                baseX + dx * lod,
-                baseZ + dz * lod
-              };
-              OctreeNodePtr leafNode = getOrCreateNode(octreeContext, leafPosition, lod);
-            }
-          }
-        }
-      } */
-      // bottom side
-      /* {
-        int baseZ = maxRange.y - lod * 2;
-        for (int baseX = minRange.x + lod * 2; baseX < maxRange.x; baseX += lod * 2) {
-          // draw box
-          for (int dx = 0; dx < 2; dx++) {
-            for (int dz = 0; dz < 2; dz++) {
-              vm::ivec2 leafPosition{
-                baseX + dx * lod,
-                baseZ + dz * lod
-              };
-              OctreeNodePtr leafNode = getOrCreateNode(octreeContext, leafPosition, lod);
-            }
-          }
-        }
-      } */
-
-      minRange.x -= lod * 2;
-      minRange.y -= lod * 2;
-      maxRange.x += lod * 2;
-      maxRange.y += lod * 2;
-    }
+    } */
 }
 /* // ensure that every neighbor of this lod also is at least at this lod (it could be a lower/more detailed leaf)
 void ensurePeers(OctreeContext &octreeContext, OctreeNode *node, int maxLod) {
