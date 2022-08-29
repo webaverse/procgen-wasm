@@ -429,38 +429,64 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &positio
     }
 
     // for each lod, find matching child nodes and scan upwards to fill in parent lod nodes
-    int lastLod = minLod;
-    for (int lod = lastLod * 2; lod <= maxLod; lastLod = lod, lod = lastLod * 2) {
-      // collect all nodes at the lower lod
+    int childLod = minLod;
+    for (int parentLod = minLod * 2; parentLod <= maxLod; parentLod *= 2) {
+      // collect all nodes at the child lod
       std::vector<OctreeNodePtr> childNodes;
       for (const auto &iter : nodeMap) {
         auto node = iter.second;
-        if (node->lod == lastLod) {
+        if (node->lod == childLod) {
           childNodes.push_back(node);
         }
       }
-      // for each node, scan upwards to fill in parent lods
-      for (auto leafNode : childNodes) {
-        vm::ivec2 baseMin = leafNode->min;
-        // snap
-        baseMin.x = (baseMin.x / lod) * lod;
-        baseMin.y = (baseMin.y / lod) * lod;
+      // for each child node, fill in neighbor child nodes
+      for (auto childNode : childNodes) {
+        vm::ivec2 baseMin = childNode->min;
+        // snap to parent lod
+        baseMin.x = (baseMin.x / parentLod) * parentLod;
+        baseMin.y = (baseMin.y / parentLod) * parentLod;
 
-        // scan 1 to either side
-        for (int dx = -1; dx <= 1; dx++) {
-          for (int dz = -1; dz <= 1; dz++) {
+        for (int dx2 = 0; dx2 < 2; dx2++) {
+          for (int dz2 = 0; dz2 < 2; dz2++) {
             vm::ivec2 min{
-              baseMin.x + dx * lod,
-              baseMin.y + dz * lod
+              baseMin.x + dx2 * childLod,
+              baseMin.y + dz2 * childLod
             };
 
-            OctreeNodePtr existingNode = findContainedNode(octreeContext, min, lod);
+            OctreeNodePtr existingNode = findContainedNode(octreeContext, min, childLod);
             if (!existingNode) {
-              OctreeNodePtr node = createNode(octreeContext, min, lod);
+              OctreeNodePtr node = getOrCreateNode(octreeContext, min, childLod);
             }
           }
         }
       }
+      for (auto childNode : childNodes) {
+        vm::ivec2 baseMin = childNode->min;
+        // snap to parent lod
+        baseMin.x = (baseMin.x / parentLod) * parentLod;
+        baseMin.y = (baseMin.y / parentLod) * parentLod;
+
+        // scan 1 parent unit to either side
+        for (int dx = -1; dx <= 1; dx++) {
+          for (int dz = -1; dz <= 1; dz++) {
+            if (dx == 0 && dz == 0) {
+              continue;
+            }
+
+            vm::ivec2 parentMin{
+              baseMin.x + dx * parentLod,
+              baseMin.y + dz * parentLod
+            };
+
+            OctreeNodePtr existingNode = findContainedNode(octreeContext, parentMin, parentLod);
+            if (!existingNode) {
+              OctreeNodePtr node = getOrCreateNode(octreeContext, parentMin, parentLod);
+            }
+          }
+        }
+      }
+
+      childLod *= 2;
     }
 }
 /* // ensure that every neighbor of this lod also is at least at this lod (it could be a lower/more detailed leaf)
