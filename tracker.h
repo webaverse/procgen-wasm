@@ -102,7 +102,8 @@ public:
 
 //
 
-bool containsPoint(const OctreeNode &node, const vm::ivec3 &p);
+bool containsPoint(const vm::ivec2 &min, const int lod, const vm::ivec2 &p);
+bool containsPoint(const OctreeNode &node, const vm::ivec2 &p);
 bool containsNode(const OctreeNode &node, const OctreeNode &other);
 bool equalsNode(const OctreeNode &node, const OctreeNode &other);
 bool equalsNodeLod(const OctreeNode &node, const OctreeNode &other);

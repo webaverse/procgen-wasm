@@ -214,9 +214,12 @@ std::vector<uint8_t> Dominator::getBuffer() const {
 
 //
 
+bool containsPoint(const vm::ivec2 &min, const int lod, const vm::ivec2 &p) {
+  return p.x >= min.x && p.x < min.x + lod &&
+    p.y >= min.y && p.y < min.y + lod;
+}
 bool containsPoint(const OctreeNode &node, const vm::ivec2 &p) {
-  return p.x >= node.min.x && p.x < node.min.x + node.lod &&
-    p.y >= node.min.y && p.y < node.min.y + node.lod;
+  return containsPoint(node.min, node.lod, p);
 }
 bool containsNode(const OctreeNode &node, const OctreeNode &other) {
   return containsPoint(node, other.min);
@@ -342,13 +345,25 @@ OctreeNodePtr getOrCreateNode(OctreeContext &octreeContext, const vm::ivec2 &min
   }
   return nullptr;
 } */
-OctreeNodePtr findContainingNode(OctreeContext &octreeContext, const vm::ivec2 &min) {
+/* OctreeNodePtr findContainingNode(OctreeContext &octreeContext, const vm::ivec2 &min) {
   auto &nodeMap = octreeContext.nodeMap;
 
   std::vector<OctreeNodePtr> leafNodes;
   for (const auto &iter : nodeMap) {
     auto node = iter.second;
     if (containsPoint(*node, min)) {
+      return node;
+    }
+  }
+  return nullptr;
+} */
+OctreeNodePtr findContainedNode(OctreeContext &octreeContext, const vm::ivec2 &min, const int lod) {
+  auto &nodeMap = octreeContext.nodeMap;
+
+  std::vector<OctreeNodePtr> leafNodes;
+  for (const auto &iter : nodeMap) {
+    auto node = iter.second;
+    if (containsPoint(min, lod, node->min)) {
       return node;
     }
   }
@@ -435,7 +450,7 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &positio
               baseMin.y + dz * lod
             };
 
-            OctreeNodePtr existingNode = findContainingNode(octreeContext, min);
+            OctreeNodePtr existingNode = findContainedNode(octreeContext, min, lod);
             if (!existingNode) {
               // OctreeNodePtr node = getOrCreateNode(octreeContext, min, lod);
               OctreeNodePtr node = createNode(octreeContext, min, lod);
@@ -518,9 +533,13 @@ std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec2 &position, int
   for (auto leafNode : leafNodes) {
     for (auto leafNode2 : leafNodes) {
       if (leafNode != leafNode2 && containsNode(*leafNode, *leafNode2)) {
-        EM_ASM({
-            console.log('Leaf node contains another leaf node:', $0, $1);
-        }, leafNode->min.x, leafNode->min.y);
+        EM_ASM(
+          {
+              console.log('Leaf node contains another leaf node:', $0, $1, $2, $3, $4, $5);
+          },
+          leafNode->min.x, leafNode->min.y, leafNode->lod,
+          leafNode2->min.x, leafNode2->min.y, leafNode2->lod
+        );
       }
     }
   }
@@ -778,7 +797,7 @@ void Tracker::sortNodes(std::vector<OctreeNodePtr> &nodes) {
   sort<OctreeNodePtr>(nodes, worldPosition, frustum);
 }
 
-const OctreeNodePtr findLeafNodeForPosition(
+/* const OctreeNodePtr findLeafNodeForPosition(
   const std::vector<OctreeNodePtr> &nodes,
   const vm::ivec3 &p
 ) {
@@ -789,7 +808,7 @@ const OctreeNodePtr findLeafNodeForPosition(
     }
   }
   return nullptr;
-}
+} */
 
 DataRequestUpdate Tracker::updateDataRequests(
   std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
