@@ -428,16 +428,20 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &positio
       }
     }
 
-    // collect all nodes in the nodeMap
-    std::vector<OctreeNodePtr> leafNodes;
-    for (const auto &iter : nodeMap) {
-      auto node = iter.second;
-      leafNodes.push_back(node);
-    }
-    // for all leaf nodes, scan upwards to fill in missing lods
-    for (const auto &leafNode : leafNodes) {
-      vm::ivec2 baseMin = leafNode->min;
-      for (int lod = minLod * 2; lod <= maxLod; lod *= 2) {
+    // for each lod, find matching child nodes and scan upwards to fill in parent lod nodes
+    int lastLod = minLod;
+    for (int lod = lastLod * 2; lod <= maxLod; lastLod = lod, lod = lastLod * 2) {
+      // collect all nodes at the lower lod
+      std::vector<OctreeNodePtr> childNodes;
+      for (const auto &iter : nodeMap) {
+        auto node = iter.second;
+        if (node->lod == lastLod) {
+          childNodes.push_back(node);
+        }
+      }
+      // for each node, scan upwards to fill in parent lods
+      for (auto leafNode : childNodes) {
+        vm::ivec2 baseMin = leafNode->min;
         // snap
         baseMin.x = (baseMin.x / lod) * lod;
         baseMin.y = (baseMin.y / lod) * lod;
@@ -452,7 +456,6 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &positio
 
             OctreeNodePtr existingNode = findContainedNode(octreeContext, min, lod);
             if (!existingNode) {
-              // OctreeNodePtr node = getOrCreateNode(octreeContext, min, lod);
               OctreeNodePtr node = createNode(octreeContext, min, lod);
             }
           }
