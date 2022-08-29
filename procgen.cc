@@ -1,7 +1,7 @@
 #include "procgen.h"
 #include "octree.h"
 #include "instance.h"
-#include "noises.h"
+// #include "noises.h"
 // #include "result.h"
 #include "worley.h"
 #include <pthread.h>
@@ -26,7 +26,6 @@ namespace ProcGen
     // int gridPoints = getGridPoints(chunkSize);
     // int cacheWidth = chunkSize * CHUNK_CACHE_RANGE;
 
-    Noises *noises = nullptr;
     TaskQueue taskQueue;
     ResultQueue resultQueue;
 
@@ -77,9 +76,8 @@ namespace ProcGen
         // std::cout << "run loop 2" << std::endl;
     }
 
-    void initialize(int newChunkSize, int seed)
+    void initialize()
     {
-        noises = new Noises(seed);
         parentThreadId = pthread_self();
     }
 
@@ -91,21 +89,8 @@ namespace ProcGen
         delete instance;
     }
 
-    // biomes
-    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition) {
-        const Biome &biome = BIOMES[b];
-        float ax = worldPosition.x;
-        float az = worldPosition.y;
-
-        float biomeHeight = biome.baseHeight +
-            ProcGen::noises->elevationNoise1.in2D(ax * biome.amps[0][0], az * biome.amps[0][0]) * biome.amps[0][1] +
-            ProcGen::noises->elevationNoise2.in2D(ax * biome.amps[1][0], az * biome.amps[1][0]) * biome.amps[1][1] +
-            ProcGen::noises->elevationNoise3.in2D(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1];
-        return biomeHeight;
-    }
-
     // caves
-    float getComputedCaveNoise(int ax, int ay, int az) {
+    /* float getComputedCaveNoise(int ax, int ay, int az) {
         std::vector<double> at = {
             (double)ax * 0.1f,
             (double)ay * 0.1f,
@@ -145,5 +130,5 @@ namespace ProcGen
         float caveValue = std::min(std::max((distance3 != 0.f ? (distance1 / distance3) : 0.f) * 1.1f, 0.f), 1.f);
         // std::cout << "return" << std::endl;
         return caveValue;
-    }
+    } */
 }

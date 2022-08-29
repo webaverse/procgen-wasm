@@ -12,6 +12,7 @@
 #include "context.h"
 #include "task.h"
 #include "vector.h"
+#include "noises.h"
 
 //
 
@@ -25,6 +26,7 @@ class PGInstance {
 public:
     int seed;
     int chunkSize;
+    Noises noises;
     std::unique_ptr<vm::box3> clipRange;
 
     vm::vec3 worldPosition;
@@ -41,6 +43,8 @@ public:
     Heightfield getHeightField(int bx, int bz);
     void getWaterField(int bx, int bz, int lod, float *waterField);
     float getWaterField(int bx, int bz);
+
+    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
 
     //
 

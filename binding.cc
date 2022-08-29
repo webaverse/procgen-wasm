@@ -5,13 +5,14 @@
 
 extern "C" {
 
-EMSCRIPTEN_KEEPALIVE void initialize(int chunkSize, int seed) {
-    ProcGen::initialize(chunkSize, seed);
+EMSCRIPTEN_KEEPALIVE void initialize() {
+    ProcGen::initialize();
 }
 
 // 
 
 EMSCRIPTEN_KEEPALIVE PGInstance *createInstance(int seed, int chunkSize) {
+    std::cout << "create instance " << seed << " " << chunkSize << std::endl;
     return ProcGen::createInstance(seed, chunkSize);
 }
 EMSCRIPTEN_KEEPALIVE void destroyInstance(PGInstance *instance) {
@@ -150,7 +151,9 @@ EMSCRIPTEN_KEEPALIVE void setCamera(PGInstance *inst, float *worldPosition, floa
 //
 
 EMSCRIPTEN_KEEPALIVE Tracker *createTracker(PGInstance *inst, int lods, int lod1Range) {
+    // std::cout << "create tracker 1 " << (void *)inst << " " << lods << " " << lod1Range << std::endl;
     Tracker *tracker = new Tracker(inst, lods, lod1Range);
+    // std::cout << "create tracker 2 " << (void *)inst << " " << lods << " " << lod1Range << std::endl;
     return tracker;
 }
 

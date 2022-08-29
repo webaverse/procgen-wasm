@@ -23,20 +23,17 @@ class PGInstance;
 
 namespace ProcGen {
     // globals
-    extern Noises *noises;
     extern TaskQueue taskQueue;
     extern ResultQueue resultQueue;
 
     extern pthread_t parentThreadId;
 
     // initialization
-    void initialize(int newChunkSize, int seed);
+    void initialize();
     
     // instances
     PGInstance *createInstance(int seed, int chunkSize);
     void destroyInstance(PGInstance *instance);
-
-    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
 
     // threads
     void start();

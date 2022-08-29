@@ -1,7 +1,7 @@
 #include "instance.h"
 #include "procgen.h"
 #include "octree.h"
-#include "lock.h"
+// #include "lock.h"
 #include "biomes.h"
 #include "tracker.h"
 #include "vector.h"
@@ -14,7 +14,8 @@ constexpr int CHUNK_RANGE = 1;
 // constructor/destructor
 PGInstance::PGInstance(int seed, int chunkSize) :
     seed(seed),
-    chunkSize(chunkSize)
+    chunkSize(chunkSize),
+    noises(seed)
     // cachedNoiseField(this),
     // cachedBiomesField(this),
     // cachedHeightField(this),
@@ -26,6 +27,7 @@ PGInstance::PGInstance(int seed, int chunkSize) :
     // cachedWaterSdf(this)
     // cachedDamageSdf(this)
 {
+    std::cout << "new pg instance " << seed << " " << chunkSize << std::endl;
 }
 PGInstance::~PGInstance() {}
 
@@ -176,7 +178,7 @@ uint8_t *PGInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const in
     int minX = worldPositionXZ.x / size * size;
     int minZ = worldPositionXZ.y / size * size;
 
-    float seed = ProcGen::noises->grassNoise.in2D(minX, minZ);
+    float seed = noises.grassNoise.in2D(minX, minZ);
     unsigned int seedInt;
     memcpy(&seedInt, &seed, sizeof(unsigned int));
     std::mt19937 rng(seedInt);
@@ -249,7 +251,7 @@ uint8_t *PGInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, con
     int minX = worldPositionXZ.x / chunkSize * chunkSize;
     int minZ = worldPositionXZ.y / chunkSize * chunkSize;
 
-    float seed = ProcGen::noises->vegetationNoise.in2D(minX, minZ);
+    float seed = noises.vegetationNoise.in2D(minX, minZ);
     unsigned int seedInt;
     memcpy(&seedInt, &seed, sizeof(unsigned int));
     std::mt19937 rng(seedInt);
@@ -264,7 +266,7 @@ uint8_t *PGInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, con
         float ax = (float)minX + dx * lod;
         float az = (float)minZ + dz * lod;
 
-        float noiseValue = ProcGen::noises->vegetationNoise.in2D(ax, az);
+        float noiseValue = noises.vegetationNoise.in2D(ax, az);
 
         if (noiseValue < veggieRate)
         {
@@ -325,7 +327,7 @@ uint8_t *PGInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int 
     int minX = worldPositionXZ.x / chunkSize * chunkSize;
     int minZ = worldPositionXZ.y / chunkSize * chunkSize;
 
-    float seed = ProcGen::noises->mobNoise.in2D(minX, minZ);
+    float seed = noises.mobNoise.in2D(minX, minZ);
     unsigned int seedInt;
     memcpy(&seedInt, &seed, sizeof(unsigned int));
     std::mt19937 rng(seedInt);
@@ -340,7 +342,7 @@ uint8_t *PGInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int 
         float ax = (float)minX + dx;
         float az = (float)minZ + dz;
 
-        float noiseValue = ProcGen::noises->mobNoise.in2D(ax, az);
+        float noiseValue = noises.mobNoise.in2D(ax, az);
 
         if (noiseValue < mobRate)
         {
@@ -950,16 +952,16 @@ NoiseField PGInstance::getNoise(int bx, int bz) {
             // int ax = x;
             // int az = y;
 
-            float tNoise = (float)ProcGen::noises->temperatureNoise.in2D(bx, bz);
+            float tNoise = (float)noises.temperatureNoise.in2D(bx, bz);
             // noiseField.temperature[index] = tNoise;
 
-            float hNoise = (float)ProcGen::noises->humidityNoise.in2D(bx, bz);
+            float hNoise = (float)noises.humidityNoise.in2D(bx, bz);
             // noiseField.humidity[index] = hNoise;
 
-            float oNoise = (float)ProcGen::noises->oceanNoise.in2D(bx, bz);
+            float oNoise = (float)noises.oceanNoise.in2D(bx, bz);
             // noiseField.ocean[index] = oNoise;
 
-            float rNoise = (float)ProcGen::noises->riverNoise.in2D(bx, bz);
+            float rNoise = (float)noises.riverNoise.in2D(bx, bz);
             // noiseField.river[index] = rNoise;
 
             return NoiseField{
@@ -1102,7 +1104,7 @@ Heightfield PGInstance::getHeightField(int bx, int bz) {
     vm::vec2 fWorldPosition{(float)bx, (float)bz};
     for (auto const &iter : biomeCounts)
     {
-        elevationSum += iter.second * ProcGen::getComputedBiomeHeight(iter.first, fWorldPosition);
+        elevationSum += iter.second * getComputedBiomeHeight(iter.first, fWorldPosition);
     }
 
     float elevation = elevationSum / (float)numSamples;
@@ -1369,6 +1371,19 @@ float PGInstance::signedDistanceToSphere(float cx, float cy, float cz, float r, 
     return d - r;
 } */
 
+// biomes
+float PGInstance::getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition) {
+    const Biome &biome = BIOMES[b];
+    float ax = worldPosition.x;
+    float az = worldPosition.y;
+
+    float biomeHeight = biome.baseHeight +
+        noises.elevationNoise1.in2D(ax * biome.amps[0][0], az * biome.amps[0][0]) * biome.amps[0][1] +
+        noises.elevationNoise2.in2D(ax * biome.amps[1][0], az * biome.amps[1][0]) * biome.amps[1][1] +
+        noises.elevationNoise3.in2D(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1];
+    return biomeHeight;
+}
+
 void PGInstance::trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec3 &position, int priority) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
@@ -1382,6 +1397,7 @@ void PGInstance::trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec
     ]() -> void {
         const TrackerUpdate &trackerUpdate = tracker->update(position);
         uint8_t *buffer = trackerUpdate.getBuffer();
+        std::cout << "trakcer update buffer address" << (void *)buffer << std::endl;
         if (!promise->resolve(buffer)) {
           // XXX clean up
         }
