@@ -152,10 +152,6 @@ public:
 
   Tracker(PGInstance *inst, int lods, int lod1Range);
 
-  // static methods
-
-  vm::ivec2 getCurrentCoord(const vm::vec3 &position);
-
   // dynamic methods
 
   void sortNodes(std::vector<OctreeNodePtr> &nodes);
@@ -167,7 +163,6 @@ public:
     const std::vector<OctreeNodePtr> &oldRenderedChunks,
     std::unordered_map<uint64_t, DataRequestPtr> &dataRequests
   ); */
-  TrackerUpdate updateCoord(const vm::ivec2 &currentCoord);
   TrackerUpdate update(const vm::vec3 &position);
 };
 

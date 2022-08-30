@@ -54,22 +54,22 @@ typedef std::shared_ptr<OctreeNode> OctreeNodePtr;
 class OctreeNode : public OctreeNodeSpec
 {
 public:
-    std::vector<OctreeNodePtr> children;
-    OctreeNodePtr parent;
+    // std::vector<OctreeNodePtr> children;
+    // OctreeNodePtr parent;
 
     OctreeNode(const vm::ivec2 &min, int lod) :
-      OctreeNodeSpec{min, lod},
-      children(4)
+      OctreeNodeSpec{min, lod}// ,
+      // children(4)
       {}
 
-    bool isLeaf() const {
+    /* bool isLeaf() const {
         for (const auto &child : children) {
             if (child) {
                 return false;
             }
         }
         return true;
-    }
+    } */
     int getPriority() const {
         return 0;
     }

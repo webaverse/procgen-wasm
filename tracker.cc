@@ -306,11 +306,17 @@ OctreeNodePtr OctreeContext::alloc(const vm::ivec2 &min, int lod) {
   }
   return nullptr;
 } */
-OctreeNodePtr getNode(OctreeContext &octreeContext, const vm::ivec2 &min, int lod) {
+std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>>::iterator getNodeIter(OctreeContext &octreeContext, const vm::ivec2 &min, int lod) {
   auto &nodeMap = octreeContext.nodeMap;
 
   uint64_t hash = hashOctreeMinLod(min, lod);
   auto iter = nodeMap.find(hash);
+  return iter;
+}
+OctreeNodePtr getNode(OctreeContext &octreeContext, const vm::ivec2 &min, int lod) {
+  auto &nodeMap = octreeContext.nodeMap;
+
+  auto iter = getNodeIter(octreeContext, min, lod);
   if (iter != nodeMap.end()) {
     return iter->second;
   } else {
@@ -357,6 +363,18 @@ OctreeNodePtr getOrCreateNode(OctreeContext &octreeContext, const vm::ivec2 &min
   }
   return nullptr;
 } */
+std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>>::iterator findNodeIterAtPoint(OctreeContext &octreeContext, const vm::ivec2 &position) {
+  auto &nodeMap = octreeContext.nodeMap;
+
+  std::vector<OctreeNodePtr> leafNodes;
+  for (auto iter = nodeMap.begin(); iter != nodeMap.end(); iter++) {
+    auto node = iter->second;
+    if (containsPoint(node->min, node->lod, position)) {
+      return iter;
+    }
+  }
+  return nodeMap.end();
+}
 OctreeNodePtr findContainedNode(OctreeContext &octreeContext, const vm::ivec2 &min, const int lod) {
   auto &nodeMap = octreeContext.nodeMap;
 
@@ -406,7 +424,7 @@ bool removeNode(OctreeContext &octreeContext, OctreeNodePtr node) {
       }
     }
 } */
-void ensureChildLayer(OctreeContext &octreeContext, OctreeNodePtr parentNode) {
+/* void ensureChildLayer(OctreeContext &octreeContext, OctreeNodePtr parentNode) {
   const vm::ivec2 &parentPosition = parentNode->min;
   int childLod = parentNode->lod / 2;
   
@@ -424,61 +442,69 @@ void ensureChildLayer(OctreeContext &octreeContext, OctreeNodePtr parentNode) {
       parentNode->children[i] = childNode;
     // }
   }
-}
-void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &position, int lod1Range, int _maxLod) {
-    auto &nodeMap = octreeContext.nodeMap;
+} */
+void splitPointToLod(OctreeContext &octreeContext, const vm::ivec2 &absolutePosition, int targetLod) {
+  auto &nodeMap = octreeContext.nodeMap;
 
-    constexpr int minLod = 1;
-    constexpr int maxLod = (1 << 6);
-    vm::ivec2 maxLodCenter{
-      (int)std::floor((float)position.x / (float)maxLod) * maxLod,
-      (int)std::floor((float)position.y / (float)maxLod) * maxLod
-    };
-    /* vm::ivec2 minRange{
-      maxLodCenter.x - lod1Range * maxLod,
-      maxLodCenter.y - lod1Range * maxLod
-    };
-    vm::ivec2 maxRange{
-      maxLodCenter.x + lod1Range * maxLod,
-      maxLodCenter.y + lod1Range * maxLod
-    };
-    for (int lod = maxLod; lod >= maxLod / 64; lod /= 2) {
-      for (int dx = minRange.x; dx <= maxRange.x; dx += lod) {
-        for (int dy = minRange.y; dy <= maxRange.y; dy += lod) {
-          if (
-            (dx == minRange.x) || (dx == maxRange.x) ||
-            (dy == minRange.y) || (dy == maxRange.y)
-          ) { // if it's an edge
-            vm::ivec2 childPosition{
-              dx,
-              dy
+  for (;;) {
+    auto iter = findNodeIterAtPoint(octreeContext, absolutePosition);
+    if (iter != nodeMap.end()) {
+      OctreeNodePtr node = iter->second;
+      int parentLod = node->lod;
+      
+      if (parentLod > targetLod) {
+        const vm::ivec2 &parentPosition = node->min;
+        int childLod = parentLod / 2;
+
+        nodeMap.erase(iter);
+
+        for (int dx = 0; dx < 2; dx++) {
+          for (int dy = 0; dy < 2; dy++) {
+            vm::ivec2 min{
+              parentPosition.x + dx * childLod,
+              parentPosition.y + dy * childLod
             };
-            OctreeNodePtr childNode = getOrCreateNode(
+            
+            OctreeNodePtr childNode = createNode(
               octreeContext,
-              childPosition,
-              lod
+              min,
+              childLod
             );
           }
         }
+      } else {
+        break;
       }
-
-      minRange += lod;
-      maxRange -= lod / 2;
-    } */
-    for (int dx = -lod1Range * maxLod; dx <= lod1Range * maxLod; dx += maxLod) {
-      for (int dy = -lod1Range * maxLod; dy <= lod1Range * maxLod; dy += maxLod) {
-        vm::ivec2 childPosition{
-          maxLodCenter.x + dx,
-          maxLodCenter.y + dy
-        };
-        OctreeNodePtr childNode = getOrCreateNode(
-          octreeContext,
-          childPosition,
-          maxLod
-        );
-        // childNode->parent = parentNode;
-      }
+    } else {
+      std::cerr << "could not find split point node" << std::endl;
+      abort();
     }
+  }
+}
+void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &currentCoord, int lod1Range, int _maxLod) {
+  auto &nodeMap = octreeContext.nodeMap;
+
+  constexpr int minLod = 1;
+  constexpr int maxLod = (1 << 6);
+  vm::ivec2 maxLodCenter{
+    (int)std::floor((float)currentCoord.x / (float)maxLod) * maxLod,
+    (int)std::floor((float)currentCoord.y / (float)maxLod) * maxLod
+  };
+  for (int dx = -lod1Range * maxLod; dx <= lod1Range * maxLod; dx += maxLod) {
+    for (int dy = -lod1Range * maxLod; dy <= lod1Range * maxLod; dy += maxLod) {
+      vm::ivec2 childPosition{
+        maxLodCenter.x + dx,
+        maxLodCenter.y + dy
+      };
+      OctreeNodePtr childNode = getOrCreateNode(
+        octreeContext,
+        childPosition,
+        maxLod
+      );
+    }
+  }
+
+  splitPointToLod(octreeContext, currentCoord, 1);
 }
 /* // ensure that every neighbor of this lod also is at least at this lod (it could be a lower/more detailed leaf)
 void ensurePeers(OctreeContext &octreeContext, OctreeNode *node, int maxLod) {
@@ -507,13 +533,13 @@ void ensurePeers(OctreeContext &octreeContext, OctreeNode *node, int maxLod) {
         printf(" ");
     }
 } */
-std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec2 &position, int lod1Range, int maxLod) {
+std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec2 &currentCoord, int lod1Range, int maxLod) {
   OctreeContext octreeContext;
   auto &nodeMap = octreeContext.nodeMap;
 
   constructTreeUpwards(
     octreeContext,
-    position,
+    currentCoord,
     lod1Range,
     maxLod
   );
@@ -735,8 +761,7 @@ Tracker::Tracker(PGInstance *inst, int lods, int lod1Range) :
   }
 {}
 // static methods
-vm::ivec2 Tracker::getCurrentCoord(const vm::vec3 &position) {
-  const int &chunkSize = inst->chunkSize;
+vm::ivec2 getCurrentCoord(const vm::vec3 &position, int chunkSize) {
   const int cx = std::floor(position.x / (float)chunkSize);
   const int cz = std::floor(position.z / (float)chunkSize);
   return vm::ivec2{cx, cz};
@@ -932,17 +957,16 @@ DataRequestUpdate Tracker::updateDataRequests(
   }
   return dominators;
 } */
-TrackerUpdate Tracker::updateCoord(const vm::ivec2 &currentCoord) {
-  // old octrees
-  // const std::vector<OctreeNodePtr> &oldRenderedChunks = this->leafNodes;
-  
+TrackerUpdate Tracker::update(const vm::vec3 &position) {
   // new octrees
+  vm::ivec2 currentCoord = getCurrentCoord(position, this->inst->chunkSize);
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(
     currentCoord,
     this->lod1Range,
     1 << (this->lods - 1)
   );
   sortNodes(octreeLeafNodes);
+
   DataRequestUpdate dataRequestUpdate = updateDataRequests(this->dataRequests, octreeLeafNodes);
 
   //
@@ -958,13 +982,6 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec2 &currentCoord) {
     }
   );
 
-  // compute dominators
-  // std::unordered_map<uint64_t, Dominator> dominators = updateDominators(oldRenderedChunks, newRenderedChunks);
-
-  //
-
-  // this->leafNodes = octreeLeafNodes;
-
   //
 
   TrackerUpdate result;
@@ -975,19 +992,12 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec2 &currentCoord) {
   result.keepDataRequests = std::move(dataRequestUpdate.keepDataRequests);
   result.cancelDataRequests = std::move(dataRequestUpdate.cancelDataRequests);
 
-  // result.dominators = std::move(dominators);
-
   //
 
   return result;
 }
-TrackerUpdate Tracker::update(const vm::vec3 &position) {
+/* TrackerUpdate Tracker::update(const vm::vec3 &position) {
   const vm::ivec2 &currentCoord = getCurrentCoord(position);
-  std::cout << "tracker update coord " <<
-    position.x << " " << position.y << " " << position.z << " : " <<
-    inst->chunkSize << " : " <<
-    currentCoord.x << " " << currentCoord.y <<
-    std::endl;
   TrackerUpdate trackerUpdate = updateCoord(currentCoord);
   return trackerUpdate;
-}
+} */
