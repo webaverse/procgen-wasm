@@ -504,7 +504,17 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &current
     }
   }
 
-  splitPointToLod(octreeContext, currentCoord, 1);
+  for (int lod = minLod; lod <= maxLod; lod *= 2) {
+    for (int dx = -lod1Range * lod; dx <= lod1Range * lod; dx += lod) {
+      for (int dz = -lod1Range * lod; dz <= lod1Range * lod; dz += lod) {
+        vm::ivec2 splitPosition{
+          currentCoord.x + dx,
+          currentCoord.y + dz
+        };
+        splitPointToLod(octreeContext, splitPosition, lod);
+      }
+    }
+  }
 }
 /* // ensure that every neighbor of this lod also is at least at this lod (it could be a lower/more detailed leaf)
 void ensurePeers(OctreeContext &octreeContext, OctreeNode *node, int maxLod) {
