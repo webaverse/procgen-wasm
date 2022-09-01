@@ -27,7 +27,7 @@ PGInstance::PGInstance(int seed, int chunkSize) :
     // cachedWaterSdf(this)
     // cachedDamageSdf(this)
 {
-    std::cout << "new pg instance " << seed << " " << chunkSize << std::endl;
+    // std::cout << "new pg instance " << seed << " " << chunkSize << std::endl;
 }
 PGInstance::~PGInstance() {}
 
@@ -427,8 +427,122 @@ std::vector<vm::ivec2> getChunkRangeInclusive(const vm::ivec2 &worldPosition, in
 
 //
 
-uint8_t *PGInstance::createTerrainChunkMesh(const vm::ivec2 &worldPosition, int lod)
-{
+class Geometry {
+public:
+    std::vector<float> positions;
+    std::vector<float> normals;
+    std::vector<float> uvs;
+    std::vector<uint32_t> indices;
+
+    // Geometry() {}
+};
+Geometry createPlaneGeometry(int width = 1, int height = 1, int widthSegments = 1, int heightSegments = 1) {
+    Geometry geometry;
+
+    /* this.parameters = {
+        width: width,
+        height: height,
+        widthSegments: widthSegments,
+        heightSegments: heightSegments
+    }; */
+
+    const int width_half = width / 2;
+    const int height_half = height / 2;
+
+    const int gridX = widthSegments;
+    const int gridY = heightSegments;
+
+    const int gridX1 = gridX + 1;
+    const int gridY1 = gridY + 1;
+
+    const int segment_width = width / gridX;
+    const int segment_height = height / gridY;
+
+    //
+
+    // const indices = [];
+    // const vertices = [];
+    // const normals = [];
+    // const uvs = [];
+
+    for (int iy = 0; iy < gridY1; iy ++) {
+
+        const int y = iy * segment_height - height_half;
+
+        for (int ix = 0; ix < gridX1; ix++) {
+
+            const int x = ix * segment_width - width_half;
+
+            geometry.positions.push_back(x);
+            geometry.positions.push_back(0);
+            geometry.positions.push_back(-y);
+
+            geometry.normals.push_back(0);
+            geometry.normals.push_back(0);
+            geometry.normals.push_back(1);
+
+            geometry.uvs.push_back(ix / gridX);
+            geometry.uvs.push_back(1 - ( iy / gridY ));
+
+        }
+
+    }
+
+    for (int iy = 0; iy < gridY; iy++) {
+
+        for (int ix = 0; ix < gridX; ix++) {
+
+            const int a = ix + gridX1 * iy;
+            const int b = ix + gridX1 * (iy + 1);
+            const int c = (ix + 1) + gridX1 * (iy + 1);
+            const int d = (ix + 1) + gridX1 * iy;
+
+            geometry.indices.push_back(a);
+            geometry.indices.push_back(b);
+            geometry.indices.push_back(d);
+            geometry.indices.push_back(b);
+            geometry.indices.push_back(c);
+            geometry.indices.push_back(d);
+
+        }
+
+    }
+
+    // this.setIndex( indices );
+    // this.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
+    // this.setAttribute( 'normal', new Float32BufferAttribute( normals, 3 ) );
+    // this.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
+
+    return geometry;
+}
+void generateHeightfieldMesh(const vm::ivec2 &worldPosition, int lod, const std::vector<Heightfield> &heightfield, TerrainVertexBuffer &vertexBuffer) {
+    // std::cout << "generate plane geometry: " << worldPosition.x << " " << worldPosition.y << " " << lod << std::endl;
+    Geometry planeGeometry = createPlaneGeometry(lod, lod, lod, lod);
+
+    for (size_t i = 0; i < planeGeometry.positions.size(); i += 3) { 
+      vertexBuffer.positions.push_back(vm::vec3{
+        planeGeometry.positions[i],
+        planeGeometry.positions[i + 1],
+        planeGeometry.positions[i + 2]
+      });
+
+      vertexBuffer.normals.push_back(vm::vec3{
+        planeGeometry.normals[i],
+        planeGeometry.normals[i + 1],
+        planeGeometry.normals[i + 2]
+      });
+
+      size_t j = i / 3 * 2;
+      vertexBuffer.biomesUvs1.push_back(std::array<UV, 2>{
+        planeGeometry.uvs[j],
+        planeGeometry.uvs[j + 1]
+      });
+    }
+    for (size_t i = 0; i < planeGeometry.indices.size(); i++) {
+      vertexBuffer.indices.push_back(planeGeometry.indices[i]);
+    }
+}
+uint8_t *PGInstance::createTerrainChunkMesh(const vm::ivec2 &worldPosition, int lod) {
     const int chunkSizeP1 = chunkSize + 1;
     std::vector<Heightfield> heightfields(chunkSizeP1 * chunkSizeP1);
     getHeightField(worldPosition.x, worldPosition.y, lod, heightfields.data());
@@ -439,16 +553,18 @@ uint8_t *PGInstance::createTerrainChunkMesh(const vm::ivec2 &worldPosition, int 
 
     // auto &vertexBuffer = vertexContext.vertexBuffer;
     TerrainVertexBuffer vertexBuffer;
-    if (vertexBuffer.indices.size() == 0)
+    generateHeightfieldMesh(worldPosition, lod, heightfields, vertexBuffer);
+    
+    /* if (vertexBuffer.indices.size() == 0)
     {
         // printf("Generated Mesh Is Not Valid\n");
         return nullptr;
-    }
+    } */
 
     // const vm::ivec3 chunkMax = worldPosition + (chunkSize * lod);
     // setPeeks<TerrainDCContext>(this, worldPosition, chunkMax, lod, vertexBuffer.peeks, PEEK_FACE_INDICES.array);
 
-    return vertexBuffer.getBuffer();
+return vertexBuffer.getBuffer();
 }
 uint8_t *PGInstance::createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod)
 {
@@ -1397,7 +1513,7 @@ void PGInstance::trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec
     ]() -> void {
         const TrackerUpdate &trackerUpdate = tracker->update(position);
         uint8_t *buffer = trackerUpdate.getBuffer();
-        std::cout << "trakcer update buffer address" << (void *)buffer << std::endl;
+        // std::cout << "trakcer update buffer address" << (void *)buffer << std::endl;
         if (!promise->resolve(buffer)) {
           // XXX clean up
         }

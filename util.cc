@@ -1,4 +1,4 @@
-#include "./DualContouring/vectorMath.h"
+#include "vectorMath.h"
 #include "util.h"
 #include <vector>
 

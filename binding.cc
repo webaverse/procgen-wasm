@@ -12,7 +12,7 @@ EMSCRIPTEN_KEEPALIVE void initialize() {
 // 
 
 EMSCRIPTEN_KEEPALIVE PGInstance *createInstance(int seed, int chunkSize) {
-    std::cout << "create instance " << seed << " " << chunkSize << std::endl;
+    // std::cout << "create instance " << seed << " " << chunkSize << std::endl;
     return ProcGen::createInstance(seed, chunkSize);
 }
 EMSCRIPTEN_KEEPALIVE void destroyInstance(PGInstance *instance) {
