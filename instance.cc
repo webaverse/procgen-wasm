@@ -485,7 +485,7 @@ Geometry createPlaneGeometry(int width, int height, int widthSegments, int heigh
 
             geometry.positions.push_back(x);
             geometry.positions.push_back(height);
-            geometry.positions.push_back(-y);
+            geometry.positions.push_back(y);
 
             geometry.normals.push_back(0);
             geometry.normals.push_back(1);
@@ -509,19 +509,19 @@ Geometry createPlaneGeometry(int width, int height, int widthSegments, int heigh
             const int c = (ix + 1) + gridX1 * (iy + 1);
             const int d = (ix + 1) + gridX1 * iy;
 
-            // geometry.indices.push_back(a);
-            // geometry.indices.push_back(b);
-            // geometry.indices.push_back(d);
-            // geometry.indices.push_back(b);
-            // geometry.indices.push_back(c);
-            // geometry.indices.push_back(d);
-
             geometry.indices.push_back(a);
-            geometry.indices.push_back(d);
-            geometry.indices.push_back(b);
             geometry.indices.push_back(b);
             geometry.indices.push_back(d);
+            geometry.indices.push_back(b);
             geometry.indices.push_back(c);
+            geometry.indices.push_back(d);
+
+            // geometry.indices.push_back(a);
+            // geometry.indices.push_back(d);
+            // geometry.indices.push_back(b);
+            // geometry.indices.push_back(b);
+            // geometry.indices.push_back(d);
+            // geometry.indices.push_back(c);
 
         }
 
