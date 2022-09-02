@@ -446,8 +446,8 @@ Geometry createPlaneGeometry(int width, int height, int widthSegments, int heigh
         heightSegments: heightSegments
     }; */
 
-    const int width_half = width / 2;
-    const int height_half = height / 2;
+    // const int width_half = width / 2;
+    // const int height_half = height / 2;
 
     const int gridX = widthSegments;
     const int gridY = heightSegments;
@@ -468,16 +468,18 @@ Geometry createPlaneGeometry(int width, int height, int widthSegments, int heigh
     int index = 0;
     for (int iy = 0; iy < gridY1; iy ++) {
 
-        const int y = iy * segment_height - height_half;
+        // const int y = iy * segment_height - height_half;
+        const int y = iy * segment_height;
 
         for (int ix = 0; ix < gridX1; ix++) {
 
-            const int x = ix * segment_width - width_half;
+            // const int x = ix * segment_width - width_half;
+            const int x = ix * segment_width;
 
-            if (index >= heightfield.size()) {
+            /* if (index >= heightfield.size()) {
                 std::cerr << "height overflow " << index << " " << heightfield.size() << " " << gridX1 << " " << gridY1 << std::endl;
                 abort();
-            }
+            } */
             const Heightfield &localHeightfield = heightfield[index];
             const float &height = localHeightfield.heightField;
 
@@ -486,11 +488,11 @@ Geometry createPlaneGeometry(int width, int height, int widthSegments, int heigh
             geometry.positions.push_back(-y);
 
             geometry.normals.push_back(0);
-            geometry.normals.push_back(0);
             geometry.normals.push_back(1);
+            geometry.normals.push_back(0);
 
-            geometry.uvs.push_back(ix / gridX);
-            geometry.uvs.push_back(1 - ( iy / gridY ));
+            geometry.uvs.push_back((float)ix / (float)gridX);
+            geometry.uvs.push_back(1.f - ((float)iy / (float)gridY));
 
             index++;
 
@@ -507,12 +509,19 @@ Geometry createPlaneGeometry(int width, int height, int widthSegments, int heigh
             const int c = (ix + 1) + gridX1 * (iy + 1);
             const int d = (ix + 1) + gridX1 * iy;
 
+            // geometry.indices.push_back(a);
+            // geometry.indices.push_back(b);
+            // geometry.indices.push_back(d);
+            // geometry.indices.push_back(b);
+            // geometry.indices.push_back(c);
+            // geometry.indices.push_back(d);
+
             geometry.indices.push_back(a);
-            geometry.indices.push_back(b);
             geometry.indices.push_back(d);
             geometry.indices.push_back(b);
+            geometry.indices.push_back(b);
+            geometry.indices.push_back(d);
             geometry.indices.push_back(c);
-            geometry.indices.push_back(d);
 
         }
 
@@ -526,14 +535,15 @@ Geometry createPlaneGeometry(int width, int height, int widthSegments, int heigh
     return geometry;
 }
 void generateHeightfieldMesh(const vm::ivec2 &worldPosition, int lod, int chunkSize, const std::vector<Heightfield> &heightfield, TerrainVertexBuffer &vertexBuffer) {
-    // std::cout << "generate plane geometry: " << worldPosition.x << " " << worldPosition.y << " " << lod << std::endl;
-    Geometry planeGeometry = createPlaneGeometry(lod, lod, chunkSize, chunkSize, heightfield);
+    // std::cout << "generate plane geometry: " << worldPosition.x << " " << worldPosition.y << " " << lod << " " << chunkSize << std::endl;
+    const int worldSize = chunkSize * lod;
+    Geometry planeGeometry = createPlaneGeometry(worldSize, worldSize, chunkSize, chunkSize, heightfield);
 
-    for (size_t i = 0; i < planeGeometry.positions.size(); i += 3) { 
+    for (size_t i = 0, j = 0; i < planeGeometry.positions.size(); i += 3, j += 2) { 
       vertexBuffer.positions.push_back(vm::vec3{
-        planeGeometry.positions[i],
-        planeGeometry.positions[i + 1],
-        planeGeometry.positions[i + 2]
+        planeGeometry.positions[i] + (float)worldPosition.x,
+        planeGeometry.positions[i + 1] - (float)WORLD_BASE_HEIGHT,
+        planeGeometry.positions[i + 2] + (float)worldPosition.y
       });
 
       vertexBuffer.normals.push_back(vm::vec3{
@@ -542,7 +552,7 @@ void generateHeightfieldMesh(const vm::ivec2 &worldPosition, int lod, int chunkS
         planeGeometry.normals[i + 2]
       });
 
-      size_t j = i / 3 * 2;
+      // size_t j = i / 3 * 2;
       vertexBuffer.biomesUvs1.push_back(std::array<UV, 2>{
         planeGeometry.uvs[j],
         planeGeometry.uvs[j + 1]
@@ -811,6 +821,7 @@ void PGInstance::setClipRange(const vm::vec2 &min, const vm::vec2 &max)
 
 void PGInstance::createTerrainChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod)
 {
+    // std::cout << "create terrain async " << worldPosition.x << " " << worldPosition.y << std::endl;
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
     // int lod = lodArray[0];
