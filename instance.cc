@@ -516,13 +516,6 @@ Geometry createPlaneGeometry(int width, int height, int widthSegments, int heigh
             geometry.indices.push_back(c);
             geometry.indices.push_back(d);
 
-            // geometry.indices.push_back(a);
-            // geometry.indices.push_back(d);
-            // geometry.indices.push_back(b);
-            // geometry.indices.push_back(b);
-            // geometry.indices.push_back(d);
-            // geometry.indices.push_back(c);
-
         }
 
     }
