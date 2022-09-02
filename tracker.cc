@@ -9,7 +9,7 @@ tracker = await dcWorkerManager.createTracker(3, 2, true); trackerUpdate = await
 
 //
 
-std::atomic<int> nextTrackerId(0);
+// std::atomic<int> nextTrackerId(0);
 
 //
 

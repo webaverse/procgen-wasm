@@ -439,13 +439,6 @@ public:
 Geometry createPlaneGeometry(int width, int height, int widthSegments, int heightSegments, const std::vector<Heightfield> &heightfield) {
     Geometry geometry;
 
-    /* this.parameters = {
-        width: width,
-        height: height,
-        widthSegments: widthSegments,
-        heightSegments: heightSegments
-    }; */
-
     // const int width_half = width / 2;
     // const int height_half = height / 2;
 
@@ -476,10 +469,6 @@ Geometry createPlaneGeometry(int width, int height, int widthSegments, int heigh
             // const int x = ix * segment_width - width_half;
             const int x = ix * segment_width;
 
-            /* if (index >= heightfield.size()) {
-                std::cerr << "height overflow " << index << " " << heightfield.size() << " " << gridX1 << " " << gridY1 << std::endl;
-                abort();
-            } */
             const Heightfield &localHeightfield = heightfield[index];
             const float &height = localHeightfield.heightField;
 
@@ -519,11 +508,6 @@ Geometry createPlaneGeometry(int width, int height, int widthSegments, int heigh
         }
 
     }
-
-    // this.setIndex( indices );
-    // this.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
-    // this.setAttribute( 'normal', new Float32BufferAttribute( normals, 3 ) );
-    // this.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
 
     return geometry;
 }
