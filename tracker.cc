@@ -541,7 +541,6 @@ void ensurePeers(OctreeContext &octreeContext, OctreeNode *node, int maxLod) {
     }
   }
 } */
-
 /* void stdoutSpaces(int numSpaces) {
     for (int i = 0; i < numSpaces; i++) {
         printf(" ");

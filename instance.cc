@@ -436,6 +436,114 @@ public:
 
     // Geometry() {}
 };
+void normalizeNormals(std::vector<float> &normals) {
+    for (size_t i = 0, il = normals.size(); i < il; i++) {
+        Vec vec{
+            normals[i],
+            normals[i + 1],
+            normals[i + 2]
+        };
+        vec.normalize();
+        // normals.setXYZ(i, vec.x, vec.y, vec.z);
+        normals[i] = vec.x;
+        normals[i + 1] = vec.y;
+        normals[i + 2] = vec.z;
+    }
+}
+void computeVertexNormals(std::vector<float> &positions, std::vector<float> &normals, std::vector<uint32_t> &indices) {
+    // const index = this.index;
+    // const positionAttribute = this.getAttribute( 'position' );
+
+    // reset existing normals to zero
+    // for ( let i = 0, il = normalAttribute.count; i < il; i ++ ) {
+    //   normalAttribute.setXYZ( i, 0, 0, 0 );
+    // }
+    std::fill(normals.begin(), normals.end(), 0);
+
+    // const pA = new Vector3(), pB = new Vector3(), pC = new Vector3();
+    // const nA = new Vector3(), nB = new Vector3(), nC = new Vector3();
+    // const cb = new Vector3(), ab = new Vector3();
+
+    // indexed elements
+    for (size_t i = 0, il = indices.size(); i < il; i += 3) {
+        // const uint32_t vA = index.getX(i + 0);
+        // const uint32_t vB = index.getX(i + 1);
+        // const uint32_t vC = index.getX(i + 2);
+
+        const uint32_t &vA = indices[i];
+        const uint32_t &vB = indices[i + 1];
+        const uint32_t &vC = indices[i + 2];
+
+        // pA.fromBufferAttribute( positionAttribute, vA );
+        // pB.fromBufferAttribute( positionAttribute, vB );
+        // pC.fromBufferAttribute( positionAttribute, vC );
+        Vec pA{
+            positions[vA * 3],
+            positions[vA * 3 + 1],
+            positions[vA * 3 + 2]
+        };
+        Vec pB{
+            positions[vB * 3],
+            positions[vB * 3 + 1],
+            positions[vB * 3 + 2]
+        };
+        Vec pC{
+            positions[vC * 3],
+            positions[vC * 3 + 1],
+            positions[vC * 3 + 2]
+        };
+
+        // cb.subVectors( pC, pB );
+        // ab.subVectors( pA, pB );
+        // cb.cross( ab );
+        Vec cb = pC - pB;
+        Vec ab = pA - pB;
+        // cb.cross(ab);
+        cb ^= ab;
+
+        // nA.fromBufferAttribute( normalAttribute, vA );
+        // nB.fromBufferAttribute( normalAttribute, vB );
+        // nC.fromBufferAttribute( normalAttribute, vC );
+        Vec nA{
+            normals[vA * 3],
+            normals[vA * 3 + 1],
+            normals[vA * 3 + 2]
+        };
+        Vec nB{
+            normals[vB * 3],
+            normals[vB * 3 + 1],
+            normals[vB * 3 + 2]
+        };
+        Vec nC{
+            normals[vC * 3],
+            normals[vC * 3 + 1],
+            normals[vC * 3 + 2]
+        };
+
+        // nA.add( cb );
+        // nB.add( cb );
+        // nC.add( cb );
+        nA += cb;
+        nB += cb;
+        nC += cb;
+
+        // normalAttribute.setXYZ( vA, nA.x, nA.y, nA.z );
+        // normalAttribute.setXYZ( vB, nB.x, nB.y, nB.z );
+        // normalAttribute.setXYZ( vC, nC.x, nC.y, nC.z );
+        normals[vA * 3] = nA.x;
+        normals[vA * 3 + 1] = nA.y;
+        normals[vA * 3 + 2] = nA.z;
+        normals[vB * 3] = nB.x;
+        normals[vB * 3 + 1] = nB.y;
+        normals[vB * 3 + 2] = nB.z;
+        normals[vC * 3] = nC.x;
+        normals[vC * 3 + 1] = nC.y;
+        normals[vC * 3 + 2] = nC.z;
+
+    }
+
+    normalizeNormals(normals);
+}
 Geometry createPlaneGeometry(int width, int height, int widthSegments, int heightSegments, const std::vector<Heightfield> &heightfield) {
     Geometry geometry;
 
@@ -508,6 +616,8 @@ Geometry createPlaneGeometry(int width, int height, int widthSegments, int heigh
         }
 
     }
+
+    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 
     return geometry;
 }
