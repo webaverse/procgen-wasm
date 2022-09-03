@@ -100,8 +100,12 @@ void serializeOctreeNodes(const std::vector<OctreeNodePtr> &datas, uint8_t *ptr,
   for (const auto &data : datas) {
     std::memcpy(ptr + index, &data->min, sizeof(vm::ivec2));
     index += sizeof(vm::ivec2);
+
     *((int *)(ptr + index)) = data->lod;
     index += sizeof(int);
+
+    std::memcpy(ptr + index, data->lodArray, sizeof(int[2]));
+    index += sizeof(int[2]);
   }
 }
 void serializeDataRequests(const std::vector<DataRequestPtr> &datas, uint8_t *ptr, int &index) {
@@ -113,8 +117,12 @@ void serializeDataRequests(const std::vector<DataRequestPtr> &datas, uint8_t *pt
   for (const auto &data : datas) {
     std::memcpy(ptr + index, &data->node->min, sizeof(vm::ivec2));
     index += sizeof(vm::ivec2);
+
     *((int *)(ptr + index)) = data->node->lod;
     index += sizeof(int);
+    
+    std::memcpy(ptr + index, data->node->lodArray, sizeof(int[2]));
+    index += sizeof(int[2]);
   }
 }
 
@@ -122,7 +130,7 @@ uint8_t *TrackerUpdate::getBuffer() const {
   // compute size
   size_t size = 0;
 
-  constexpr size_t octreeNodeSize = sizeof(vm::ivec2) + sizeof(int);
+  constexpr size_t octreeNodeSize = sizeof(vm::ivec2) + sizeof(int) + sizeof(int[2]);
 
   size += sizeof(int32_t); // numLeafNodes
   size += octreeNodeSize * leafNodes.size();
@@ -540,8 +548,8 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &current
     };
     auto rightNodeIter = findNodeIterAtPoint(octreeContext, rightNodePosition);
 
-    node->lodArray[0] = bottomNodeIter != nodeMap.end() ? bottomNodeIter->second->lod : 0;
-    node->lodArray[1] = rightNodeIter != nodeMap.end() ? rightNodeIter->second->lod : 0;
+    node->lodArray[0] = bottomNodeIter != nodeMap.end() ? bottomNodeIter->second->lod : (lod * 2);
+    node->lodArray[1] = rightNodeIter != nodeMap.end() ? rightNodeIter->second->lod : (lod * 2);
   }
 }
 /* // ensure that every neighbor of this lod also is at least at this lod (it could be a lower/more detailed leaf)
