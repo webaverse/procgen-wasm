@@ -431,7 +431,7 @@ class Geometry {
 public:
     std::vector<float> positions;
     std::vector<float> normals;
-    std::vector<float> uvs;
+    // std::vector<float> uvs;
     std::vector<uint32_t> indices;
 
     // Geometry() {}
@@ -550,8 +550,8 @@ Geometry createPlaneGeometry(int width, int height, int widthSegments, int heigh
     // const int width_half = width / 2;
     // const int height_half = height / 2;
 
-    const int gridX = widthSegments;
-    const int gridY = heightSegments;
+    const int &gridX = widthSegments;
+    const int &gridY = heightSegments;
 
     const int gridX1 = gridX + 1;
     const int gridY1 = gridY + 1;
@@ -588,8 +588,8 @@ Geometry createPlaneGeometry(int width, int height, int widthSegments, int heigh
             geometry.normals.push_back(1);
             geometry.normals.push_back(0);
 
-            geometry.uvs.push_back((float)ix / (float)gridX);
-            geometry.uvs.push_back(1.f - ((float)iy / (float)gridY));
+            // geometry.uvs.push_back((float)ix / (float)gridX);
+            // geometry.uvs.push_back(1.f - ((float)iy / (float)gridY));
 
             index++;
 
@@ -621,6 +621,102 @@ Geometry createPlaneGeometry(int width, int height, int widthSegments, int heigh
 
     return geometry;
 }
+Geometry createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int chunkSize, const std::vector<Heightfield> &heightfields, const std::vector<Heightfield> &heightfieldSeams) {
+    Geometry geometry;
+
+    //
+
+    const int &bottomLod = lodArray[0];
+    const int &rightLod = lodArray[1];
+
+    const int gridWidth = chunkSize * lod / bottomLod;
+    const int gridWidthP1 = gridWidth + 1;
+
+    const int gridHeight = chunkSize * lod / rightLod;
+    const int gridHeightP1 = gridHeight + 1;
+
+    //
+
+    auto pushPoint = [&](int x, int y, float height) -> void {
+        geometry.positions.push_back(x);
+        geometry.positions.push_back(height);
+        geometry.positions.push_back(y);
+
+        geometry.normals.push_back(0);
+        geometry.normals.push_back(1);
+        geometry.normals.push_back(0);
+    };
+
+    // positions
+    // bottom
+    {
+        int index = 0;
+        {
+            const int iy = chunkSize;
+            for (int ix = 0; ix < gridWidthP1; ix++) {
+                const Heightfield &localHeightfield = heightfieldSeams[index];
+                const float &height = localHeightfield.heightField;
+
+                const int x = ix * bottomLod;
+                const int y = iy * lod;
+
+                pushPoint(x, y, height);
+                index++;
+            }
+        }
+        // right
+        {
+            const int ix = chunkSize;
+            for (int iy = 1; iy < gridHeightP1; iy++) { // note: starting at 1
+                const Heightfield &localHeightfield = heightfieldSeams[index];
+                const float &height = localHeightfield.heightField;
+
+                const int x = ix * lod;
+                const int y = iy * rightLod;
+
+                pushPoint(x, y, height);
+                index++;
+            }
+        }
+    }
+
+    // indices
+    // bottom
+    {
+        int index = 0;
+        {
+            const int iy = chunkSize;
+            for (int ix = 0; ix < gridWidthP1; ix++) {
+                // const int a = ix + gridSize * iy;
+                // const int b = ix + gridSize * (iy + 1);
+                // const int c = (ix + 1) + gridSize * (iy + 1);
+                // const int d = (ix + 1) + gridSize * iy;
+
+                // XXX
+
+                index++;
+            }
+        }
+        // right
+        {
+            const int ix = chunkSize;
+            for (int iy = 1; iy < gridHeightP1; iy++) { // note: starting at 1
+                // const int a = ix + gridX1 * iy;
+                // const int b = ix + gridX1 * (iy + 1);
+                // const int c = (ix + 1) + gridX1 * (iy + 1);
+                // const int d = (ix + 1) + gridX1 * iy;
+
+                // XXX
+
+                index++;
+            }
+        }
+    }
+
+    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
+
+    return geometry;
+}
 void offsetGeometry(Geometry &geometry, const vm::ivec2 &worldPosition) {
     for (size_t i = 0; i < geometry.positions.size(); i += 3) { 
         geometry.positions[i] += (float)worldPosition.x;
@@ -630,7 +726,7 @@ void offsetGeometry(Geometry &geometry, const vm::ivec2 &worldPosition) {
 }
 template<typename T>
 void copyGeometryToVertexBuffer(const Geometry &geometry, T &vertexBuffer) {
-    for (size_t i = 0, j = 0; i < geometry.positions.size(); i += 3, j += 2) { 
+    for (size_t i = 0/*, j = 0*/; i < geometry.positions.size(); i += 3/*, j += 2*/) { 
       vertexBuffer.positions.push_back(vm::vec3{
         geometry.positions[i],
         geometry.positions[i + 1],
@@ -643,17 +739,17 @@ void copyGeometryToVertexBuffer(const Geometry &geometry, T &vertexBuffer) {
         geometry.normals[i + 2]
       });
 
-      // size_t j = i / 3 * 2;
-      vertexBuffer.biomesUvs1.push_back(std::array<UV, 2>{
+      // XXX compute biomes uvs
+      /* vertexBuffer.biomesUvs1.push_back(std::array<UV, 2>{
         geometry.uvs[j],
         geometry.uvs[j + 1]
-      });
+      }); */
     }
     for (size_t i = 0; i < geometry.indices.size(); i++) {
       vertexBuffer.indices.push_back(geometry.indices[i]);
     }
 }
-void generateHeightfieldMesh(const vm::ivec2 &worldPosition, int lod, int chunkSize, const std::vector<Heightfield> &heightfield, TerrainVertexBuffer &vertexBuffer) {
+void generateHeightfieldCenterMesh(const vm::ivec2 &worldPosition, int lod, int chunkSize, const std::vector<Heightfield> &heightfield, TerrainVertexBuffer &vertexBuffer) {
     const int worldSize = chunkSize * lod;
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
@@ -661,16 +757,24 @@ void generateHeightfieldMesh(const vm::ivec2 &worldPosition, int lod, int chunkS
     offsetGeometry(planeGeometry, worldPosition);
     copyGeometryToVertexBuffer(planeGeometry, vertexBuffer);
 }
-uint8_t *PGInstance::createTerrainChunkMesh(const vm::ivec2 &worldPosition, int lod) {
+void generateHeightfieldSeamsMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray, int chunkSize, const std::vector<Heightfield> &heightfields, const std::vector<Heightfield> &heightfieldSeams, TerrainVertexBuffer &vertexBuffer) {
+    Geometry planeGeometry = createPlaneSeamsGeometry(lod, lodArray, chunkSize, heightfields, heightfieldSeams);
+    offsetGeometry(planeGeometry, worldPosition);
+    copyGeometryToVertexBuffer(planeGeometry, vertexBuffer);
+}
+uint8_t *PGInstance::createTerrainChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray) {
     std::vector<Heightfield> heightfields(chunkSize * chunkSize);
     getHeightField(worldPosition.x, worldPosition.y, lod, heightfields.data());
+    std::vector<Heightfield> heightfieldSeams(chunkSize * chunkSize);
+    getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfieldSeams.data());
 
     TerrainVertexBuffer vertexBuffer;
-    generateHeightfieldMesh(worldPosition, lod, chunkSize, heightfields, vertexBuffer);
+    generateHeightfieldCenterMesh(worldPosition, lod, chunkSize, heightfields, vertexBuffer);
+    generateHeightfieldSeamsMesh(worldPosition, lod, lodArray, chunkSize, heightfields, heightfieldSeams, vertexBuffer);
 
     return vertexBuffer.getBuffer();
 }
-uint8_t *PGInstance::createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod)
+uint8_t *PGInstance::createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
 {
     const int chunkSizeP1 = chunkSize + 1;
     std::vector<float> waterfields(chunkSizeP1 * chunkSizeP1);
@@ -903,31 +1007,27 @@ void PGInstance::setClipRange(const vm::vec2 &min, const vm::vec2 &max)
 
 //
 
-void PGInstance::createTerrainChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod)
+void PGInstance::createTerrainChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
 {
-    // std::cout << "create terrain async " << worldPosition.x << " " << worldPosition.y << std::endl;
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
-
-    // int lod = lodArray[0];
-    // std::vector<int> lodVector(lodArray, lodArray + 8);
 
     vm::vec3 worldPositionF{
         (float)worldPosition.x + (float)lod / 2.f,
         (float)(MIN_WORLD_HEIGHT + MAX_WORLD_HEIGHT) / 2.f,
         (float)worldPosition.y + (float)lod / 2.f
     };
-    // vm::vec3 sizeF{
-    //     (float)lod / 2.f,
-    //     (float)lod / 2.f,
-    //     (float)lod / 2.f
-    // };
+    std::array<int, 2> lodArray2{
+        lodArray[0],
+        lodArray[1]
+    };
     Task *terrainTask = new Task(id, worldPositionF, lod, [
         this,
         promise,
         worldPosition,
-        lod
+        lod,
+        lodArray2
     ]() -> void {
-        uint8_t *result = createTerrainChunkMesh(worldPosition, lod);
+        uint8_t *result = createTerrainChunkMesh(worldPosition, lod, lodArray2);
         if (!promise->resolve(result)) {
             // XXX cleanup
             // XXX also cleanup the other async calls
@@ -935,30 +1035,27 @@ void PGInstance::createTerrainChunkMeshAsync(uint32_t id, const vm::ivec2 &world
     });
     ProcGen::taskQueue.pushTask(terrainTask);
 }
-void PGInstance::createLiquidChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod)
+void PGInstance::createLiquidChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
 {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
-
-    // int lod = lodArray[0];
-    // std::vector<int> lodVector(lodArray, lodArray + 8);
 
     vm::vec3 worldPositionF{
         (float)worldPosition.x + (float)lod / 2.f,
         (float)(MIN_WORLD_HEIGHT + MAX_WORLD_HEIGHT) / 2.f,
         (float)worldPosition.y + (float)lod / 2.f
     };
-    // vm::vec3 sizeF{
-    //     (float)lod / 2.f,
-    //     (float)lod / 2.f,
-    //     (float)lod / 2.f
-    // };
+    std::array<int, 2> lodArray2{
+        lodArray[0],
+        lodArray[1]
+    };
     Task *liquidTask = new Task(id, worldPositionF, lod, [
         this,
         promise,
         worldPosition,
-        lod
+        lod,
+        lodArray2
     ]() -> void {
-        uint8_t *result = createLiquidChunkMesh(worldPosition, lod);
+        uint8_t *result = createLiquidChunkMesh(worldPosition, lod, lodArray2);
         promise->resolve(result);
     });
     ProcGen::taskQueue.pushTask(liquidTask);
@@ -1263,7 +1360,40 @@ void PGInstance::getHeightField(int bx, int bz, int lod, Heightfield *heightfiel
             localHeightfield = getHeightField(bx + x * lod, bz + z * lod);
         }
     }
-    // return heightfield;
+}
+void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, Heightfield *heightfieldSeams) {
+    const int &bottomLod = lodArray[0];
+    const int &rightLod = lodArray[1];
+
+    const int gridWidth = chunkSize * lod / bottomLod;
+    const int gridWidthP1 = gridWidth + 1;
+
+    const int gridHeight = chunkSize * lod / rightLod;
+    const int gridHeightP1 = gridHeight + 1;
+
+    // bottom
+    int index = 0;
+    {
+        const int z = chunkSize;
+        for (int x = 0; x < gridWidthP1; x++) {
+            Heightfield &localHeightfieldSeam = heightfieldSeams[index];
+
+            localHeightfieldSeam = getHeightField(bx + x * bottomLod, bz + z * lod);
+
+            index++;
+        }
+    }
+    // right
+    {
+        const int x = chunkSize;
+        for (int z = 1; z < gridHeightP1; z++) { // note: starting at 1
+            Heightfield &localHeightfieldSeam = heightfieldSeams[index];
+            
+            localHeightfieldSeam = getHeightField(bx + x * lod, bz + z * rightLod);
+
+            index++;
+        }
+    }
 }
 Heightfield PGInstance::getHeightField(int bx, int bz) {
     Heightfield localHeightfield;

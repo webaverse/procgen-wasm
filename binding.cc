@@ -46,8 +46,16 @@ EMSCRIPTEN_KEEPALIVE void createMobSplatAsync(DCInstance *inst, uint32_t taskId,
 
 //
 
-EMSCRIPTEN_KEEPALIVE void createTerrainChunkMeshAsync(PGInstance *inst, uint32_t taskId, int x, int z, int lod) {
-    inst->createTerrainChunkMeshAsync(taskId, vm::ivec2{x, z}, lod);
+EMSCRIPTEN_KEEPALIVE void createTerrainChunkMeshAsync(PGInstance *inst, uint32_t taskId, int x, int z, int lod, int *lodArray) {
+    std::array<int, 2> lodArray2{
+        lodArray[0],
+        lodArray[1]
+    };
+    /* if (lodArray2[0] == 0 || lodArray2[1] == 0) {
+        std::cerr << "lodArray is zero" << std::endl;
+        abort();
+    } */
+    inst->createTerrainChunkMeshAsync(taskId, vm::ivec2{x, z}, lod, lodArray2);
 }
 
 /* EMSCRIPTEN_KEEPALIVE void createLiquidChunkMeshAsync(DCInstance *inst, uint32_t taskId, int x, int y, int z, int *lodArray) {

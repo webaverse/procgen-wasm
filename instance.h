@@ -40,7 +40,9 @@ public:
     uint8_t getBiome(int bx, int bz);
     
     void getHeightField(int bx, int bz, int lod, Heightfield *heightfield);
+    void getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, Heightfield *heightfieldSeams);
     Heightfield getHeightField(int bx, int bz);
+    
     void getWaterField(int bx, int bz, int lod, float *waterField);
     float getWaterField(int bx, int bz);
 
@@ -87,8 +89,8 @@ public:
     
     //
     
-    uint8_t *createTerrainChunkMesh(const vm::ivec2 &worldPosition, int lod);
-    uint8_t *createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod);
+    uint8_t *createTerrainChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
+    uint8_t *createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
 
     //
 
@@ -115,8 +117,8 @@ public:
 
     //
 
-    void createTerrainChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod);
-    void createLiquidChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod);
+    void createTerrainChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
+    void createLiquidChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
 
     //
 
