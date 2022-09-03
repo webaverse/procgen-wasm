@@ -437,7 +437,7 @@ public:
     // Geometry() {}
 };
 void normalizeNormals(std::vector<float> &normals) {
-    for (size_t i = 0, il = normals.size(); i < il; i++) {
+    for (size_t i = 0, il = normals.size(); i < il; i += 3) {
         Vec vec{
             normals[i],
             normals[i + 1],
