@@ -254,6 +254,24 @@ bool equalsNodeLod(const OctreeNode &node, const OctreeNode &other) {
     return false;
   }
 }
+bool equalsNodeLodArray(const OctreeNode &node, const OctreeNode &other) {
+  if (equalsNode(node, other)) {
+    if (
+      (node.lod != other.lod) ||
+      (node.lodArray[0] != other.lodArray[0] || node.lodArray[1] != other.lodArray[1])
+    ) {
+      return false;
+    }
+    /* for (size_t i = 0; i < node.lodArray.size(); i++) {
+      if (node.lodArray[i] != other.lodArray[i]) {
+        return false;
+      }
+    } */
+    return true;
+  } else {
+    return false;
+  }
+}
 /* bool intersectsNode(const OctreeNode &node, const OctreeNode &other) {
   return containsNode(node, other) || containsNode(other, node);
 } */
@@ -915,7 +933,7 @@ DataRequestUpdate Tracker::updateDataRequests(
       leafNodes.begin(),
       leafNodes.end(),
       [&](const OctreeNodePtr &leafNode) -> bool {
-        return equalsNodeLod(*leafNode, *oldDataRequest->node);
+        return equalsNodeLodArray(*leafNode, *oldDataRequest->node);
       }
     );
     if (matchingLeafNodeIter != leafNodes.end()) {
