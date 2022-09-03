@@ -484,6 +484,7 @@ void splitPointToLod(OctreeContext &octreeContext, const vm::ivec2 &absolutePosi
 void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &currentCoord, int lod1Range, int _maxLod) {
   auto &nodeMap = octreeContext.nodeMap;
 
+  // initialize lod 1
   constexpr int minLod = 1;
   constexpr int maxLod = (1 << 6);
   vm::ivec2 maxLodCenter{
@@ -504,6 +505,7 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &current
     }
   }
 
+  // initialize other lods
   for (int lod = minLod; lod <= maxLod; lod *= 2) {
     for (int dx = -lod1Range * lod; dx <= lod1Range * lod; dx += lod) {
       for (int dz = -lod1Range * lod; dz <= lod1Range * lod; dz += lod) {
@@ -518,6 +520,28 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &current
         splitPointToLod(octreeContext, splitPosition, lod);
       }
     }
+  }
+
+  // initalize lodArrays
+  for (auto iter = nodeMap.begin(); iter != nodeMap.end(); iter++) {
+    auto &node = iter->second;
+    auto &min = node->min;
+    auto &lod = node->lod;
+    
+    vm::ivec2 bottomNodePosition{
+      min.x,
+      min.y + lod
+    };
+    auto bottomNodeIter = findNodeIterAtPoint(octreeContext, bottomNodePosition);
+
+    vm::ivec2 rightNodePosition{
+      min.x + lod,
+      min.y
+    };
+    auto rightNodeIter = findNodeIterAtPoint(octreeContext, rightNodePosition);
+
+    node->lodArray[0] = bottomNodeIter != nodeMap.end() ? bottomNodeIter->second->lod : 0;
+    node->lodArray[1] = rightNodeIter != nodeMap.end() ? rightNodeIter->second->lod : 0;
   }
 }
 /* // ensure that every neighbor of this lod also is at least at this lod (it could be a lower/more detailed leaf)
@@ -569,9 +593,7 @@ std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec2 &currentCoord,
   std::vector<OctreeNodePtr> leafNodes;
   for (const auto &iter : nodeMap) {
     auto node = iter.second;
-    // if (node->isLeaf()) {
-      leafNodes.push_back(node);
-    // }
+    leafNodes.push_back(node);
   }
 
   /* // sanity check lod1Nodes for duplicates
