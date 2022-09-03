@@ -684,99 +684,140 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
 
     // indices
     // bottom
-    {
-        {
-            const int iy = chunkSize - 1;
-            const int innerPointY = iy;
-            for (int ix = 0; ix < gridWidth; ix++) {
-                const int outerPointX = ix;
-                const int innerPointX = (int)std::floor((float)outerPointX * (float)bottomLod / (float)lod);
-                // const int outerAbsoluteX = outerPointX * bottomLod;
-                // const int innerPointX = outerAbsoluteX / lod;
+    if (bottomLod == lod) {
+        const int innerPointY = chunkSize - 1;
+        for (int innerPointX = 0; innerPointX <= chunkSize && innerPointX < 2; innerPointX++) {
+            const int outerPointX = innerPointX;
 
+            // inner
+            const int a = innerPointX + chunkSize * innerPointY;
+            const int d = (innerPointX + 1) + chunkSize * innerPointY;
+            // outer
+            const int b = heightfieldsOffset + outerPointX;
+            const int c = heightfieldsOffset + (outerPointX + 1);
+
+            geometry.indices.push_back(a);
+            geometry.indices.push_back(b);
+            geometry.indices.push_back(c);
+            if (innerPointX != chunkSize) { // only single triangle in corner
+                geometry.indices.push_back(a);
+                geometry.indices.push_back(c);
+                geometry.indices.push_back(d);
+            }
+        }
+    } else if (bottomLod > lod) {
+        const int innerPointY = chunkSize - 1;
+        for (int innerPointX = 0; innerPointX <= chunkSize && innerPointX < 2; innerPointX++) {
+            const int outerPointX = innerPointX / 2;
+
+            if (innerPointX % 2 == 0) {
                 // inner
-                // const int a = ix + gridX1 * iy;
-                // const int d = (ix + 1) + gridX1 * iy;
-                const int a = innerPointX + gridX1 * innerPointY;
-                const int d = (innerPointX + 1) + gridX1 * innerPointY;
+                const int a = innerPointX + chunkSize * innerPointY;
+                const int d = (innerPointX + 1) + chunkSize * innerPointY;
                 // outer
-                // const int b = ix + gridX1 * (iy + 1);
-                // const int c = (ix + 1) + gridX1 * (iy + 1);
                 const int b = heightfieldsOffset + outerPointX;
                 const int c = heightfieldsOffset + (outerPointX + 1);
-
-                if (a * 3 >= geometry.positions.size()) {
-                    std::cout << "a bottom overflow: " << a << " " << geometry.positions.size() << std::endl;
-                    abort();
-                }
-                if (b * 3 >= geometry.positions.size()) {
-                    std::cout << "b bottom overflow: " << b << " " << geometry.positions.size() << std::endl;
-                    abort();
-                }
-                if (c * 3 >= geometry.positions.size()) {
-                    std::cout << "c bottom overflow: " << c << " " << geometry.positions.size() << std::endl;
-                    abort();
-                }
-                if (d * 3 >= geometry.positions.size()) {
-                    std::cout << "d bottom overflow: " << d << " " << geometry.positions.size() << std::endl;
-                    abort();
-                }
 
                 geometry.indices.push_back(a);
                 geometry.indices.push_back(b);
                 geometry.indices.push_back(c);
-                if (ix != (gridWidth - 1)) { // only single triangle in corner
+                if (innerPointX != chunkSize) { // only single triangle in corner
                     geometry.indices.push_back(a);
                     geometry.indices.push_back(c);
                     geometry.indices.push_back(d);
                 }
-            }
-        }
-        // right
-        {
-            const int ix = chunkSize - 1;
-            const int innerPointX = ix;
-            for (int iy = 0; iy < gridHeight && iy < 0; iy++) {
-                const int outerPointY = iy;
-                const int innerPointY = (int)std::floor((float)outerPointY * (float)rightLod / (float)lod);
-                // const int outerAbsoluteY = outerPointY * rightLod;
-                // const int innerPointY = outerAbsoluteY / lod;
-
+            } else {
                 // inner
-                // const int a = ix + gridX1 * iy;
-                // const int b = ix + gridX1 * (iy + 1);
-                const int a = innerPointX + gridX1 * innerPointY;
-                const int b = innerPointX + gridX1 * (innerPointY + 1);
-                // const int c = (ix + 1) + gridX1 * (iy + 1);
-                // const int d = (ix + 1) + gridX1 * iy;
-                const int d = heightfieldsOffset + bottomOffset + outerPointY;
-                const int c = heightfieldsOffset + bottomOffset + (outerPointY + 1);
-
-                if (a * 3 >= geometry.positions.size()) {
-                    std::cout << "a right overflow: " << a << " " << geometry.positions.size() << std::endl;
-                    abort();
-                }
-                if (b * 3 >= geometry.positions.size()) {
-                    std::cout << "b right overflow: " << b << " " << geometry.positions.size() << std::endl;
-                    abort();
-                }
-                if (c * 3 >= geometry.positions.size()) {
-                    std::cout << "c right overflow: " << c << " " << geometry.positions.size() << std::endl;
-                    abort();
-                }
-                if (d * 3 >= geometry.positions.size()) {
-                    std::cout << "d right overflow: " << d << " " << geometry.positions.size() << std::endl;
-                    abort();
-                }
+                const int a = innerPointX + chunkSize * innerPointY;
+                const int d = (innerPointX + 1) + chunkSize * innerPointY;
+                // outer
+                const int b = heightfieldsOffset + outerPointX;
+                const int c = heightfieldsOffset + (outerPointX + 1);
 
                 geometry.indices.push_back(a);
                 geometry.indices.push_back(c);
                 geometry.indices.push_back(d);
-                if (iy != (gridHeight - 1)) { // only single triangle in corner
+            }
+        }
+    } else if (bottomLod < lod) {
+        const int innerPointY = chunkSize - 1;
+        for (int outerPointX = 0; outerPointX < gridWidthP1 && outerPointX < 2; outerPointX++) {
+            const int innerPointX = outerPointX / 2;
+
+            if (outerPointX % 2 == 0) {
+                // inner
+                const int a = innerPointX + chunkSize * innerPointY;
+                const int d = (innerPointX + 1) + chunkSize * innerPointY;
+                // outer
+                const int b = heightfieldsOffset + outerPointX;
+                const int c = heightfieldsOffset + (outerPointX + 1);
+
+                geometry.indices.push_back(a);
+                geometry.indices.push_back(b);
+                geometry.indices.push_back(c);
+                if (innerPointX != chunkSize) { // only single triangle in corner
                     geometry.indices.push_back(a);
-                    geometry.indices.push_back(b);
                     geometry.indices.push_back(c);
+                    geometry.indices.push_back(d);
                 }
+            } else {
+                // inner
+                const int a = innerPointX + chunkSize * innerPointY;
+                const int d = (innerPointX + 1) + chunkSize * innerPointY;
+                // outer
+                const int b = heightfieldsOffset + outerPointX;
+                const int c = heightfieldsOffset + (outerPointX + 1);
+
+                geometry.indices.push_back(b);
+                geometry.indices.push_back(c);
+                geometry.indices.push_back(d);
+            }
+        }
+    }
+    // right
+    {
+        const int ix = chunkSize - 1;
+        const int innerPointX = ix;
+        for (int iy = 0; iy < gridHeight && iy < 0; iy++) {
+            const int outerPointY = iy;
+            const int innerPointY = (int)std::floor((float)outerPointY * (float)rightLod / (float)lod);
+            // const int outerAbsoluteY = outerPointY * rightLod;
+            // const int innerPointY = outerAbsoluteY / lod;
+
+            // inner
+            // const int a = ix + gridX1 * iy;
+            // const int b = ix + gridX1 * (iy + 1);
+            const int a = innerPointX + gridX1 * innerPointY;
+            const int b = innerPointX + gridX1 * (innerPointY + 1);
+            // const int c = (ix + 1) + gridX1 * (iy + 1);
+            // const int d = (ix + 1) + gridX1 * iy;
+            const int d = heightfieldsOffset + bottomOffset + outerPointY;
+            const int c = heightfieldsOffset + bottomOffset + (outerPointY + 1);
+
+            /* if (a * 3 >= geometry.positions.size()) {
+                std::cout << "a right overflow: " << a << " " << geometry.positions.size() << std::endl;
+                abort();
+            }
+            if (b * 3 >= geometry.positions.size()) {
+                std::cout << "b right overflow: " << b << " " << geometry.positions.size() << std::endl;
+                abort();
+            }
+            if (c * 3 >= geometry.positions.size()) {
+                std::cout << "c right overflow: " << c << " " << geometry.positions.size() << std::endl;
+                abort();
+            }
+            if (d * 3 >= geometry.positions.size()) {
+                std::cout << "d right overflow: " << d << " " << geometry.positions.size() << std::endl;
+                abort();
+            } */
+
+            geometry.indices.push_back(a);
+            geometry.indices.push_back(c);
+            geometry.indices.push_back(d);
+            if (iy != (gridHeight - 1)) { // only single triangle in corner
+                geometry.indices.push_back(a);
+                geometry.indices.push_back(b);
+                geometry.indices.push_back(c);
             }
         }
     }
