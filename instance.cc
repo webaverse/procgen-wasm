@@ -654,35 +654,21 @@ void copyGeometryToVertexBuffer(const Geometry &geometry, T &vertexBuffer) {
     }
 }
 void generateHeightfieldMesh(const vm::ivec2 &worldPosition, int lod, int chunkSize, const std::vector<Heightfield> &heightfield, TerrainVertexBuffer &vertexBuffer) {
-    // std::cout << "generate plane geometry: " << worldPosition.x << " " << worldPosition.y << " " << lod << " " << chunkSize << std::endl;
     const int worldSize = chunkSize * lod;
-    Geometry planeGeometry = createPlaneGeometry(worldSize, worldSize, chunkSize, chunkSize, heightfield);
+    const int worldSizeM1 = worldSize - lod;
+    const int chunkSizeM1 = chunkSize - 1;
+    Geometry planeGeometry = createPlaneGeometry(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, heightfield);
     offsetGeometry(planeGeometry, worldPosition);
     copyGeometryToVertexBuffer(planeGeometry, vertexBuffer);
 }
 uint8_t *PGInstance::createTerrainChunkMesh(const vm::ivec2 &worldPosition, int lod) {
-    const int chunkSizeP1 = chunkSize + 1;
-    std::vector<Heightfield> heightfields(chunkSizeP1 * chunkSizeP1);
+    std::vector<Heightfield> heightfields(chunkSize * chunkSize);
     getHeightField(worldPosition.x, worldPosition.y, lod, heightfields.data());
 
-    // TerrainDCContext vertexContext;
-    // generateMeshFromOctree<TerrainDCContext, false>(chunkOctree.root, vertexContext);
-    // generateMeshFromOctree<TerrainDCContext, true>(chunkOctree.seamRoot, vertexContext);
-
-    // auto &vertexBuffer = vertexContext.vertexBuffer;
     TerrainVertexBuffer vertexBuffer;
     generateHeightfieldMesh(worldPosition, lod, chunkSize, heightfields, vertexBuffer);
-    
-    /* if (vertexBuffer.indices.size() == 0)
-    {
-        // printf("Generated Mesh Is Not Valid\n");
-        return nullptr;
-    } */
 
-    // const vm::ivec3 chunkMax = worldPosition + (chunkSize * lod);
-    // setPeeks<TerrainDCContext>(this, worldPosition, chunkMax, lod, vertexBuffer.peeks, PEEK_FACE_INDICES.array);
-
-return vertexBuffer.getBuffer();
+    return vertexBuffer.getBuffer();
 }
 uint8_t *PGInstance::createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod)
 {
@@ -1267,20 +1253,12 @@ uint8_t PGInstance::getBiome(int bx, int bz) {
     // return biomesField;
 }
 void PGInstance::getHeightField(int bx, int bz, int lod, Heightfield *heightfield) {
-    const int chunkSizeP1 = chunkSize + 1;
-    for (int z = 0; z < chunkSizeP1; z++)
+    for (int z = 0; z < chunkSize; z++)
     {
-        for (int x = 0; x < chunkSizeP1; x++)
+        for (int x = 0; x < chunkSize; x++)
         {
-            int index2D = x + z * chunkSizeP1;
+            int index2D = x + z * chunkSize;
             Heightfield &localHeightfield = heightfield[index2D];
-            // int ax = x;
-            // int az = z;
-            
-            // int lx = x - 1;
-            // int lz = z - 1;
-            // int index2D2 = lx + lz * size;
-            // bool isInRange = lx >= 0 && lx < size && lz >= 0 && lz < size;
 
             localHeightfield = getHeightField(bx + x * lod, bz + z * lod);
         }
