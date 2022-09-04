@@ -22,6 +22,14 @@ class OctreeNode;
 
 //
 
+class ChunkResult {
+public:
+    uint8_t *terrainMeshBuffer;
+    uint8_t *waterMeshBuffer;
+    uint8_t biome;
+    uint8_t padding[3];
+};
+
 class PGInstance {
 public:
     int seed;
@@ -39,12 +47,13 @@ public:
     NoiseField getNoise(int bx, int by);
     uint8_t getBiome(int bx, int bz);
     
-    void getHeightField(int bx, int bz, int lod, Heightfield *heightfield);
-    void getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, Heightfield *heightfieldSeams);
+    void getHeightField(int bx, int bz, int lod, std::vector<Heightfield> &heightfield);
+    void getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Heightfield> &heightfieldSeams);
     Heightfield getHeightField(int bx, int bz);
     
-    void getWaterField(int bx, int bz, int lod, float *waterField);
-    float getWaterField(int bx, int bz);
+    void getWaterField(int bx, int bz, int lod, std::vector<Waterfield> &waterfield);
+    void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfieldSeams);
+    bool getWaterField(int bx, int bz);
 
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
 
@@ -89,8 +98,8 @@ public:
     
     //
     
-    uint8_t *createTerrainChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
-    uint8_t *createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
+    ChunkResult *createChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
+    // uint8_t *createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
 
     //
 
@@ -117,7 +126,7 @@ public:
 
     //
 
-    void createTerrainChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
+    void createChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
     // void createLiquidChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
 
     //

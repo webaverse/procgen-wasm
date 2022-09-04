@@ -25,6 +25,25 @@ public:
     float heightField;
     std::array<unsigned char, 4> biomesVectorField;
     std::array<unsigned char, 4> biomesWeightsVectorField;
+
+    float getHeight() const {
+      return heightField;
+    }
+    bool acceptIndex() const {
+      return true;
+    }
+};
+
+class Waterfield {
+public:
+    bool isWater;
+
+    float getHeight() const {
+      return 0;
+    }
+    bool acceptIndex() const {
+      return isWater;
+    }
 };
 
 class NoiseField {
