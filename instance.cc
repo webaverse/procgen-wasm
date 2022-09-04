@@ -614,10 +614,10 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
 
-    const int gridWidth = (int)std::floor((float)chunkSize * (float)lod / (float)bottomLod);
+    const int gridWidth = chunkSize * lod / bottomLod;
     const int gridWidthP1 = gridWidth + 1;
 
-    const int gridHeight = (int)std::floor((float)chunkSize * (float)lod / (float)rightLod);
+    const int gridHeight = chunkSize * lod / rightLod;
     const int gridHeightP1 = gridHeight + 1;
 
     const int heightfieldsCenterDataOffset = chunkSize * chunkSize;
@@ -1040,9 +1040,9 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
     {
         const int &bottomLod = lodArray[0];
         const int &rightLod = lodArray[1];
-        const int gridWidth = (int)std::floor((float)chunkSize * (float)lod / (float)bottomLod);
+        const int gridWidth = chunkSize * lod / bottomLod;
         const int gridWidthP1 = gridWidth + 1;
-        const int gridHeight = (int)std::floor((float)chunkSize * (float)lod / (float)rightLod);
+        const int gridHeight = chunkSize * lod / rightLod;
         const int gridHeightP1 = gridHeight + 1;
         std::vector<Heightfield> heightfields(
             (chunkSize * chunkSize) + // center
@@ -1070,9 +1070,9 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
     /* {
         const int &bottomLod = lodArray[0];
         const int &rightLod = lodArray[1];
-        const int gridWidth = (int)std::floor((float)chunkSize * (float)lod / (float)bottomLod);
+        const int gridWidth = chunkSize * lod / bottomLod;
         const int gridWidthP1 = gridWidth + 1;
-        const int gridHeight = (int)std::floor((float)chunkSize * (float)lod / (float)rightLod);
+        const int gridHeight = chunkSize * lod / rightLod;
         const int gridHeightP1 = gridHeight + 1;
         std::vector<Waterfield> waterfields(
             (chunkSize * chunkSize) +
