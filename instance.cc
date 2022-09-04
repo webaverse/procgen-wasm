@@ -835,13 +835,6 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 const int d = heightfieldsOffset + bottomOffset + outerPointY;
                 const int c = heightfieldsOffset + bottomOffset + (outerPointY + 1);
 
-                // inner
-                // const int a = innerPointX + chunkSize * innerPointY;
-                // const int d = (innerPointX + 1) + chunkSize * innerPointY;
-                // outer
-                // const int b = heightfieldsOffset + outerPointX;
-                // const int c = heightfieldsOffset + (outerPointX + 1);
-
                 // if (innerPointX != (chunkSize - 1)) { // only single triangle in corner
                     geometry.indices.push_back(a);
                     geometry.indices.push_back(b);
