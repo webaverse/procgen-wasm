@@ -945,15 +945,41 @@ void copyGeometryToVertexBuffer(const Geometry &geometry, T &vertexBuffer) {
       vertexBuffer.indices.push_back(geometry.indices[i]);
     }
 }
-void generateHeightfieldCenterMesh(int lod, int chunkSize, const std::vector<Heightfield> &heightfield, Geometry &geometry) {
+void generateHeightfieldCenterMesh(
+    int lod,
+    int chunkSize,
+    const std::vector<Heightfield> &heightfield,
+    Geometry &geometry
+) {
     const int worldSize = chunkSize * lod;
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
 
     createPlaneGeometry(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, heightfield, geometry);
 }
-void generateHeightfieldSeamsMesh(int lod, const std::array<int, 2> &lodArray, int chunkSize, const std::vector<Heightfield> &heightfields, const std::vector<Heightfield> &heightfieldSeams, Geometry &geometry) {
+void generateHeightfieldSeamsMesh(
+    int lod,
+    const std::array<int, 2> &lodArray,
+    int chunkSize,
+    const std::vector<Heightfield> &heightfields,
+    const std::vector<Heightfield> &heightfieldSeams,
+    Geometry &geometry
+) {
     createPlaneSeamsGeometry(lod, lodArray, chunkSize, heightfields, heightfieldSeams, geometry);
+}
+void generateTerrainGeometry(
+    const vm::ivec2 &worldPosition,
+    int lod,
+    const std::array<int, 2> &lodArray,
+    int chunkSize,
+    const std::vector<Heightfield> &heightfields,
+    const std::vector<Heightfield> &heightfieldSeams,
+    Geometry &geometry
+) {
+    generateHeightfieldCenterMesh(lod, chunkSize, heightfields, geometry);
+    generateHeightfieldSeamsMesh(lod, lodArray, chunkSize, heightfields, heightfieldSeams, geometry);
+    offsetGeometry(geometry, worldPosition);
+    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
 Geometry &mergeGeometry(Geometry &a, Geometry &b) {
     for (size_t i = 0; i < b.positions.size(); i++) {
@@ -981,18 +1007,20 @@ uint8_t *PGInstance::createTerrainChunkMesh(const vm::ivec2 &worldPosition, int 
     getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfieldSeams.data());
 
     Geometry geometry;
-    generateHeightfieldCenterMesh(lod, chunkSize, heightfields, geometry);
-    generateHeightfieldSeamsMesh(lod, lodArray, chunkSize, heightfields, heightfieldSeams, geometry);
+    generateTerrainGeometry(
+        worldPosition,
+        lod,
+        lodArray,
+        chunkSize,
+        heightfields,
+        heightfieldSeams,
+        geometry
+    );
 
-    offsetGeometry(geometry, worldPosition);
+    TerrainVertexBuffer terrainVertexBuffer;
+    copyGeometryToVertexBuffer(geometry, terrainVertexBuffer);
 
-    // Geometry &geometry = mergeGeometry(centerGeometry, seamsGeometry);
-    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
-
-    TerrainVertexBuffer vertexBuffer;
-    copyGeometryToVertexBuffer(geometry, vertexBuffer);
-
-    return vertexBuffer.getBuffer();
+    return terrainVertexBuffer.getBuffer();
 }
 uint8_t *PGInstance::createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
 {
