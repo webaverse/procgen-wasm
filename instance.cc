@@ -548,7 +548,7 @@ void computeVertexNormals(std::vector<float> &positions, std::vector<float> &nor
 //
 
 template<typename T>
-void createPlaneGeometry(int width, int height, int widthSegments, int heightSegments, const std::vector<T> &heightfield, Geometry &geometry) {
+void createPlaneGeometry(int width, int height, int widthSegments, int heightSegments, const std::vector<T> &heightfields, Geometry &geometry) {
     const int &gridX = widthSegments; // equals chunkSize - 1
     const int &gridY = heightSegments; // equals chunkSize - 1
 
@@ -558,8 +558,7 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
     const int segment_width = width / gridX; // equals lod
     const int segment_height = height / gridY; // equals lod
 
-    //
-
+    // positions
     int index = 0;
     for (int iy = 0; iy < gridY1; iy ++) {
 
@@ -569,7 +568,7 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
 
             const int x = ix * segment_width;
 
-            const T &localHeightfield = heightfield[index];
+            const T &localHeightfield = heightfields[index];
             const float height = localHeightfield.getHeight();
 
             geometry.positions.push_back(x);
@@ -589,6 +588,18 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
 
     }
 
+    auto pushTriangle = [&](int a, int b, int c) {
+        const T &hfA = heightfields[a];
+        const T &hfB = heightfields[b];
+        const T &hfC = heightfields[c];
+        if (hfA.acceptIndex() && hfB.acceptIndex() && hfC.acceptIndex()) {
+            geometry.indices.push_back(a);
+            geometry.indices.push_back(b);
+            geometry.indices.push_back(c);
+        }
+    };
+
+    // indices
     for (int iy = 0; iy < gridY; iy++) {
 
         for (int ix = 0; ix < gridX; ix++) {
@@ -598,12 +609,8 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
             const int c = (ix + 1) + gridX1 * (iy + 1);
             const int d = (ix + 1) + gridX1 * iy;
 
-            geometry.indices.push_back(a);
-            geometry.indices.push_back(b);
-            geometry.indices.push_back(d);
-            geometry.indices.push_back(b);
-            geometry.indices.push_back(c);
-            geometry.indices.push_back(d);
+            pushTriangle(a, b, d);
+            pushTriangle(b, c, d);
 
         }
 
@@ -678,6 +685,17 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
     const int gridX1 = gridX + 1; // equals chunkSize
     const int gridY1 = gridY + 1; // equals chunkSize
 
+    auto pushTriangle = [&](int a, int b, int c) {
+        const T &hfA = heightfields[a];
+        const T &hfB = heightfields[b];
+        const T &hfC = heightfields[c];
+        if (hfA.acceptIndex() && hfB.acceptIndex() && hfC.acceptIndex()) {
+            geometry.indices.push_back(a);
+            geometry.indices.push_back(b);
+            geometry.indices.push_back(c);
+        }
+    };
+
     // indices
     // bottom
     if (bottomLod == lod) {
@@ -692,13 +710,9 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
             const int b = heightfieldsCenterDataOffset + outerPointX;
             const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
 
-            geometry.indices.push_back(a);
-            geometry.indices.push_back(b);
-            geometry.indices.push_back(c);
+            pushTriangle(a, b, c);
             if (innerPointX != (chunkSize - 1)) { // only single triangle in corner
-                geometry.indices.push_back(a);
-                geometry.indices.push_back(c);
-                geometry.indices.push_back(d);
+                pushTriangle(a, c, d);
             }
         }
     } else if (bottomLod > lod) {
@@ -714,12 +728,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 const int b = heightfieldsCenterDataOffset + outerPointX;
                 const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
 
-                geometry.indices.push_back(a);
-                geometry.indices.push_back(b);
-                geometry.indices.push_back(c);
-                geometry.indices.push_back(a);
-                geometry.indices.push_back(c);
-                geometry.indices.push_back(d);
+                pushTriangle(a, b, c);
+                pushTriangle(a, c, d);
             } else {
                 if (innerPointX != (chunkSize - 1)) {
                     // inner
@@ -729,9 +739,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     const int b = heightfieldsCenterDataOffset + outerPointX;
                     const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
 
-                    geometry.indices.push_back(a);
-                    geometry.indices.push_back(c);
-                    geometry.indices.push_back(d);
+                    pushTriangle(a, c, d);
                 }
             }
         }
@@ -749,12 +757,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     const int b = heightfieldsCenterDataOffset + outerPointX;
                     const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
 
-                    geometry.indices.push_back(a);
-                    geometry.indices.push_back(b);
-                    geometry.indices.push_back(c);
-                    geometry.indices.push_back(a);
-                    geometry.indices.push_back(c);
-                    geometry.indices.push_back(d);
+                    pushTriangle(a, b, c);
+                    pushTriangle(a, c, d);
                 }
                 outerPointX++;
                 {
@@ -765,9 +769,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     const int b = heightfieldsCenterDataOffset + outerPointX;
                     const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
 
-                    geometry.indices.push_back(b);
-                    geometry.indices.push_back(c);
-                    geometry.indices.push_back(d);
+                    pushTriangle(b, c, d);
                 }
             } else {
                 // inner
@@ -777,12 +779,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
                 const int d = heightfieldsCenterDataOffset + (outerPointX + 2);
 
-                geometry.indices.push_back(a);
-                geometry.indices.push_back(b);
-                geometry.indices.push_back(c);
-                geometry.indices.push_back(a);
-                geometry.indices.push_back(c);
-                geometry.indices.push_back(d);
+                pushTriangle(a, b, c);
+                pushTriangle(a, c, d);
             }
         }
     }
@@ -800,13 +798,9 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
             const int d = heightfieldsBottomDataOffset + outerPointY;
             const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
 
-            geometry.indices.push_back(a);
-            geometry.indices.push_back(c);
-            geometry.indices.push_back(d);
+            pushTriangle(a, c, d);
             if (innerPointY != (chunkSize - 1)) { // only single triangle in corner
-                geometry.indices.push_back(a);
-                geometry.indices.push_back(b);
-                geometry.indices.push_back(c);
+                pushTriangle(a, b, c);
             }
         }
     } else if (rightLod > lod) {
@@ -823,12 +817,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 const int d = heightfieldsBottomDataOffset + outerPointY;
                 const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
 
-                geometry.indices.push_back(a);
-                geometry.indices.push_back(c);
-                geometry.indices.push_back(d);
-                geometry.indices.push_back(a);
-                geometry.indices.push_back(b);
-                geometry.indices.push_back(c);
+                pushTriangle(a, c, d);
+                pushTriangle(a, b, c);
             } else {
                 if (innerPointY != (chunkSize - 1)) {
                     // inner
@@ -838,9 +828,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     const int d = heightfieldsBottomDataOffset + outerPointY;
                     const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
 
-                    geometry.indices.push_back(a);
-                    geometry.indices.push_back(b);
-                    geometry.indices.push_back(c);
+                    pushTriangle(a, b, c);
                 }
             }
         }
@@ -859,12 +847,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     const int d = heightfieldsBottomDataOffset + outerPointY;
                     const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
 
-                    geometry.indices.push_back(a);
-                    geometry.indices.push_back(c);
-                    geometry.indices.push_back(d);
-                    geometry.indices.push_back(a);
-                    geometry.indices.push_back(b);
-                    geometry.indices.push_back(c);
+                    pushTriangle(a, c, d);
+                    pushTriangle(a, b, c);
                 }
                 outerPointY++;
                 {
@@ -875,9 +859,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     const int d = heightfieldsBottomDataOffset + outerPointY;
                     const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
 
-                    geometry.indices.push_back(b);
-                    geometry.indices.push_back(c);
-                    geometry.indices.push_back(d);
+                    pushTriangle(b, c, d);
                 }
             } else {
                 // inner
@@ -887,12 +869,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
                 const int b = heightfieldsBottomDataOffset + (outerPointY + 2);
 
-                geometry.indices.push_back(a);
-                geometry.indices.push_back(b);
-                geometry.indices.push_back(c);
-                geometry.indices.push_back(a);
-                geometry.indices.push_back(c);
-                geometry.indices.push_back(d);
+                pushTriangle(a, b, c);
+                pushTriangle(a, c, d);
             }
         }
     }
