@@ -140,7 +140,9 @@ uint8_t *WaterVertexBuffer::getBuffer() const {
     normals.size() * sizeof(normals[0]) +
     // biomes
     sizeof(uint32_t) +
-    biomes.size() * sizeof(biomes[0]) +
+    biomes.size() * sizeof(biomes[0]);
+  neededSize = align4(neededSize);
+  neededSize +=
     // indices
     sizeof(uint32_t) +
     indices.size() * sizeof(indices[0]);
@@ -166,6 +168,7 @@ uint8_t *WaterVertexBuffer::getBuffer() const {
   index += sizeof(uint32_t);
   std::memcpy(buffer + index, &biomes[0], biomes.size() * sizeof(biomes[0]));
   index += biomes.size() * sizeof(biomes[0]);
+  index = align4(index);
 
   // indices
   *((uint32_t *)(buffer + index)) = indices.size();

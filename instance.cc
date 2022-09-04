@@ -944,7 +944,7 @@ void generateHeightfieldSeamsMesh(
     const std::array<int, 2> &lodArray,
     int chunkSize,
     const std::vector<Heightfield> &heightfields,
-    const std::vector<Heightfield> &heightfieldSeams,
+    const std::vector<Heightfield> &heightfieldSeams, // XXX need to merge these for easier index accept check
     Geometry &geometry
 ) {
     createPlaneSeamsGeometry<Heightfield>(lod, lodArray, chunkSize, heightfields, heightfieldSeams, geometry);
