@@ -998,7 +998,7 @@ void generateWaterGeometry(
     offsetGeometry(geometry, worldPosition);
     computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
-Geometry &mergeGeometry(Geometry &a, Geometry &b) {
+/* Geometry &mergeGeometry(Geometry &a, Geometry &b) {
     for (size_t i = 0; i < b.positions.size(); i++) {
         a.positions.push_back(b.positions[i]);
     }
@@ -1009,7 +1009,7 @@ Geometry &mergeGeometry(Geometry &a, Geometry &b) {
         a.indices.push_back(b.indices[i]);
     }
     return a;
-}
+} */
 uint8_t getMostCommonBiome(const std::vector<Heightfield> &heightfields, const std::vector<Heightfield> &heightfieldSeams) {
     std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
     for (const auto &hf : heightfields) {
