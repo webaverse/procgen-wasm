@@ -686,7 +686,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
     // bottom
     if (bottomLod == lod) {
         const int innerPointY = chunkSize - 1;
-        for (int innerPointX = 0; innerPointX <= chunkSize && innerPointX < 2; innerPointX++) {
+        for (int innerPointX = 0; innerPointX < chunkSize; innerPointX++) {
             const int outerPointX = innerPointX;
 
             // inner
@@ -699,7 +699,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
             geometry.indices.push_back(a);
             geometry.indices.push_back(b);
             geometry.indices.push_back(c);
-            if (innerPointX != chunkSize) { // only single triangle in corner
+            if (innerPointX != (chunkSize - 1)) { // only single triangle in corner
                 geometry.indices.push_back(a);
                 geometry.indices.push_back(c);
                 geometry.indices.push_back(d);
@@ -707,7 +707,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         }
     } else if (bottomLod > lod) {
         const int innerPointY = chunkSize - 1;
-        for (int innerPointX = 0; innerPointX <= chunkSize && innerPointX < 2; innerPointX++) {
+        for (int innerPointX = 0; innerPointX < chunkSize; innerPointX++) {
             const int outerPointX = innerPointX / 2;
 
             if (innerPointX % 2 == 0) {
@@ -721,7 +721,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 geometry.indices.push_back(a);
                 geometry.indices.push_back(b);
                 geometry.indices.push_back(c);
-                if (innerPointX != chunkSize) { // only single triangle in corner
+                if (innerPointX != (chunkSize - 1)) { // only single triangle in corner
                     geometry.indices.push_back(a);
                     geometry.indices.push_back(c);
                     geometry.indices.push_back(d);
@@ -741,36 +741,58 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         }
     } else if (bottomLod < lod) {
         const int innerPointY = chunkSize - 1;
-        for (int outerPointX = 0; outerPointX < gridWidthP1 && outerPointX < 2; outerPointX++) {
-            const int innerPointX = outerPointX / 2;
+        for (int innerPointX = 0; innerPointX < chunkSize; innerPointX++) {
+            int outerPointX = innerPointX * 2;
 
-            if (outerPointX % 2 == 0) {
-                // inner
-                const int a = innerPointX + chunkSize * innerPointY;
-                const int d = (innerPointX + 1) + chunkSize * innerPointY;
-                // outer
-                const int b = heightfieldsOffset + outerPointX;
-                const int c = heightfieldsOffset + (outerPointX + 1);
+            if (innerPointX != 15) {
+                {
+                    // inner
+                    const int a = innerPointX + chunkSize * innerPointY;
+                    const int d = (innerPointX + 1) + chunkSize * innerPointY;
+                    // outer
+                    const int b = heightfieldsOffset + outerPointX;
+                    const int c = heightfieldsOffset + (outerPointX + 1);
 
-                geometry.indices.push_back(a);
-                geometry.indices.push_back(b);
-                geometry.indices.push_back(c);
-                if (innerPointX != chunkSize) { // only single triangle in corner
                     geometry.indices.push_back(a);
+                    geometry.indices.push_back(b);
+                    geometry.indices.push_back(c);
+                    if (innerPointX != (chunkSize - 1)) { // only single triangle in corner
+                        geometry.indices.push_back(a);
+                        geometry.indices.push_back(c);
+                        geometry.indices.push_back(d);
+                    }
+                }
+                outerPointX++;
+                {
+                    // inner
+                    const int a = innerPointX + chunkSize * innerPointY;
+                    const int d = (innerPointX + 1) + chunkSize * innerPointY;
+                    // outer
+                    const int b = heightfieldsOffset + outerPointX;
+                    const int c = heightfieldsOffset + (outerPointX + 1);
+
+                    geometry.indices.push_back(b);
                     geometry.indices.push_back(c);
                     geometry.indices.push_back(d);
                 }
             } else {
-                // inner
-                const int a = innerPointX + chunkSize * innerPointY;
-                const int d = (innerPointX + 1) + chunkSize * innerPointY;
-                // outer
-                const int b = heightfieldsOffset + outerPointX;
-                const int c = heightfieldsOffset + (outerPointX + 1);
+                {
+                    // inner
+                    const int a = innerPointX + chunkSize * innerPointY;
+                    // outer
+                    const int b = heightfieldsOffset + outerPointX;
+                    const int c = heightfieldsOffset + (outerPointX + 1);
+                    const int d = heightfieldsOffset + (outerPointX + 2);
 
-                geometry.indices.push_back(b);
-                geometry.indices.push_back(c);
-                geometry.indices.push_back(d);
+                    geometry.indices.push_back(a);
+                    geometry.indices.push_back(b);
+                    geometry.indices.push_back(c);
+                    // if (innerPointX != (chunkSize - 1)) { // only single triangle in corner
+                        geometry.indices.push_back(a);
+                        geometry.indices.push_back(c);
+                        geometry.indices.push_back(d);
+                    // }
+                }
             }
         }
     }
