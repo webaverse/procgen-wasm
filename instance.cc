@@ -746,7 +746,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         for (int innerPointX = 0; innerPointX < chunkSize; innerPointX++) {
             int outerPointX = innerPointX * 2;
 
-            if (innerPointX != 15) {
+            if (innerPointX != (chunkSize - 1)) {
                 {
                     // inner
                     const int a = innerPointX + chunkSize * innerPointY;
