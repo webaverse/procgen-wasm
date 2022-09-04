@@ -684,7 +684,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
 
     // indices
     // bottom
-    /* if (bottomLod == lod) {
+    if (bottomLod == lod) {
         const int innerPointY = chunkSize - 1;
         for (int innerPointX = 0; innerPointX < chunkSize; innerPointX++) {
             const int outerPointX = innerPointX;
@@ -795,9 +795,9 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 // }
             }
         }
-    } */
+    }
     // right
-    /* if (rightLod == lod) {
+    if (rightLod == lod) {
         const int innerPointX = chunkSize - 1;
         const int outerPointX = innerPointX;
         for (int innerPointY = 0; innerPointY < chunkSize; innerPointY++) {
@@ -819,7 +819,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 geometry.indices.push_back(c);
             }
         }
-    } else */ /* if (rightLod > lod) {
+    } else if (rightLod > lod) {
         const int innerPointX = chunkSize - 1;
         const int outerPointX = innerPointX;
         for (int innerPointY = 0; innerPointY < chunkSize; innerPointY++) {
@@ -856,7 +856,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 }
             }
         }
-    } else */ if (rightLod < lod) {
+    } else if (rightLod < lod) {
         const int innerPointX = chunkSize - 1;
         const int outerPointX = innerPointX;
         for (int innerPointY = 0; innerPointY < chunkSize; innerPointY++) {
