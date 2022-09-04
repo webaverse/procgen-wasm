@@ -799,50 +799,36 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         }
     }
     // right
-    {
-        const int ix = chunkSize - 1;
-        const int innerPointX = ix;
-        for (int iy = 0; iy < gridHeight && iy < 0; iy++) {
-            const int outerPointY = iy;
-            const int innerPointY = (int)std::floor((float)outerPointY * (float)rightLod / (float)lod);
-            // const int outerAbsoluteY = outerPointY * rightLod;
-            // const int innerPointY = outerAbsoluteY / lod;
+    if (rightLod == lod) {
+        const int innerPointX = chunkSize - 1;
+        const int outerPointX = innerPointX;
+        for (int innerPointY = 0; innerPointY < chunkSize; innerPointY++) {
+            const int outerPointY = innerPointY;
 
-            // inner
             // const int a = ix + gridX1 * iy;
             // const int b = ix + gridX1 * (iy + 1);
-            const int a = innerPointX + gridX1 * innerPointY;
-            const int b = innerPointX + gridX1 * (innerPointY + 1);
+            const int a = innerPointX + chunkSize * innerPointY;
+            const int b = innerPointX + chunkSize * (innerPointY + 1);
             // const int c = (ix + 1) + gridX1 * (iy + 1);
             // const int d = (ix + 1) + gridX1 * iy;
             const int d = heightfieldsOffset + bottomOffset + outerPointY;
             const int c = heightfieldsOffset + bottomOffset + (outerPointY + 1);
 
-            /* if (a * 3 >= geometry.positions.size()) {
-                std::cout << "a right overflow: " << a << " " << geometry.positions.size() << std::endl;
-                abort();
-            }
-            if (b * 3 >= geometry.positions.size()) {
-                std::cout << "b right overflow: " << b << " " << geometry.positions.size() << std::endl;
-                abort();
-            }
-            if (c * 3 >= geometry.positions.size()) {
-                std::cout << "c right overflow: " << c << " " << geometry.positions.size() << std::endl;
-                abort();
-            }
-            if (d * 3 >= geometry.positions.size()) {
-                std::cout << "d right overflow: " << d << " " << geometry.positions.size() << std::endl;
-                abort();
-            } */
+            /* // inner
+            const int a = innerPointX + chunkSize * innerPointY;
+            const int d = (innerPointX + 1) + chunkSize * innerPointY;
+            // outer
+            const int b = heightfieldsOffset + outerPointX;
+            const int c = heightfieldsOffset + (outerPointX + 1); */
 
-            geometry.indices.push_back(a);
-            geometry.indices.push_back(c);
-            geometry.indices.push_back(d);
-            if (iy != (gridHeight - 1)) { // only single triangle in corner
+            if (innerPointY != (chunkSize - 1)) { // only single triangle in corner
                 geometry.indices.push_back(a);
                 geometry.indices.push_back(b);
                 geometry.indices.push_back(c);
             }
+            geometry.indices.push_back(a);
+            geometry.indices.push_back(c);
+            geometry.indices.push_back(d);
         }
     }
 }
