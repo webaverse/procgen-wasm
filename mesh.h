@@ -3,6 +3,7 @@
 
 #include "vectorMath.h"
 #include "biomes.h"
+#include "cache.h"
 
 #include <vector>
 #include <array>
@@ -16,14 +17,15 @@ typedef std::vector<vm::vec3> NormalBuffer;
 typedef std::vector<vm::ivec4> BiomesBuffer;
 typedef std::vector<vm::vec4> BiomesWeightBuffer;
 typedef std::vector<std::array<UV, 2>> BiomesUvsBuffer;
-typedef std::vector<int> IndexBuffer;
-typedef std::vector<int> BiomeBuffer;
+typedef std::vector<uint32_t> IndexBuffer;
+// typedef std::vector<int> BiomeBuffer;
+typedef std::vector<float> FactorBuffer;
 typedef std::vector<uint8_t> LightBuffer;
 typedef unsigned char PeekBuffer[15];
 
 //
 
-struct VertexData
+/* struct VertexData
 {
     int index;
     int corners;
@@ -39,11 +41,11 @@ struct VertexData
 
     uint8_t skylight;
     uint8_t ao;
-};
+}; */
 
 //
 
-class TerrainVertexBuffer {
+class TerrainGeometry {
 public:
     PositionBuffer positions;
     NormalBuffer normals;
@@ -59,24 +61,24 @@ public:
 
     // PeekBuffer peeks;
 
+    void pushPointMetadata(const Heightfield &fieldValue);
+
     uint8_t *getBuffer() const;
-    
-    // void pushVertexData(const VertexData &vertexData);
 };
 
-class WaterVertexBuffer {
+class WaterGeometry {
 public:
     PositionBuffer positions;
     NormalBuffer normals;
     IndexBuffer indices;
 
-    BiomeBuffer biomes;
+    FactorBuffer factors;
 
     // PeekBuffer peeks;
 
-    uint8_t *getBuffer() const;
+    void pushPointMetadata(const Waterfield &fieldValue);
 
-    // void pushVertexData(const VertexData &vertexData);
+    uint8_t *getBuffer() const;
 };
 
 #endif // MESH_H

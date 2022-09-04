@@ -2,7 +2,10 @@
 #include "util.h"
 #include <iostream>
 
-uint8_t *TerrainVertexBuffer::getBuffer() const {
+void TerrainGeometry::pushPointMetadata(const Heightfield &fieldValue) {
+  // XXX push biomes here
+}
+uint8_t *TerrainGeometry::getBuffer() const {
   // calculate size
   size_t neededSize = 
     // positions
@@ -129,7 +132,10 @@ uint8_t *TerrainVertexBuffer::getBuffer() const {
 
 //
 
-uint8_t *WaterVertexBuffer::getBuffer() const {
+void WaterGeometry::pushPointMetadata(const Waterfield &fieldValue) {
+  factors.push_back(fieldValue.waterFactor);
+}
+uint8_t *WaterGeometry::getBuffer() const {
   // calculate size
   size_t neededSize =
     // positions
@@ -138,11 +144,9 @@ uint8_t *WaterVertexBuffer::getBuffer() const {
     // normals
     sizeof(uint32_t) +
     normals.size() * sizeof(normals[0]) +
-    // biomes
+    // factors
     sizeof(uint32_t) +
-    biomes.size() * sizeof(biomes[0]) +
-  // neededSize = align4(neededSize);
-  // neededSize +=
+    factors.size() * sizeof(factors[0]) +
     // indices
     sizeof(uint32_t) +
     indices.size() * sizeof(indices[0]);
@@ -163,12 +167,11 @@ uint8_t *WaterVertexBuffer::getBuffer() const {
   std::memcpy(buffer + index, &normals[0], normals.size() * sizeof(normals[0]));
   index += normals.size() * sizeof(normals[0]);
 
-  // biomes
-  *((uint32_t *)(buffer + index)) = biomes.size();
+  // factors
+  *((uint32_t *)(buffer + index)) = factors.size();
   index += sizeof(uint32_t);
-  std::memcpy(buffer + index, &biomes[0], biomes.size() * sizeof(biomes[0]));
-  index += biomes.size() * sizeof(biomes[0]);
-  // index = align4(index);
+  std::memcpy(buffer + index, &factors[0], factors.size() * sizeof(factors[0]));
+  index += factors.size() * sizeof(factors[0]);
 
   // indices
   *((uint32_t *)(buffer + index)) = indices.size();

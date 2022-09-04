@@ -427,7 +427,7 @@ std::vector<vm::ivec2> getChunkRangeInclusive(const vm::ivec2 &worldPosition, in
 
 //
 
-class Geometry {
+/* class Geometry {
 public:
     std::vector<float> positions;
     std::vector<float> normals;
@@ -435,22 +435,22 @@ public:
     std::vector<uint32_t> indices;
 
     // Geometry() {}
-};
-void normalizeNormals(std::vector<float> &normals) {
-    for (size_t i = 0, il = normals.size(); i < il; i += 3) {
+}; */
+void normalizeNormals(std::vector<vm::vec3> &normals) {
+    for (size_t i = 0, il = normals.size(); i < il; i++) {
         Vec vec{
-            normals[i],
-            normals[i + 1],
-            normals[i + 2]
+            normals[i].x,
+            normals[i].y,
+            normals[i].z
         };
         vec.normalize();
         // normals.setXYZ(i, vec.x, vec.y, vec.z);
-        normals[i] = vec.x;
-        normals[i + 1] = vec.y;
-        normals[i + 2] = vec.z;
+        normals[i].x = vec.x;
+        normals[i].y = vec.y;
+        normals[i].z = vec.z;
     }
 }
-void computeVertexNormals(std::vector<float> &positions, std::vector<float> &normals, std::vector<uint32_t> &indices) {
+void computeVertexNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3> &normals, std::vector<uint32_t> &indices) {
     // const index = this.index;
     // const positionAttribute = this.getAttribute( 'position' );
 
@@ -458,7 +458,7 @@ void computeVertexNormals(std::vector<float> &positions, std::vector<float> &nor
     // for ( let i = 0, il = normalAttribute.count; i < il; i ++ ) {
     //   normalAttribute.setXYZ( i, 0, 0, 0 );
     // }
-    std::fill(normals.begin(), normals.end(), 0);
+    // std::fill(normals.begin(), normals.end(), 0);
 
     // const pA = new Vector3(), pB = new Vector3(), pC = new Vector3();
     // const nA = new Vector3(), nB = new Vector3(), nC = new Vector3();
@@ -478,19 +478,19 @@ void computeVertexNormals(std::vector<float> &positions, std::vector<float> &nor
         // pB.fromBufferAttribute( positionAttribute, vB );
         // pC.fromBufferAttribute( positionAttribute, vC );
         Vec pA{
-            positions[vA * 3],
-            positions[vA * 3 + 1],
-            positions[vA * 3 + 2]
+            positions[vA].x,
+            positions[vA].y,
+            positions[vA].z
         };
         Vec pB{
-            positions[vB * 3],
-            positions[vB * 3 + 1],
-            positions[vB * 3 + 2]
+            positions[vB].x,
+            positions[vB].y,
+            positions[vB].z
         };
         Vec pC{
-            positions[vC * 3],
-            positions[vC * 3 + 1],
-            positions[vC * 3 + 2]
+            positions[vC].x,
+            positions[vC].y,
+            positions[vC].z
         };
 
         // cb.subVectors( pC, pB );
@@ -505,19 +505,19 @@ void computeVertexNormals(std::vector<float> &positions, std::vector<float> &nor
         // nB.fromBufferAttribute( normalAttribute, vB );
         // nC.fromBufferAttribute( normalAttribute, vC );
         Vec nA{
-            normals[vA * 3],
-            normals[vA * 3 + 1],
-            normals[vA * 3 + 2]
+            normals[vA].x,
+            normals[vA].y,
+            normals[vA].z
         };
         Vec nB{
-            normals[vB * 3],
-            normals[vB * 3 + 1],
-            normals[vB * 3 + 2]
+            normals[vB].x,
+            normals[vB].y,
+            normals[vB].z
         };
         Vec nC{
-            normals[vC * 3],
-            normals[vC * 3 + 1],
-            normals[vC * 3 + 2]
+            normals[vC].x,
+            normals[vC].y,
+            normals[vC].z
         };
 
         // nA.add( cb );
@@ -530,16 +530,15 @@ void computeVertexNormals(std::vector<float> &positions, std::vector<float> &nor
         // normalAttribute.setXYZ( vA, nA.x, nA.y, nA.z );
         // normalAttribute.setXYZ( vB, nB.x, nB.y, nB.z );
         // normalAttribute.setXYZ( vC, nC.x, nC.y, nC.z );
-        normals[vA * 3] = nA.x;
-        normals[vA * 3 + 1] = nA.y;
-        normals[vA * 3 + 2] = nA.z;
-        normals[vB * 3] = nB.x;
-        normals[vB * 3 + 1] = nB.y;
-        normals[vB * 3 + 2] = nB.z;
-        normals[vC * 3] = nC.x;
-        normals[vC * 3 + 1] = nC.y;
-        normals[vC * 3 + 2] = nC.z;
-
+        normals[vA].x = nA.x;
+        normals[vA].y = nA.y;
+        normals[vA].z = nA.z;
+        normals[vB].x = nB.x;
+        normals[vB].y = nB.y;
+        normals[vB].z = nB.z;
+        normals[vC].x = nC.x;
+        normals[vC].y = nC.y;
+        normals[vC].z = nC.z;
     }
 
     normalizeNormals(normals);
@@ -547,8 +546,8 @@ void computeVertexNormals(std::vector<float> &positions, std::vector<float> &nor
 
 //
 
-template<typename T>
-void createPlaneGeometry(int width, int height, int widthSegments, int heightSegments, const std::vector<T> &heightfields, Geometry &geometry) {
+template<typename T, typename G>
+void createPlaneGeometry(int width, int height, int widthSegments, int heightSegments, const std::vector<T> &heightfields, G &geometry) {
     const int &gridX = widthSegments; // equals chunkSize - 1
     const int &gridY = heightSegments; // equals chunkSize - 1
 
@@ -557,6 +556,23 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
 
     const int segment_width = width / gridX; // equals lod
     const int segment_height = height / gridY; // equals lod
+
+    //
+
+    auto pushPoint = [&](int x, int y, const T &fieldValue) -> void {
+        const float height = fieldValue.getHeight();
+        geometry.positions.push_back(vm::vec3{
+            (float)x,
+            height,
+            (float)y
+        });
+        geometry.normals.push_back(vm::vec3{
+            0,
+            1,
+            0
+        });
+        geometry.pushPointMetadata(fieldValue);
+    };
 
     // positions
     int index = 0;
@@ -568,19 +584,9 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
 
             const int x = ix * segment_width;
 
-            const T &localHeightfield = heightfields[index];
-            const float height = localHeightfield.getHeight();
+            const T &fieldValue = heightfields[index];
 
-            geometry.positions.push_back(x);
-            geometry.positions.push_back(height);
-            geometry.positions.push_back(y);
-
-            geometry.normals.push_back(0);
-            geometry.normals.push_back(1);
-            geometry.normals.push_back(0);
-
-            // geometry.uvs.push_back((float)ix / (float)gridX);
-            // geometry.uvs.push_back(1.f - ((float)iy / (float)gridY));
+            pushPoint(x, y, fieldValue);
 
             index++;
 
@@ -616,8 +622,8 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
 
     }
 }
-template<typename T>
-void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int chunkSize, const std::vector<T> &heightfields, Geometry &geometry) {
+template<typename T, typename G>
+void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int chunkSize, const std::vector<T> &heightfields, G &geometry) {
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
 
@@ -631,14 +637,19 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
 
     //
 
-    auto pushPoint = [&](int x, int y, float height) -> void {
-        geometry.positions.push_back(x);
-        geometry.positions.push_back(height);
-        geometry.positions.push_back(y);
-
-        geometry.normals.push_back(0);
-        geometry.normals.push_back(1);
-        geometry.normals.push_back(0);
+    auto pushPoint = [&](int x, int y, const T &fieldValue) -> void {
+        const float height = fieldValue.getHeight();
+        geometry.positions.push_back(vm::vec3{
+            (float)x,
+            height,
+            (float)y
+        });
+        geometry.normals.push_back(vm::vec3{
+            0,
+            1,
+            0
+        });
+        geometry.pushPointMetadata(fieldValue);
     };
 
     // positions
@@ -649,13 +660,12 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         {
             const int iy = chunkSize;
             for (int ix = 0; ix < gridWidthP1; ix++) {
-                const T &localHeightfield = heightfields[index];
-                const float height = localHeightfield.getHeight();
+                const T &fieldValue = heightfields[index];
 
                 const int x = ix * bottomLod;
                 const int y = iy * lod;
 
-                pushPoint(x, y, height);
+                pushPoint(x, y, fieldValue);
                 index++;
             }
         }
@@ -664,13 +674,12 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         {
             const int ix = chunkSize;
             for (int iy = 0; iy < gridHeightP1; iy++) {
-                const T &localHeightfield = heightfields[index];
-                const float height = localHeightfield.getHeight();
+                const T &fieldValue = heightfields[index];
 
                 const int x = ix * lod;
                 const int y = iy * rightLod;
 
-                pushPoint(x, y, height);
+                pushPoint(x, y, fieldValue);
                 index++;
             }
         }
@@ -878,77 +887,54 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
 
 //
 
-void offsetGeometry(Geometry &geometry, const vm::ivec2 &worldPosition) {
-    for (size_t i = 0; i < geometry.positions.size(); i += 3) { 
-        geometry.positions[i] += (float)worldPosition.x;
-        geometry.positions[i + 1] -= (float)WORLD_BASE_HEIGHT;
-        geometry.positions[i + 2] += (float)worldPosition.y;
-    }
-}
-template<typename T>
-void copyGeometryToVertexBuffer(const Geometry &geometry, T &vertexBuffer) {
-    for (size_t i = 0/*, j = 0*/; i < geometry.positions.size(); i += 3/*, j += 2*/) { 
-      vertexBuffer.positions.push_back(vm::vec3{
-        geometry.positions[i],
-        geometry.positions[i + 1],
-        geometry.positions[i + 2]
-      });
-
-      vertexBuffer.normals.push_back(vm::vec3{
-        geometry.normals[i],
-        geometry.normals[i + 1],
-        geometry.normals[i + 2]
-      });
-
-      // XXX compute biomes uvs
-      /* vertexBuffer.biomesUvs1.push_back(std::array<UV, 2>{
-        geometry.uvs[j],
-        geometry.uvs[j + 1]
-      }); */
-    }
-    for (size_t i = 0; i < geometry.indices.size(); i++) {
-      vertexBuffer.indices.push_back(geometry.indices[i]);
+template<typename G>
+void offsetGeometry(G &geometry, const vm::ivec2 &worldPosition) {
+    for (size_t i = 0; i < geometry.positions.size(); i++) {
+        vm::vec3 &p = geometry.positions[i]; 
+        p.x += (float)worldPosition.x;
+        p.y -= (float)WORLD_BASE_HEIGHT;
+        p.z += (float)worldPosition.y;
     }
 }
 void generateHeightfieldCenterMesh(
     int lod,
     int chunkSize,
     const std::vector<Heightfield> &heightfield,
-    Geometry &geometry
+    TerrainGeometry &geometry
 ) {
     const int worldSize = chunkSize * lod;
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
-    createPlaneGeometry<Heightfield>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, heightfield, geometry);
+    createPlaneGeometry<Heightfield, TerrainGeometry>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, heightfield, geometry);
 }
 void generateHeightfieldSeamsMesh(
     int lod,
     const std::array<int, 2> &lodArray,
     int chunkSize,
     const std::vector<Heightfield> &heightfields,
-    Geometry &geometry
+    TerrainGeometry &geometry
 ) {
-    createPlaneSeamsGeometry<Heightfield>(lod, lodArray, chunkSize, heightfields, geometry);
+    createPlaneSeamsGeometry<Heightfield, TerrainGeometry>(lod, lodArray, chunkSize, heightfields, geometry);
 }
 void generateWaterfieldCenterMesh(
     int lod,
     int chunkSize,
     const std::vector<Waterfield> &heightfield,
-    Geometry &geometry
+    WaterGeometry &geometry
 ) {
     const int worldSize = chunkSize * lod;
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
-    createPlaneGeometry<Waterfield>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, heightfield, geometry);
+    createPlaneGeometry<Waterfield, WaterGeometry>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, heightfield, geometry);
 }
 void generateWaterfieldSeamsMesh(
     int lod,
     const std::array<int, 2> &lodArray,
     int chunkSize,
     const std::vector<Waterfield> &waterfields,
-    Geometry &geometry
+    WaterGeometry &geometry
 ) {
-    createPlaneSeamsGeometry<Waterfield>(lod, lodArray, chunkSize, waterfields, geometry);
+    createPlaneSeamsGeometry<Waterfield, WaterGeometry>(lod, lodArray, chunkSize, waterfields, geometry);
 }
 void generateTerrainGeometry(
     const vm::ivec2 &worldPosition,
@@ -956,7 +942,7 @@ void generateTerrainGeometry(
     const std::array<int, 2> &lodArray,
     int chunkSize,
     const std::vector<Heightfield> &heightfields,
-    Geometry &geometry
+    TerrainGeometry &geometry
 ) {
     generateHeightfieldCenterMesh(lod, chunkSize, heightfields, geometry);
     generateHeightfieldSeamsMesh(lod, lodArray, chunkSize, heightfields, geometry);
@@ -969,7 +955,7 @@ void generateWaterGeometry(
     const std::array<int, 2> &lodArray,
     int chunkSize,
     const std::vector<Waterfield> &waterfields,
-    Geometry &geometry
+    WaterGeometry &geometry
 ) {
     generateWaterfieldCenterMesh(lod, chunkSize, waterfields, geometry);
     generateWaterfieldSeamsMesh(lod, lodArray, chunkSize, waterfields, geometry);
@@ -1013,7 +999,7 @@ uint8_t getMostCommonBiome(const std::vector<Heightfield> &heightfields) {
 }
 ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray) {
     // terrain
-    TerrainVertexBuffer terrainVertexBuffer;
+    TerrainGeometry terrainGeometry;
     uint8_t mostCommonBiome;
     {
         const int &bottomLod = lodArray[0];
@@ -1029,7 +1015,6 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
         getHeightFieldCenter(worldPosition.x, worldPosition.y, lod, heightfields);
         getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfields);
 
-        Geometry terrainGeometry;
         generateTerrainGeometry(
             worldPosition,
             lod,
@@ -1038,13 +1023,12 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
             heightfields,
             terrainGeometry
         );
-        copyGeometryToVertexBuffer(terrainGeometry, terrainVertexBuffer);
 
         mostCommonBiome = getMostCommonBiome(heightfields);
     }
 
     // water
-    TerrainVertexBuffer waterVertexBuffer;
+    WaterGeometry waterGeometry;
     /* {
         const int &bottomLod = lodArray[0];
         const int &rightLod = lodArray[1];
@@ -1072,8 +1056,8 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
     } */
 
     ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
-    result->terrainMeshBuffer = terrainVertexBuffer.getBuffer();
-    result->waterMeshBuffer = waterVertexBuffer.getBuffer();
+    result->terrainMeshBuffer = terrainGeometry.getBuffer();
+    result->waterMeshBuffer = waterGeometry.getBuffer();
     result->biome = mostCommonBiome;
     return result;
 }
