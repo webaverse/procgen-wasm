@@ -945,14 +945,14 @@ void copyGeometryToVertexBuffer(const Geometry &geometry, T &vertexBuffer) {
       vertexBuffer.indices.push_back(geometry.indices[i]);
     }
 }
-void generateHeightfieldCenterMesh(const vm::ivec2 &worldPosition, int lod, int chunkSize, const std::vector<Heightfield> &heightfield, Geometry &geometry) {
+void generateHeightfieldCenterMesh(int lod, int chunkSize, const std::vector<Heightfield> &heightfield, Geometry &geometry) {
     const int worldSize = chunkSize * lod;
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
 
     createPlaneGeometry(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, heightfield, geometry);
 }
-void generateHeightfieldSeamsMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray, int chunkSize, const std::vector<Heightfield> &heightfields, const std::vector<Heightfield> &heightfieldSeams, Geometry &geometry) {
+void generateHeightfieldSeamsMesh(int lod, const std::array<int, 2> &lodArray, int chunkSize, const std::vector<Heightfield> &heightfields, const std::vector<Heightfield> &heightfieldSeams, Geometry &geometry) {
     createPlaneSeamsGeometry(lod, lodArray, chunkSize, heightfields, heightfieldSeams, geometry);
 }
 Geometry &mergeGeometry(Geometry &a, Geometry &b) {
@@ -978,12 +978,11 @@ uint8_t *PGInstance::createTerrainChunkMesh(const vm::ivec2 &worldPosition, int 
     const int gridHeight = (int)std::floor((float)chunkSize * (float)lod / (float)rightLod);
     const int gridHeightP1 = gridHeight + 1;
     std::vector<Heightfield> heightfieldSeams(gridWidthP1 + gridHeightP1);
-    // std::vector<Heightfield> heightfieldSeams(chunkSize * chunkSize);
     getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfieldSeams.data());
 
     Geometry geometry;
-    generateHeightfieldCenterMesh(worldPosition, lod, chunkSize, heightfields, geometry);
-    generateHeightfieldSeamsMesh(worldPosition, lod, lodArray, chunkSize, heightfields, heightfieldSeams, geometry);
+    generateHeightfieldCenterMesh(lod, chunkSize, heightfields, geometry);
+    generateHeightfieldSeamsMesh(lod, lodArray, chunkSize, heightfields, heightfieldSeams, geometry);
 
     offsetGeometry(geometry, worldPosition);
 
