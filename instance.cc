@@ -1006,7 +1006,7 @@ uint8_t *PGInstance::createTerrainChunkMesh(const vm::ivec2 &worldPosition, int 
     std::vector<Heightfield> heightfieldSeams(gridWidthP1 + gridHeightP1);
     getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfieldSeams.data());
 
-    Geometry geometry;
+    Geometry terrainGeometry;
     generateTerrainGeometry(
         worldPosition,
         lod,
@@ -1014,11 +1014,11 @@ uint8_t *PGInstance::createTerrainChunkMesh(const vm::ivec2 &worldPosition, int 
         chunkSize,
         heightfields,
         heightfieldSeams,
-        geometry
+        terrainGeometry
     );
 
     TerrainVertexBuffer terrainVertexBuffer;
-    copyGeometryToVertexBuffer(geometry, terrainVertexBuffer);
+    copyGeometryToVertexBuffer(terrainGeometry, terrainVertexBuffer);
 
     return terrainVertexBuffer.getBuffer();
 }
