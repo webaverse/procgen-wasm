@@ -47,11 +47,11 @@ public:
     NoiseField getNoise(int bx, int by);
     uint8_t getBiome(int bx, int bz);
     
-    void getHeightField(int bx, int bz, int lod, std::vector<Heightfield> &heightfield);
+    void getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfield);
     void getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Heightfield> &heightfieldSeams);
     Heightfield getHeightField(int bx, int bz);
     
-    void getWaterField(int bx, int bz, int lod, std::vector<Waterfield> &waterfield);
+    void getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfield);
     void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfieldSeams);
     Waterfield getWaterField(int bx, int bz);
 

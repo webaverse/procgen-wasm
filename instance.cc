@@ -544,6 +544,9 @@ void computeVertexNormals(std::vector<float> &positions, std::vector<float> &nor
 
     normalizeNormals(normals);
 }
+
+//
+
 template<typename T>
 void createPlaneGeometry(int width, int height, int widthSegments, int heightSegments, const std::vector<T> &heightfield, Geometry &geometry) {
     const int &gridX = widthSegments; // equals chunkSize - 1
@@ -607,9 +610,7 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
     }
 }
 template<typename T>
-void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int chunkSize, const std::vector<T> &heightfields, const std::vector<T> &heightfieldSeams, Geometry &geometry) {
-    //
-
+void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int chunkSize, const std::vector<T> &heightfields, Geometry &geometry) {
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
 
@@ -618,6 +619,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
 
     const int gridHeight = (int)std::floor((float)chunkSize * (float)lod / (float)rightLod);
     const int gridHeightP1 = gridHeight + 1;
+
+    const int heightfieldsCenterDataOffset = chunkSize * chunkSize;
 
     //
 
@@ -633,13 +636,13 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
 
     // positions
     // bottom
-    int bottomOffset;
+    int heightfieldsBottomDataOffset;
     {
-        int index = 0;
+        int index = heightfieldsCenterDataOffset;
         {
             const int iy = chunkSize;
             for (int ix = 0; ix < gridWidthP1; ix++) {
-                const T &localHeightfield = heightfieldSeams[index];
+                const T &localHeightfield = heightfields[index];
                 const float height = localHeightfield.getHeight();
 
                 const int x = ix * bottomLod;
@@ -649,12 +652,12 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 index++;
             }
         }
-        bottomOffset = index;
+        heightfieldsBottomDataOffset = index;
         // right
         {
             const int ix = chunkSize;
             for (int iy = 0; iy < gridHeightP1; iy++) {
-                const T &localHeightfield = heightfieldSeams[index];
+                const T &localHeightfield = heightfields[index];
                 const float height = localHeightfield.getHeight();
 
                 const int x = ix * lod;
@@ -675,8 +678,6 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
     const int gridX1 = gridX + 1; // equals chunkSize
     const int gridY1 = gridY + 1; // equals chunkSize
 
-    const int heightfieldsOffset = heightfields.size();
-
     // indices
     // bottom
     if (bottomLod == lod) {
@@ -688,8 +689,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
             const int a = innerPointX + chunkSize * innerPointY;
             const int d = (innerPointX + 1) + chunkSize * innerPointY;
             // outer
-            const int b = heightfieldsOffset + outerPointX;
-            const int c = heightfieldsOffset + (outerPointX + 1);
+            const int b = heightfieldsCenterDataOffset + outerPointX;
+            const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
 
             geometry.indices.push_back(a);
             geometry.indices.push_back(b);
@@ -710,8 +711,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 const int a = innerPointX + chunkSize * innerPointY;
                 const int d = (innerPointX + 1) + chunkSize * innerPointY;
                 // outer
-                const int b = heightfieldsOffset + outerPointX;
-                const int c = heightfieldsOffset + (outerPointX + 1);
+                const int b = heightfieldsCenterDataOffset + outerPointX;
+                const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
 
                 geometry.indices.push_back(a);
                 geometry.indices.push_back(b);
@@ -725,8 +726,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     const int a = innerPointX + chunkSize * innerPointY;
                     const int d = (innerPointX + 1) + chunkSize * innerPointY;
                     // outer
-                    const int b = heightfieldsOffset + outerPointX;
-                    const int c = heightfieldsOffset + (outerPointX + 1);
+                    const int b = heightfieldsCenterDataOffset + outerPointX;
+                    const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
 
                     geometry.indices.push_back(a);
                     geometry.indices.push_back(c);
@@ -745,8 +746,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     const int a = innerPointX + chunkSize * innerPointY;
                     const int d = (innerPointX + 1) + chunkSize * innerPointY;
                     // outer
-                    const int b = heightfieldsOffset + outerPointX;
-                    const int c = heightfieldsOffset + (outerPointX + 1);
+                    const int b = heightfieldsCenterDataOffset + outerPointX;
+                    const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
 
                     geometry.indices.push_back(a);
                     geometry.indices.push_back(b);
@@ -761,8 +762,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     const int a = innerPointX + chunkSize * innerPointY;
                     const int d = (innerPointX + 1) + chunkSize * innerPointY;
                     // outer
-                    const int b = heightfieldsOffset + outerPointX;
-                    const int c = heightfieldsOffset + (outerPointX + 1);
+                    const int b = heightfieldsCenterDataOffset + outerPointX;
+                    const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
 
                     geometry.indices.push_back(b);
                     geometry.indices.push_back(c);
@@ -772,9 +773,9 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 // inner
                 const int a = innerPointX + chunkSize * innerPointY;
                 // outer
-                const int b = heightfieldsOffset + outerPointX;
-                const int c = heightfieldsOffset + (outerPointX + 1);
-                const int d = heightfieldsOffset + (outerPointX + 2);
+                const int b = heightfieldsCenterDataOffset + outerPointX;
+                const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
+                const int d = heightfieldsCenterDataOffset + (outerPointX + 2);
 
                 geometry.indices.push_back(a);
                 geometry.indices.push_back(b);
@@ -796,8 +797,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
             const int a = innerPointX + chunkSize * innerPointY;
             const int b = innerPointX + chunkSize * (innerPointY + 1);
             // outer
-            const int d = heightfieldsOffset + bottomOffset + outerPointY;
-            const int c = heightfieldsOffset + bottomOffset + (outerPointY + 1);
+            const int d = heightfieldsBottomDataOffset + outerPointY;
+            const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
 
             geometry.indices.push_back(a);
             geometry.indices.push_back(c);
@@ -819,8 +820,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 const int a = innerPointX + chunkSize * innerPointY;
                 const int b = innerPointX + chunkSize * (innerPointY + 1);
                 // outer
-                const int d = heightfieldsOffset + bottomOffset + outerPointY;
-                const int c = heightfieldsOffset + bottomOffset + (outerPointY + 1);
+                const int d = heightfieldsBottomDataOffset + outerPointY;
+                const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
 
                 geometry.indices.push_back(a);
                 geometry.indices.push_back(c);
@@ -834,8 +835,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     const int a = innerPointX + chunkSize * innerPointY;
                     const int b = innerPointX + chunkSize * (innerPointY + 1);
                     // outer
-                    const int d = heightfieldsOffset + bottomOffset + outerPointY;
-                    const int c = heightfieldsOffset + bottomOffset + (outerPointY + 1);
+                    const int d = heightfieldsBottomDataOffset + outerPointY;
+                    const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
 
                     geometry.indices.push_back(a);
                     geometry.indices.push_back(b);
@@ -855,8 +856,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     const int a = innerPointX + chunkSize * innerPointY;
                     const int b = innerPointX + chunkSize * (innerPointY + 1);
                     // outer
-                    const int d = heightfieldsOffset + bottomOffset + outerPointY;
-                    const int c = heightfieldsOffset + bottomOffset + (outerPointY + 1);
+                    const int d = heightfieldsBottomDataOffset + outerPointY;
+                    const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
 
                     geometry.indices.push_back(a);
                     geometry.indices.push_back(c);
@@ -871,8 +872,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     const int a = innerPointX + chunkSize * innerPointY;
                     const int b = innerPointX + chunkSize * (innerPointY + 1);
                     // outer
-                    const int d = heightfieldsOffset + bottomOffset + outerPointY;
-                    const int c = heightfieldsOffset + bottomOffset + (outerPointY + 1);
+                    const int d = heightfieldsBottomDataOffset + outerPointY;
+                    const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
 
                     geometry.indices.push_back(b);
                     geometry.indices.push_back(c);
@@ -882,9 +883,9 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 // inner
                 const int a = innerPointX + chunkSize * innerPointY;
                 // outer
-                const int d = heightfieldsOffset + bottomOffset + outerPointY;
-                const int c = heightfieldsOffset + bottomOffset + (outerPointY + 1);
-                const int b = heightfieldsOffset + bottomOffset + (outerPointY + 2);
+                const int d = heightfieldsBottomDataOffset + outerPointY;
+                const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
+                const int b = heightfieldsBottomDataOffset + (outerPointY + 2);
 
                 geometry.indices.push_back(a);
                 geometry.indices.push_back(b);
@@ -896,6 +897,9 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         }
     }
 }
+
+//
+
 void offsetGeometry(Geometry &geometry, const vm::ivec2 &worldPosition) {
     for (size_t i = 0; i < geometry.positions.size(); i += 3) { 
         geometry.positions[i] += (float)worldPosition.x;
@@ -944,10 +948,9 @@ void generateHeightfieldSeamsMesh(
     const std::array<int, 2> &lodArray,
     int chunkSize,
     const std::vector<Heightfield> &heightfields,
-    const std::vector<Heightfield> &heightfieldSeams, // XXX need to merge these for easier index accept check
     Geometry &geometry
 ) {
-    createPlaneSeamsGeometry<Heightfield>(lod, lodArray, chunkSize, heightfields, heightfieldSeams, geometry);
+    createPlaneSeamsGeometry<Heightfield>(lod, lodArray, chunkSize, heightfields, geometry);
 }
 void generateWaterfieldCenterMesh(
     int lod,
@@ -965,10 +968,9 @@ void generateWaterfieldSeamsMesh(
     const std::array<int, 2> &lodArray,
     int chunkSize,
     const std::vector<Waterfield> &waterfields,
-    const std::vector<Waterfield> &waterfieldSeams,
     Geometry &geometry
 ) {
-    createPlaneSeamsGeometry<Waterfield>(lod, lodArray, chunkSize, waterfields, waterfieldSeams, geometry);
+    createPlaneSeamsGeometry<Waterfield>(lod, lodArray, chunkSize, waterfields, geometry);
 }
 void generateTerrainGeometry(
     const vm::ivec2 &worldPosition,
@@ -976,11 +978,10 @@ void generateTerrainGeometry(
     const std::array<int, 2> &lodArray,
     int chunkSize,
     const std::vector<Heightfield> &heightfields,
-    const std::vector<Heightfield> &heightfieldSeams,
     Geometry &geometry
 ) {
     generateHeightfieldCenterMesh(lod, chunkSize, heightfields, geometry);
-    generateHeightfieldSeamsMesh(lod, lodArray, chunkSize, heightfields, heightfieldSeams, geometry);
+    generateHeightfieldSeamsMesh(lod, lodArray, chunkSize, heightfields, geometry);
     offsetGeometry(geometry, worldPosition);
     computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
@@ -990,11 +991,10 @@ void generateWaterGeometry(
     const std::array<int, 2> &lodArray,
     int chunkSize,
     const std::vector<Waterfield> &waterfields,
-    const std::vector<Waterfield> &waterfieldSeams,
     Geometry &geometry
 ) {
     generateWaterfieldCenterMesh(lod, chunkSize, waterfields, geometry);
-    generateWaterfieldSeamsMesh(lod, lodArray, chunkSize, waterfields, waterfieldSeams, geometry);
+    generateWaterfieldSeamsMesh(lod, lodArray, chunkSize, waterfields, geometry);
     offsetGeometry(geometry, worldPosition);
     computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
@@ -1010,7 +1010,7 @@ void generateWaterGeometry(
     }
     return a;
 } */
-uint8_t getMostCommonBiome(const std::vector<Heightfield> &heightfields, const std::vector<Heightfield> &heightfieldSeams) {
+uint8_t getMostCommonBiome(const std::vector<Heightfield> &heightfields) {
     std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
     for (const auto &hf : heightfields) {
         biomeCounts[hf.biomesVectorField[0]]++;
@@ -1038,17 +1038,18 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
     TerrainVertexBuffer terrainVertexBuffer;
     uint8_t mostCommonBiome;
     {
-        std::vector<Heightfield> heightfields(chunkSize * chunkSize);
-        getHeightField(worldPosition.x, worldPosition.y, lod, heightfields);
-        
         const int &bottomLod = lodArray[0];
         const int &rightLod = lodArray[1];
         const int gridWidth = (int)std::floor((float)chunkSize * (float)lod / (float)bottomLod);
         const int gridWidthP1 = gridWidth + 1;
         const int gridHeight = (int)std::floor((float)chunkSize * (float)lod / (float)rightLod);
         const int gridHeightP1 = gridHeight + 1;
-        std::vector<Heightfield> heightfieldSeams(gridWidthP1 + gridHeightP1);
-        getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfieldSeams);
+        std::vector<Heightfield> heightfields(
+            (chunkSize * chunkSize) + // center
+            (gridWidthP1 + gridHeightP1) // seams
+        );
+        getHeightFieldCenter(worldPosition.x, worldPosition.y, lod, heightfields);
+        getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfields);
 
         Geometry terrainGeometry;
         generateTerrainGeometry(
@@ -1057,28 +1058,28 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
             lodArray,
             chunkSize,
             heightfields,
-            heightfieldSeams,
             terrainGeometry
         );
         copyGeometryToVertexBuffer(terrainGeometry, terrainVertexBuffer);
 
-        mostCommonBiome = getMostCommonBiome(heightfields, heightfieldSeams);
+        mostCommonBiome = getMostCommonBiome(heightfields);
     }
 
     // water
     TerrainVertexBuffer waterVertexBuffer;
     /* {
-        std::vector<Waterfield> waterfields(chunkSize * chunkSize);
-        getWaterField(worldPosition.x, worldPosition.y, lod, waterfields);
-        
         const int &bottomLod = lodArray[0];
         const int &rightLod = lodArray[1];
         const int gridWidth = (int)std::floor((float)chunkSize * (float)lod / (float)bottomLod);
         const int gridWidthP1 = gridWidth + 1;
         const int gridHeight = (int)std::floor((float)chunkSize * (float)lod / (float)rightLod);
         const int gridHeightP1 = gridHeight + 1;
-        std::vector<Waterfield> waterfieldSeams(gridWidthP1 + gridHeightP1);
-        getWaterFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, waterfieldSeams);
+        std::vector<Waterfield> waterfields(
+            (chunkSize * chunkSize) +
+            (gridWidthP1 + gridHeightP1)
+        );
+        getWaterFieldCenter(worldPosition.x, worldPosition.y, lod, waterfields);
+        getWaterFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, waterfields);
 
         Geometry waterGeometry;
         generateWaterGeometry(
@@ -1087,7 +1088,6 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
             lodArray,
             chunkSize,
             waterfields,
-            waterfieldSeams,
             waterGeometry
         );
         copyGeometryToVertexBuffer(waterGeometry, waterVertexBuffer);
@@ -1643,7 +1643,7 @@ uint8_t PGInstance::getBiome(int bx, int bz) {
 
 //
 
-void PGInstance::getHeightField(int bx, int bz, int lod, std::vector<Heightfield> &heightfield) {
+void PGInstance::getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfield) {
     for (int z = 0; z < chunkSize; z++)
     {
         for (int x = 0; x < chunkSize; x++)
@@ -1654,7 +1654,7 @@ void PGInstance::getHeightField(int bx, int bz, int lod, std::vector<Heightfield
         }
     }
 }
-void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Heightfield> &heightfieldSeams) {
+void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Heightfield> &heightfields) {
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
 
@@ -1664,12 +1664,14 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
     const int gridHeight = chunkSize * lod / rightLod;
     const int gridHeightP1 = gridHeight + 1;
 
+    const int heightfieldsCenterDataOffset = chunkSize * chunkSize;
+
     // bottom
-    int index = 0;
+    int index = heightfieldsCenterDataOffset;
     {
         const int z = chunkSize;
         for (int x = 0; x < gridWidthP1; x++) {
-            Heightfield &localHeightfieldSeam = heightfieldSeams[index];
+            Heightfield &localHeightfieldSeam = heightfields[index];
             localHeightfieldSeam = getHeightField(bx + x * bottomLod, bz + z * lod);
 
             index++;
@@ -1679,7 +1681,7 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
     {
         const int x = chunkSize;
         for (int z = 0; z < gridHeightP1; z++) {
-            Heightfield &localHeightfieldSeam = heightfieldSeams[index];
+            Heightfield &localHeightfieldSeam = heightfields[index];
             localHeightfieldSeam = getHeightField(bx + x * lod, bz + z * rightLod);
 
             index++;
@@ -1749,7 +1751,7 @@ Heightfield PGInstance::getHeightField(int bx, int bz) {
 
 //
 
-void PGInstance::getWaterField(int bx, int bz, int lod, std::vector<Waterfield> &waterfield) {
+void PGInstance::getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfield) {
     for (int z = 0; z < chunkSize; z++)
     {
         for (int x = 0; x < chunkSize; x++)
