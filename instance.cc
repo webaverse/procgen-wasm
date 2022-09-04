@@ -1772,25 +1772,54 @@ void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<in
         }
     }
 }
+
+// compile-time sqrt
+template <typename T>
+constexpr T sqrt_helper(T x, T lo, T hi) {
+  if (lo == hi)
+    return lo;
+
+  const T mid = (lo + hi + 1) / 2;
+
+  if (x / mid < mid)
+    return sqrt_helper<T>(x, lo, mid - 1);
+  else
+    return sqrt_helper(x, mid, hi);
+}
+template <typename T>
+constexpr T ct_sqrt(T x) {
+  return sqrt_helper<T>(x, 0, x / 2 + 1);
+}
+
 Waterfield PGInstance::getWaterField(int bx, int bz) {
-    bool isWater = false;
-    
-    constexpr int range = 1;
+    constexpr int range = 2;
+    // constexpr float maxWaterFactorSqrt = (2 * range) + 1;
+    // constexpr float maxWaterFactor = maxWaterFactorSqrt * maxWaterFactorSqrt;
+    constexpr float maxDistance = ct_sqrt<float>((float)range * (float)range);
+    constexpr float baseFactor = 0.25;
+
+    float waterFactor = 0;
+    float maxWaterFactor = 0;
     for (int dz = -range; dz <= range; dz++) {
         const int az = bz + dz;
+
         for (int dx = -range; dx <= range; dx++) {
             const int ax = bx + dx;
-            unsigned char b = getBiome(ax, az);
 
+            const float distance = (float)std::sqrt((float)dx * (float)dx + (float)dz * (float)dz);
+            const float localFactor = baseFactor + (1.f - baseFactor) * (1. - distance / maxDistance);
+
+            unsigned char b = getBiome(ax, az);
             if (isWaterBiome(b)) {
-                isWater = true;
-                goto waterfieldEnd;
+                waterFactor += localFactor;
             }
+            maxWaterFactor += localFactor;
         }
     }
-waterfieldEnd:
+    waterFactor /= maxWaterFactor;
+
     return Waterfield{
-        isWater
+        waterFactor
     };
 }
 

@@ -36,13 +36,13 @@ public:
 
 class Waterfield {
 public:
-    bool isWater;
+    float waterFactor;
 
     float getHeight() const {
       return 0;
     }
     bool acceptIndex() const {
-      return isWater;
+      return waterFactor > 0;
     }
 };
 
