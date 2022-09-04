@@ -684,7 +684,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
 
     // indices
     // bottom
-    if (bottomLod == lod) {
+    /* if (bottomLod == lod) {
         const int innerPointY = chunkSize - 1;
         for (int innerPointX = 0; innerPointX < chunkSize; innerPointX++) {
             const int outerPointX = innerPointX;
@@ -797,29 +797,20 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 }
             }
         }
-    }
+    } */
     // right
-    if (rightLod == lod) {
+    /* if (rightLod == lod) {
         const int innerPointX = chunkSize - 1;
         const int outerPointX = innerPointX;
         for (int innerPointY = 0; innerPointY < chunkSize; innerPointY++) {
             const int outerPointY = innerPointY;
 
-            // const int a = ix + gridX1 * iy;
-            // const int b = ix + gridX1 * (iy + 1);
+            // inner
             const int a = innerPointX + chunkSize * innerPointY;
             const int b = innerPointX + chunkSize * (innerPointY + 1);
-            // const int c = (ix + 1) + gridX1 * (iy + 1);
-            // const int d = (ix + 1) + gridX1 * iy;
+            // outer
             const int d = heightfieldsOffset + bottomOffset + outerPointY;
             const int c = heightfieldsOffset + bottomOffset + (outerPointY + 1);
-
-            /* // inner
-            const int a = innerPointX + chunkSize * innerPointY;
-            const int d = (innerPointX + 1) + chunkSize * innerPointY;
-            // outer
-            const int b = heightfieldsOffset + outerPointX;
-            const int c = heightfieldsOffset + (outerPointX + 1); */
 
             if (innerPointY != (chunkSize - 1)) { // only single triangle in corner
                 geometry.indices.push_back(a);
@@ -829,6 +820,50 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
             geometry.indices.push_back(a);
             geometry.indices.push_back(c);
             geometry.indices.push_back(d);
+        }
+    } else */if (rightLod > lod) {
+        const int innerPointX = chunkSize - 1;
+        const int outerPointX = innerPointX;
+        for (int innerPointY = 0; innerPointY < chunkSize; innerPointY++) {
+            const int outerPointY = innerPointY / 2;
+
+            if (innerPointY % 2 == 0) {
+                // inner
+                const int a = innerPointX + chunkSize * innerPointY;
+                const int b = innerPointX + chunkSize * (innerPointY + 1);
+                // outer
+                const int d = heightfieldsOffset + bottomOffset + outerPointY;
+                const int c = heightfieldsOffset + bottomOffset + (outerPointY + 1);
+
+                // inner
+                // const int a = innerPointX + chunkSize * innerPointY;
+                // const int d = (innerPointX + 1) + chunkSize * innerPointY;
+                // outer
+                // const int b = heightfieldsOffset + outerPointX;
+                // const int c = heightfieldsOffset + (outerPointX + 1);
+
+                // if (innerPointX != (chunkSize - 1)) { // only single triangle in corner
+                    geometry.indices.push_back(a);
+                    geometry.indices.push_back(b);
+                    geometry.indices.push_back(d);
+                // }
+                geometry.indices.push_back(d);
+                geometry.indices.push_back(b);
+                geometry.indices.push_back(c);
+            } else {
+                if (innerPointY != (chunkSize - 1)) {
+                    // inner
+                    const int a = innerPointX + chunkSize * innerPointY;
+                    const int b = innerPointX + chunkSize * (innerPointY + 1);
+                    // outer
+                    const int d = heightfieldsOffset + bottomOffset + outerPointY;
+                    const int c = heightfieldsOffset + bottomOffset + (outerPointY + 1);
+
+                    geometry.indices.push_back(a);
+                    geometry.indices.push_back(b);
+                    geometry.indices.push_back(c);
+                }
+            }
         }
     }
 }
