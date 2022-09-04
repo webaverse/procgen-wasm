@@ -54,17 +54,17 @@ public:
     BiomesUvsBuffer biomesUvs1;
     BiomesUvsBuffer biomesUvs2;
 
-    LightBuffer skylights;
-    LightBuffer aos;
+    // LightBuffer skylights;
+    // LightBuffer aos;
 
-    PeekBuffer peeks;
+    // PeekBuffer peeks;
 
     uint8_t *getBuffer() const;
     
-    void pushVertexData(const VertexData &vertexData);
+    // void pushVertexData(const VertexData &vertexData);
 };
 
-class LiquidVertexBuffer {
+class WaterVertexBuffer {
 public:
     PositionBuffer positions;
     NormalBuffer normals;
@@ -72,11 +72,11 @@ public:
 
     BiomeBuffer biomes;
 
-    PeekBuffer peeks;
+    // PeekBuffer peeks;
 
     uint8_t *getBuffer() const;
 
-    void pushVertexData(const VertexData &vertexData);
+    // void pushVertexData(const VertexData &vertexData);
 };
 
 #endif // MESH_H

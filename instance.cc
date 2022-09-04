@@ -556,20 +556,13 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
 
     //
 
-    // const indices = [];
-    // const vertices = [];
-    // const normals = [];
-    // const uvs = [];
-
     int index = 0;
     for (int iy = 0; iy < gridY1; iy ++) {
 
-        // const int y = iy * segment_height - height_half;
         const int y = iy * segment_height;
 
         for (int ix = 0; ix < gridX1; ix++) {
 
-            // const int x = ix * segment_width - width_half;
             const int x = ix * segment_width;
 
             const Heightfield &localHeightfield = heightfield[index];
@@ -758,11 +751,9 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     geometry.indices.push_back(a);
                     geometry.indices.push_back(b);
                     geometry.indices.push_back(c);
-                    // if (innerPointX != (chunkSize - 1)) { // only single triangle in corner
-                        geometry.indices.push_back(a);
-                        geometry.indices.push_back(c);
-                        geometry.indices.push_back(d);
-                    // }
+                    geometry.indices.push_back(a);
+                    geometry.indices.push_back(c);
+                    geometry.indices.push_back(d);
                 }
                 outerPointX++;
                 {
@@ -788,11 +779,9 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 geometry.indices.push_back(a);
                 geometry.indices.push_back(b);
                 geometry.indices.push_back(c);
-                // if (innerPointX != (chunkSize - 1)) { // only single triangle in corner
-                    geometry.indices.push_back(a);
-                    geometry.indices.push_back(c);
-                    geometry.indices.push_back(d);
-                // }
+                geometry.indices.push_back(a);
+                geometry.indices.push_back(c);
+                geometry.indices.push_back(d);
             }
         }
     }
@@ -833,11 +822,9 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 const int d = heightfieldsOffset + bottomOffset + outerPointY;
                 const int c = heightfieldsOffset + bottomOffset + (outerPointY + 1);
 
-                // if (innerPointX != (chunkSize - 1)) { // only single triangle in corner
-                    geometry.indices.push_back(a);
-                    geometry.indices.push_back(c);
-                    geometry.indices.push_back(d);
-                // }
+                geometry.indices.push_back(a);
+                geometry.indices.push_back(c);
+                geometry.indices.push_back(d);
                 geometry.indices.push_back(a);
                 geometry.indices.push_back(b);
                 geometry.indices.push_back(c);
@@ -874,11 +861,9 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     geometry.indices.push_back(a);
                     geometry.indices.push_back(c);
                     geometry.indices.push_back(d);
-                    // if (innerPointY != (chunkSize - 1)) { // only single triangle in corner
-                        geometry.indices.push_back(a);
-                        geometry.indices.push_back(b);
-                        geometry.indices.push_back(c);
-                    // }
+                    geometry.indices.push_back(a);
+                    geometry.indices.push_back(b);
+                    geometry.indices.push_back(c);
                 }
                 outerPointY++;
                 {
@@ -904,11 +889,9 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 geometry.indices.push_back(a);
                 geometry.indices.push_back(b);
                 geometry.indices.push_back(c);
-                // if (innerPointX != (chunkSize - 1)) { // only single triangle in corner
-                    geometry.indices.push_back(a);
-                    geometry.indices.push_back(c);
-                    geometry.indices.push_back(d);
-                // }
+                geometry.indices.push_back(a);
+                geometry.indices.push_back(c);
+                geometry.indices.push_back(d);
             }
         }
     }
@@ -954,7 +937,6 @@ void generateHeightfieldCenterMesh(
     const int worldSize = chunkSize * lod;
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
-
     createPlaneGeometry(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, heightfield, geometry);
 }
 void generateHeightfieldSeamsMesh(
@@ -981,6 +963,20 @@ void generateTerrainGeometry(
     offsetGeometry(geometry, worldPosition);
     computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
+void generateWaterGeometry(
+    const vm::ivec2 &worldPosition,
+    int lod,
+    const std::array<int, 2> &lodArray,
+    int chunkSize,
+    const std::vector<Heightfield> &heightfields,
+    const std::vector<Heightfield> &heightfieldSeams,
+    Geometry &geometry
+) {
+    generateHeightfieldCenterMesh(lod, chunkSize, heightfields, geometry);
+    generateHeightfieldSeamsMesh(lod, lodArray, chunkSize, heightfields, heightfieldSeams, geometry);
+    offsetGeometry(geometry, worldPosition);
+    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
+}
 Geometry &mergeGeometry(Geometry &a, Geometry &b) {
     for (size_t i = 0; i < b.positions.size(); i++) {
         a.positions.push_back(b.positions[i]);
@@ -994,35 +990,54 @@ Geometry &mergeGeometry(Geometry &a, Geometry &b) {
     return a;
 }
 uint8_t *PGInstance::createTerrainChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray) {
-    std::vector<Heightfield> heightfields(chunkSize * chunkSize);
-    getHeightField(worldPosition.x, worldPosition.y, lod, heightfields.data());
-    
-    const int &bottomLod = lodArray[0];
-    const int &rightLod = lodArray[1];
-    const int gridWidth = (int)std::floor((float)chunkSize * (float)lod / (float)bottomLod);
-    const int gridWidthP1 = gridWidth + 1;
-    const int gridHeight = (int)std::floor((float)chunkSize * (float)lod / (float)rightLod);
-    const int gridHeightP1 = gridHeight + 1;
-    std::vector<Heightfield> heightfieldSeams(gridWidthP1 + gridHeightP1);
-    getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfieldSeams.data());
+    // terrain
+    TerrainVertexBuffer terrainVertexBuffer;
+    {
+        std::vector<Heightfield> heightfields(chunkSize * chunkSize);
+        getHeightField(worldPosition.x, worldPosition.y, lod, heightfields.data());
+        
+        const int &bottomLod = lodArray[0];
+        const int &rightLod = lodArray[1];
+        const int gridWidth = (int)std::floor((float)chunkSize * (float)lod / (float)bottomLod);
+        const int gridWidthP1 = gridWidth + 1;
+        const int gridHeight = (int)std::floor((float)chunkSize * (float)lod / (float)rightLod);
+        const int gridHeightP1 = gridHeight + 1;
+        std::vector<Heightfield> heightfieldSeams(gridWidthP1 + gridHeightP1);
+        getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfieldSeams.data());
 
-    Geometry terrainGeometry;
-    generateTerrainGeometry(
+        Geometry terrainGeometry;
+        generateTerrainGeometry(
+            worldPosition,
+            lod,
+            lodArray,
+            chunkSize,
+            heightfields,
+            heightfieldSeams,
+            terrainGeometry
+        );
+        copyGeometryToVertexBuffer(terrainGeometry, terrainVertexBuffer);
+    }
+
+    /* Geometry waterGeometry;
+    generateWaterGeometry(
         worldPosition,
         lod,
         lodArray,
         chunkSize,
         heightfields,
         heightfieldSeams,
-        terrainGeometry
+        waterGeometry
     );
-
-    TerrainVertexBuffer terrainVertexBuffer;
-    copyGeometryToVertexBuffer(terrainGeometry, terrainVertexBuffer);
+    TerrainVertexBuffer waterVertexBuffer;
+    copyGeometryToVertexBuffer(waterGeometry, waterVertexBuffer); */
 
     return terrainVertexBuffer.getBuffer();
+    /* return std::pair<uint8_t *, uint8_t *>(
+        terrainVertexBuffer.getBuffer(),
+        waterVertexBuffer.getBuffer()
+    ); */
 }
-uint8_t *PGInstance::createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
+/* uint8_t *PGInstance::createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
 {
     const int chunkSizeP1 = chunkSize + 1;
     std::vector<float> waterfields(chunkSizeP1 * chunkSizeP1);
@@ -1047,7 +1062,7 @@ uint8_t *PGInstance::createLiquidChunkMesh(const vm::ivec2 &worldPosition, int l
     }
 
     return vertexBuffer.getBuffer();
-}
+} */
 
 //
 
@@ -1283,7 +1298,7 @@ void PGInstance::createTerrainChunkMeshAsync(uint32_t id, const vm::ivec2 &world
     });
     ProcGen::taskQueue.pushTask(terrainTask);
 }
-void PGInstance::createLiquidChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
+/* void PGInstance::createLiquidChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
 {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
@@ -1307,7 +1322,7 @@ void PGInstance::createLiquidChunkMeshAsync(uint32_t id, const vm::ivec2 &worldP
         promise->resolve(result);
     });
     ProcGen::taskQueue.pushTask(liquidTask);
-}
+} */
 
 // get ranges
 /* void PGInstance::getHeightfieldRangeAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const vm::ivec2 &sizeXZ, int lod, float *heights, int priority) {
