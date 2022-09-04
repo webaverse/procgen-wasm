@@ -1011,8 +1011,27 @@ Geometry &mergeGeometry(Geometry &a, Geometry &b) {
     return a;
 }
 uint8_t getMostCommonBiome(const std::vector<Heightfield> &heightfields, const std::vector<Heightfield> &heightfieldSeams) {
-    // XXX
-    return 0;
+    std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
+    for (const auto &hf : heightfields) {
+        biomeCounts[hf.biomesVectorField[0]]++;
+    }
+
+    std::vector<unsigned char> seenBiomes;
+    for (auto kv : biomeCounts)
+    {
+        unsigned char b = kv.first;
+        seenBiomes.push_back(b);
+    }
+    
+    // sort by increasing occurence count of the biome
+    auto iter = std::max_element(
+        seenBiomes.begin(),
+        seenBiomes.end(),
+        [&](unsigned char b1, unsigned char b2) -> bool {
+            return biomeCounts[b1] > biomeCounts[b2];
+        }
+    );
+    return *iter;
 }
 ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray) {
     // terrain
