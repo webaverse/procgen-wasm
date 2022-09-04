@@ -1354,8 +1354,7 @@ void PGInstance::createChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPositio
     ]() -> void {
         ChunkResult *result = createChunkMesh(worldPosition, lod, lodArray2);
         if (!promise->resolve(result)) {
-            // XXX cleanup
-            // XXX also cleanup the other async calls
+            result->free();
         }
     });
     ProcGen::taskQueue.pushTask(terrainTask);

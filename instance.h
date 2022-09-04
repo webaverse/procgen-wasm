@@ -28,6 +28,12 @@ public:
     uint8_t *waterMeshBuffer;
     uint8_t biome;
     uint8_t padding[3];
+
+    void free() {
+        std::free(terrainMeshBuffer);
+        std::free(waterMeshBuffer);
+        std::free(this);
+    }
 };
 
 class PGInstance {
