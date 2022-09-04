@@ -1337,9 +1337,9 @@ void PGInstance::createChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPositio
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
     vm::vec3 worldPositionF{
-        (float)worldPosition.x + (float)lod / 2.f,
+        (float)worldPosition.x,
         (float)(MIN_WORLD_HEIGHT + MAX_WORLD_HEIGHT) / 2.f,
-        (float)worldPosition.y + (float)lod / 2.f
+        (float)worldPosition.y
     };
     std::array<int, 2> lodArray2{
         lodArray[0],
@@ -1507,9 +1507,9 @@ void PGInstance::createGrassSplatAsync(uint32_t id, const vm::ivec2 &worldPositi
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
     vm::vec3 worldPositionF{
-        (float)worldPositionXZ.x + (float)lod / 2.f,
+        (float)worldPositionXZ.x,
         0.f,
-        (float)worldPositionXZ.y + (float)lod / 2.f
+        (float)worldPositionXZ.y
     };
     // vm::vec3 sizeF{
     //     (float)lod / 2.f,
@@ -1535,9 +1535,9 @@ void PGInstance::createVegetationSplatAsync(uint32_t id, const vm::ivec2 &worldP
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
     vm::vec3 worldPositionF{
-        (float)worldPositionXZ.x + (float)lod / 2.f,
+        (float)worldPositionXZ.x,
         (float)(MIN_WORLD_HEIGHT + MAX_WORLD_HEIGHT) / 2.f,
-        (float)worldPositionXZ.y + (float)lod / 2.f
+        (float)worldPositionXZ.y
     };
     // vm::vec3 sizeF{
     //     (float)lod / 2.f,
@@ -1559,9 +1559,9 @@ void PGInstance::createMobSplatAsync(uint32_t id, const vm::ivec2 &worldPosition
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
     vm::vec3 worldPositionF{
-        (float)worldPositionXZ.x + (float)lod / 2.f,
+        (float)worldPositionXZ.x,
         (float)(MIN_WORLD_HEIGHT + MAX_WORLD_HEIGHT) / 2.f,
-        (float)worldPositionXZ.y + (float)lod / 2.f
+        (float)worldPositionXZ.y
     };
     Task *mobSplatTask = new Task(id, worldPositionF, lod, priority, [
         this,
