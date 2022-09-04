@@ -758,11 +758,11 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     geometry.indices.push_back(a);
                     geometry.indices.push_back(b);
                     geometry.indices.push_back(c);
-                    if (innerPointX != (chunkSize - 1)) { // only single triangle in corner
+                    // if (innerPointX != (chunkSize - 1)) { // only single triangle in corner
                         geometry.indices.push_back(a);
                         geometry.indices.push_back(c);
                         geometry.indices.push_back(d);
-                    }
+                    // }
                 }
                 outerPointX++;
                 {
