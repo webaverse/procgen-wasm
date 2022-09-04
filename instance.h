@@ -53,7 +53,7 @@ public:
     
     void getWaterField(int bx, int bz, int lod, std::vector<Waterfield> &waterfield);
     void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfieldSeams);
-    bool getWaterField(int bx, int bz);
+    Waterfield getWaterField(int bx, int bz);
 
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
 

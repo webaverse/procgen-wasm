@@ -1674,6 +1674,9 @@ uint8_t PGInstance::getBiome(int bx, int bz) {
     } */
     // return biomesField;
 }
+
+//
+
 void PGInstance::getHeightField(int bx, int bz, int lod, std::vector<Heightfield> &heightfield) {
     for (int z = 0; z < chunkSize; z++)
     {
@@ -1716,51 +1719,6 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
             index++;
         }
     }
-}
-void PGInstance::getWaterField(int bx, int bz, int lod, std::vector<Waterfield> &waterfield) {
-    // XXX
-    /* for (int z = 0; z < chunkSize; z++)
-    {
-        for (int x = 0; x < chunkSize; x++)
-        {
-            int index2D = x + z * chunkSize;
-            Waterfield &localWaterfield = waterfield[index2D];
-            localWaterfield = getWaterField(bx + x * lod, bz + z * lod);
-        }
-    } */
-}
-void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfieldSeams) {
-    // XXX
-    /* const int &bottomLod = lodArray[0];
-    const int &rightLod = lodArray[1];
-
-    const int gridWidth = chunkSize * lod / bottomLod;
-    const int gridWidthP1 = gridWidth + 1;
-
-    const int gridHeight = chunkSize * lod / rightLod;
-    const int gridHeightP1 = gridHeight + 1;
-
-    // bottom
-    int index = 0;
-    {
-        const int z = chunkSize;
-        for (int x = 0; x < gridWidthP1; x++) {
-            Waterfield &localWaterfieldSeam = waterfieldSeams[index];
-            localWaterfieldSeam = getWaterField(bx + x * bottomLod, bz + z * lod);
-
-            index++;
-        }
-    }
-    // right
-    {
-        const int x = chunkSize;
-        for (int z = 0; z < gridHeightP1; z++) {
-            Waterfield &localWaterfieldSeam = waterfieldSeams[index];
-            localWaterfieldSeam = getWaterField(bx + x * lod, bz + z * rightLod);
-
-            index++;
-        }
-    } */
 }
 Heightfield PGInstance::getHeightField(int bx, int bz) {
     Heightfield localHeightfield;
@@ -1822,53 +1780,76 @@ Heightfield PGInstance::getHeightField(int bx, int bz) {
 
     return localHeightfield;
 }
-/* void PGInstance::getWaterField(int bx, int bz, int lod, bool *waterfield) {
-    const int chunkSizeP1 = chunkSize + 1;
-    for (int z = 0; z < chunkSizeP1; z++)
+
+//
+
+void PGInstance::getWaterField(int bx, int bz, int lod, std::vector<Waterfield> &waterfield) {
+    for (int z = 0; z < chunkSize; z++)
     {
-        for (int x = 0; x < chunkSizeP1; x++)
+        for (int x = 0; x < chunkSize; x++)
         {
-            int index2D = x + z * chunkSizeP1;
-            float &localWaterfield = waterfield[index2D];
-
-            float value = 0;
-            for (int dz = -chunkSize/2; dz < chunkSize/2; dz++)
-            {
-                for (int dx = -chunkSize/2; dx < chunkSize/2; dx++)
-                {
-                    int ax = bx + dx;
-                    int az = bz + dz;
-                    unsigned char b = getBiome(ax, az);
-
-                    if (isWaterBiome(b)) {
-                        value++;
-                    }
-                }
-            }
-            localWaterfield = value;
+            int index2D = x + z * chunkSize;
+            Waterfield &localWaterfield = waterfield[index2D];
+            
+            localWaterfield = getWaterField(bx + x * lod, bz + z * lod);
         }
     }
-} */
-bool PGInstance::getWaterField(int bx, int bz) {
-    // XXX
-    bool value = false;
-    return value;
-    /* float value = 0;
-    for (int dz = -chunkSize/2; dz < chunkSize/2; dz++)
+}
+void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfieldSeams) {
+    const int &bottomLod = lodArray[0];
+    const int &rightLod = lodArray[1];
+
+    const int gridWidth = chunkSize * lod / bottomLod;
+    const int gridWidthP1 = gridWidth + 1;
+
+    const int gridHeight = chunkSize * lod / rightLod;
+    const int gridHeightP1 = gridHeight + 1;
+
+    // bottom
+    int index = 0;
     {
-        for (int dx = -chunkSize/2; dx < chunkSize/2; dx++)
-        {
-            int ax = bx + dx;
-            int az = bz + dz;
+        const int z = chunkSize;
+        for (int x = 0; x < gridWidthP1; x++) {
+            Waterfield &localWaterfieldSeam = waterfieldSeams[index];
+            localWaterfieldSeam = getWaterField(bx + x * bottomLod, bz + z * lod);
+
+            index++;
+        }
+    }
+    // right
+    {
+        const int x = chunkSize;
+        for (int z = 0; z < gridHeightP1; z++) {
+            Waterfield &localWaterfieldSeam = waterfieldSeams[index];
+            localWaterfieldSeam = getWaterField(bx + x * lod, bz + z * rightLod);
+
+            index++;
+        }
+    }
+}
+Waterfield PGInstance::getWaterField(int bx, int bz) {
+    bool isWater = false;
+    
+    constexpr int range = 1;
+    for (int dz = -range; dz <= range; dz++) {
+        const int az = bz + dz;
+        for (int dx = -range; dx <= range; dx++) {
+            const int ax = bx + dx;
             unsigned char b = getBiome(ax, az);
 
             if (isWaterBiome(b)) {
-                value++;
+                isWater = true;
+                goto waterfieldEnd;
             }
         }
     }
-    return value; */
+waterfieldEnd:
+    return Waterfield{
+        isWater
+    };
 }
+
+//
 
 // 3d caches
 
