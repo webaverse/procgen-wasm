@@ -721,22 +721,24 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 geometry.indices.push_back(a);
                 geometry.indices.push_back(b);
                 geometry.indices.push_back(c);
-                if (innerPointX != (chunkSize - 1)) { // only single triangle in corner
+                // if (innerPointX != (chunkSize - 1)) { // only single triangle in corner
+                    geometry.indices.push_back(a);
+                    geometry.indices.push_back(c);
+                    geometry.indices.push_back(d);
+                // }
+            } else {
+                if (innerPointX != (chunkSize - 1)) {
+                    // inner
+                    const int a = innerPointX + chunkSize * innerPointY;
+                    const int d = (innerPointX + 1) + chunkSize * innerPointY;
+                    // outer
+                    const int b = heightfieldsOffset + outerPointX;
+                    const int c = heightfieldsOffset + (outerPointX + 1);
+
                     geometry.indices.push_back(a);
                     geometry.indices.push_back(c);
                     geometry.indices.push_back(d);
                 }
-            } else {
-                // inner
-                const int a = innerPointX + chunkSize * innerPointY;
-                const int d = (innerPointX + 1) + chunkSize * innerPointY;
-                // outer
-                const int b = heightfieldsOffset + outerPointX;
-                const int c = heightfieldsOffset + (outerPointX + 1);
-
-                geometry.indices.push_back(a);
-                geometry.indices.push_back(c);
-                geometry.indices.push_back(d);
             }
         }
     } else if (bottomLod < lod) {
