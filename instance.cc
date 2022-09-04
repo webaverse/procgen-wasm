@@ -1578,101 +1578,67 @@ void PGInstance::createMobSplatAsync(uint32_t id, const vm::ivec2 &worldPosition
 // 2d caches
 
 NoiseField PGInstance::getNoise(int bx, int bz) {
-    // const int &size = chunkSize;
-    // const vm::ivec2 &min = chunk->min;
-    // const int &lod = chunk->lod;
-    
-    /* NoiseField noiseField;
-    noiseField.temperature.resize(size * size);
-    noiseField.humidity.resize(size * size);
-    noiseField.ocean.resize(size * size);
-    noiseField.river.resize(size * size);
-    for (int z = 0; z < size; z++)
-    {
-        for (int x = 0; x < size; x++)
-        { */
-            // int index = x + z * size;
-            // int ax = x;
-            // int az = y;
+    float tNoise = (float)noises.temperatureNoise.in2D(bx, bz);
+    // noiseField.temperature[index] = tNoise;
 
-            float tNoise = (float)noises.temperatureNoise.in2D(bx, bz);
-            // noiseField.temperature[index] = tNoise;
+    float hNoise = (float)noises.humidityNoise.in2D(bx, bz);
+    // noiseField.humidity[index] = hNoise;
 
-            float hNoise = (float)noises.humidityNoise.in2D(bx, bz);
-            // noiseField.humidity[index] = hNoise;
+    float oNoise = (float)noises.oceanNoise.in2D(bx, bz);
+    // noiseField.ocean[index] = oNoise;
 
-            float oNoise = (float)noises.oceanNoise.in2D(bx, bz);
-            // noiseField.ocean[index] = oNoise;
+    float rNoise = (float)noises.riverNoise.in2D(bx, bz);
+    // noiseField.river[index] = rNoise;
 
-            float rNoise = (float)noises.riverNoise.in2D(bx, bz);
-            // noiseField.river[index] = rNoise;
-
-            return NoiseField{
-                tNoise,
-                hNoise,
-                oNoise,
-                rNoise
-            };
-        /* }
-    }
-
-    return noiseField; */
+    return NoiseField{
+        tNoise,
+        hNoise,
+        oNoise,
+        rNoise
+    };
 }
 uint8_t PGInstance::getBiome(int bx, int bz) {
-    // const int &size = chunkSize;
-    // const auto &cachedNoiseField = chunk->cachedNoiseField;
-    
-    // std::vector<uint8_t> biomesField(size * size);
-    /* for (int z = 0; z < size; z++)
+    unsigned char biome = 0xFF;
+
+    const auto &noise = getNoise(bx, bz);
+    float temperatureNoise = noise.temperature;
+    float humidityNoise = noise.humidity;
+    float oceanNoise = noise.ocean;
+    float riverNoise = noise.river;
+
+    if (oceanNoise < (80.0f / 255.0f))
     {
-        for (int x = 0; x < size; x++)
-        { */
-            // int index = x + z * size;
-            // unsigned char biome = cachedBiomesField.get(x, z);
-            unsigned char biome = 0xFF;
+        biome = (unsigned char)BIOME::biOcean;
+    }
+    if (biome == 0xFF)
+    {
+        const float range = 0.022f;
+        if (riverNoise > 0.5f - range && riverNoise < 0.5f + range)
+        {
+            biome = (unsigned char)BIOME::biRiver;
+        }
+    }
+    if (std::pow(temperatureNoise, 1.3f) < ((4.0f * 16.0f) / 255.0f))
+    {
+        if (biome == (unsigned char)BIOME::biOcean)
+        {
+            biome = (unsigned char)BIOME::biFrozenOcean;
+        }
+        else if (biome == (unsigned char)BIOME::biRiver)
+        {
+            biome = (unsigned char)BIOME::biFrozenRiver;
+        }
+    }
+    if (biome == 0xFF)
+    {
+        float temperatureNoise2 = vm::clamp(std::pow(temperatureNoise, 1.3f), 0.f, 1.f);
+        float humidityNoise2 = vm::clamp(std::pow(humidityNoise, 1.3f), 0.f, 1.f);
 
-            const auto &noise = getNoise(bx, bz);
-            float temperatureNoise = noise.temperature;
-            float humidityNoise = noise.humidity;
-            float oceanNoise = noise.ocean;
-            float riverNoise = noise.river;
-
-            if (oceanNoise < (80.0f / 255.0f))
-            {
-                biome = (unsigned char)BIOME::biOcean;
-            }
-            if (biome == 0xFF)
-            {
-                const float range = 0.022f;
-                if (riverNoise > 0.5f - range && riverNoise < 0.5f + range)
-                {
-                    biome = (unsigned char)BIOME::biRiver;
-                }
-            }
-            if (std::pow(temperatureNoise, 1.3f) < ((4.0f * 16.0f) / 255.0f))
-            {
-                if (biome == (unsigned char)BIOME::biOcean)
-                {
-                    biome = (unsigned char)BIOME::biFrozenOcean;
-                }
-                else if (biome == (unsigned char)BIOME::biRiver)
-                {
-                    biome = (unsigned char)BIOME::biFrozenRiver;
-                }
-            }
-            if (biome == 0xFF)
-            {
-                float temperatureNoise2 = vm::clamp(std::pow(temperatureNoise, 1.3f), 0.f, 1.f);
-                float humidityNoise2 = vm::clamp(std::pow(humidityNoise, 1.3f), 0.f, 1.f);
-
-                int t = (int)std::floor(temperatureNoise2 * 16.0f);
-                int h = (int)std::floor(humidityNoise2 * 16.0f);
-                biome = (unsigned char)BIOMES_TEMPERATURE_HUMIDITY[t + 16 * h];
-            }
-            return biome;
-        /* }
-    } */
-    // return biomesField;
+        int t = (int)std::floor(temperatureNoise2 * 16.0f);
+        int h = (int)std::floor(humidityNoise2 * 16.0f);
+        biome = (unsigned char)BIOMES_TEMPERATURE_HUMIDITY[t + 16 * h];
+    }
+    return biome;
 }
 
 //
