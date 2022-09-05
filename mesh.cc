@@ -25,9 +25,7 @@ uint8_t *TerrainGeometry::getBuffer() const {
     biomesUvs1.size() * sizeof(biomesUvs1[0]) +
     // biomesUvs2
     sizeof(uint32_t) +
-    biomesUvs2.size() * sizeof(biomesUvs2[0]);
-
-  neededSize +=
+    biomesUvs2.size() * sizeof(biomesUvs2[0]) +
     // indices
     sizeof(uint32_t) +
     indices.size() * sizeof(indices[0]);
