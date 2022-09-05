@@ -1710,19 +1710,18 @@ Heightfield PGInstance::getHeightField(int bx, int bz) {
 
 //
 
-void PGInstance::getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfield) {
+void PGInstance::getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfields) {
     for (int z = 0; z < chunkSize; z++)
     {
         for (int x = 0; x < chunkSize; x++)
         {
             int index2D = x + z * chunkSize;
-            Waterfield &localWaterfield = waterfield[index2D];
-            
+            Waterfield &localWaterfield = waterfields[index2D];
             localWaterfield = getWaterField(bx + x * lod, bz + z * lod);
         }
     }
 }
-void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfieldSeams) {
+void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfields) {
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
 
@@ -1732,12 +1731,14 @@ void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<in
     const int gridHeight = chunkSize * lod / rightLod;
     const int gridHeightP1 = gridHeight + 1;
 
+    const int waterfieldsCenterDataOffset = chunkSize * chunkSize;
+
     // bottom
-    int index = 0;
+    int index = waterfieldsCenterDataOffset;
     {
         const int z = chunkSize;
         for (int x = 0; x < gridWidthP1; x++) {
-            Waterfield &localWaterfieldSeam = waterfieldSeams[index];
+            Waterfield &localWaterfieldSeam = waterfields[index];
             localWaterfieldSeam = getWaterField(bx + x * bottomLod, bz + z * lod);
 
             index++;
@@ -1747,7 +1748,7 @@ void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<in
     {
         const int x = chunkSize;
         for (int z = 0; z < gridHeightP1; z++) {
-            Waterfield &localWaterfieldSeam = waterfieldSeams[index];
+            Waterfield &localWaterfieldSeam = waterfields[index];
             localWaterfieldSeam = getWaterField(bx + x * lod, bz + z * rightLod);
 
             index++;
