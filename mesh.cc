@@ -30,23 +30,6 @@ uint8_t *TerrainGeometry::getBuffer() const {
     sizeof(uint32_t) +
     indices.size() * sizeof(indices[0]);
 
-  /* neededSize +=
-    // skylights
-    sizeof(uint32_t) +
-    skylights.size() * sizeof(skylights[0]);
-  neededSize = align4(neededSize);
-  
-  neededSize +=
-    // aos
-    sizeof(uint32_t) +
-    aos.size() * sizeof(aos[0]);
-  neededSize = align4(neededSize);
-
-  neededSize +=
-    // peeks
-    sizeof(uint32_t) +
-    15 * sizeof(peeks[0]); */
-
   // allocate buffer
   uint8_t *buffer = (uint8_t *)malloc(neededSize);
   int index = 0;
@@ -93,40 +76,8 @@ uint8_t *TerrainGeometry::getBuffer() const {
   std::memcpy(buffer + index, &indices[0], indices.size() * sizeof(indices[0]));
   index += indices.size() * sizeof(indices[0]);
 
-  /* // skylights
-  *((uint32_t *)(buffer + index)) = skylights.size();
-  index += sizeof(uint32_t);
-  std::memcpy(buffer + index, &skylights[0], skylights.size() * sizeof(skylights[0]));
-  index += skylights.size() * sizeof(skylights[0]);
-  index = align4(index);
-
-  // aos
-  *((uint32_t *)(buffer + index)) = aos.size();
-  index += sizeof(uint32_t);
-  std::memcpy(buffer + index, &aos[0], aos.size() * sizeof(aos[0]));
-  index += aos.size() * sizeof(aos[0]);
-  index = align4(index);
-
-  // peeks
-  *((uint32_t *)(buffer + index)) = 15;
-  index += sizeof(uint32_t);
-  std::memcpy(buffer + index, &peeks[0], 15 * sizeof(peeks[0]));
-  index +=  15 * sizeof(peeks[0]); */
-
   return buffer;
 }
-/* void TerrainVertexBuffer::pushVertexData(const VertexData &vertexData) {
-  positions.push_back(vertexData.position);
-  normals.push_back(vertexData.normal);
-  biomes.push_back(vertexData.biomes);
-  biomesWeights.push_back(vertexData.biomesWeights);
-  
-  biomesUvs1.push_back(vertexData.biomeUvs1);
-  biomesUvs2.push_back(vertexData.biomeUvs2);
-  
-  // skylights.push_back(vertexData.skylight);
-  // aos.push_back(vertexData.ao);
-} */
 
 //
 
@@ -179,8 +130,3 @@ uint8_t *WaterGeometry::getBuffer() const {
 
   return buffer;
 }
-/* void WaterVertexBuffer::pushVertexData(const VertexData &vertexData) {
-  positions.push_back(vertexData.position);
-  normals.push_back(vertexData.normal);
-  biomes.push_back(vertexData.biomes.x);
-} */
