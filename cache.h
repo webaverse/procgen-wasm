@@ -39,7 +39,7 @@ public:
     float waterFactor;
 
     float getHeight() const {
-      return 0;
+      return WORLD_BASE_HEIGHT;
     }
     bool acceptIndex() const {
       return waterFactor > 0;
