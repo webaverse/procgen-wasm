@@ -1298,7 +1298,7 @@ void PGInstance::createChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPositio
 
     vm::vec3 worldPositionF{
         (float)worldPosition.x,
-        (float)(MIN_WORLD_HEIGHT + MAX_WORLD_HEIGHT) / 2.f,
+        (float)(-WORLD_BASE_HEIGHT) + ((float)MIN_WORLD_HEIGHT + (float)MAX_WORLD_HEIGHT) / 2.f,
         (float)worldPosition.y
     };
     std::array<int, 2> lodArray2{
