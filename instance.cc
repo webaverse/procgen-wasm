@@ -1029,7 +1029,7 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
 
     // water
     WaterGeometry waterGeometry;
-    /* {
+    {
         const int &bottomLod = lodArray[0];
         const int &rightLod = lodArray[1];
         const int gridWidth = chunkSize * lod / bottomLod;
@@ -1043,7 +1043,6 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
         getWaterFieldCenter(worldPosition.x, worldPosition.y, lod, waterfields);
         getWaterFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, waterfields);
 
-        Geometry waterGeometry;
         generateWaterGeometry(
             worldPosition,
             lod,
@@ -1052,8 +1051,7 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
             waterfields,
             waterGeometry
         );
-        copyGeometryToVertexBuffer(waterGeometry, waterVertexBuffer);
-    } */
+    }
 
     ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
     result->terrainMeshBuffer = terrainGeometry.getBuffer();
