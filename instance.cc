@@ -896,16 +896,19 @@ void offsetGeometry(G &geometry, const vm::ivec2 &worldPosition) {
         p.z += (float)worldPosition.y;
     }
 }
+
+//
+
 void generateHeightfieldCenterMesh(
     int lod,
     int chunkSize,
-    const std::vector<Heightfield> &heightfield,
+    const std::vector<Heightfield> &heightfields,
     TerrainGeometry &geometry
 ) {
     const int worldSize = chunkSize * lod;
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
-    createPlaneGeometry<Heightfield, TerrainGeometry>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, heightfield, geometry);
+    createPlaneGeometry<Heightfield, TerrainGeometry>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, heightfields, geometry);
 }
 void generateHeightfieldSeamsMesh(
     int lod,
@@ -916,16 +919,19 @@ void generateHeightfieldSeamsMesh(
 ) {
     createPlaneSeamsGeometry<Heightfield, TerrainGeometry>(lod, lodArray, chunkSize, heightfields, geometry);
 }
+
+//
+
 void generateWaterfieldCenterMesh(
     int lod,
     int chunkSize,
-    const std::vector<Waterfield> &heightfield,
+    const std::vector<Waterfield> &waterfields,
     WaterGeometry &geometry
 ) {
     const int worldSize = chunkSize * lod;
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
-    createPlaneGeometry<Waterfield, WaterGeometry>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, heightfield, geometry);
+    createPlaneGeometry<Waterfield, WaterGeometry>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, waterfields, geometry);
 }
 void generateWaterfieldSeamsMesh(
     int lod,
@@ -936,6 +942,32 @@ void generateWaterfieldSeamsMesh(
 ) {
     createPlaneSeamsGeometry<Waterfield, WaterGeometry>(lod, lodArray, chunkSize, waterfields, geometry);
 }
+
+//
+
+void generateBiomefieldCenterMesh(
+    int lod,
+    int chunkSize,
+    const std::vector<Biomefield> &biomefields,
+    BiomeGeometry &geometry
+) {
+    const int worldSize = chunkSize * lod;
+    const int worldSizeM1 = worldSize - lod;
+    const int chunkSizeM1 = chunkSize - 1;
+    createPlaneGeometry<Biomefield, BiomeGeometry>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, biomefields, geometry);
+}
+void generateBiomefieldSeamsMesh(
+    int lod,
+    const std::array<int, 2> &lodArray,
+    int chunkSize,
+    const std::vector<Biomefield> &biomefields,
+    BiomeGeometry &geometry
+) {
+    createPlaneSeamsGeometry<Biomefield, BiomeGeometry>(lod, lodArray, chunkSize, biomefields, geometry);
+}
+
+//
+
 void generateTerrainGeometry(
     const vm::ivec2 &worldPosition,
     int lod,
@@ -949,6 +981,9 @@ void generateTerrainGeometry(
     offsetGeometry(geometry, worldPosition);
     computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
+
+//
+
 void generateWaterGeometry(
     const vm::ivec2 &worldPosition,
     int lod,
@@ -962,6 +997,25 @@ void generateWaterGeometry(
     offsetGeometry(geometry, worldPosition);
     computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
+
+//
+
+void generateBiomeGeometry(
+    const vm::ivec2 &worldPosition,
+    int lod,
+    const std::array<int, 2> &lodArray,
+    int chunkSize,
+    const std::vector<Biomefield> &biomefields,
+    BiomeGeometry &geometry
+) {
+    generateBiomefieldCenterMesh(lod, chunkSize, biomefields, geometry);
+    generateBiomefieldSeamsMesh(lod, lodArray, chunkSize, biomefields, geometry);
+    offsetGeometry(geometry, worldPosition);
+    // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
+}
+
+//
+
 /* Geometry &mergeGeometry(Geometry &a, Geometry &b) {
     for (size_t i = 0; i < b.positions.size(); i++) {
         a.positions.push_back(b.positions[i]);
@@ -998,20 +1052,22 @@ uint8_t getMostCommonBiome(const std::vector<Heightfield> &heightfields) {
     return *iter;
 }
 ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray) {
+    // biomes
+    const int &bottomLod = lodArray[0];
+    const int &rightLod = lodArray[1];
+    const int gridWidth = chunkSize * lod / bottomLod;
+    const int gridWidthP1 = gridWidth + 1;
+    const int gridHeight = chunkSize * lod / rightLod;
+    const int gridHeightP1 = gridHeight + 1;
+
     // terrain
     TerrainGeometry terrainGeometry;
-    uint8_t mostCommonBiome;
+    std::vector<Heightfield> heightfields(
+        (chunkSize * chunkSize) + // center
+        (gridWidthP1 + gridHeightP1) // seams
+    );
+    // uint8_t mostCommonBiome;
     {
-        const int &bottomLod = lodArray[0];
-        const int &rightLod = lodArray[1];
-        const int gridWidth = chunkSize * lod / bottomLod;
-        const int gridWidthP1 = gridWidth + 1;
-        const int gridHeight = chunkSize * lod / rightLod;
-        const int gridHeightP1 = gridHeight + 1;
-        std::vector<Heightfield> heightfields(
-            (chunkSize * chunkSize) + // center
-            (gridWidthP1 + gridHeightP1) // seams
-        );
         getHeightFieldCenter(worldPosition.x, worldPosition.y, lod, heightfields);
         getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfields);
 
@@ -1024,18 +1080,12 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
             terrainGeometry
         );
 
-        mostCommonBiome = getMostCommonBiome(heightfields);
+        // mostCommonBiome = getMostCommonBiome(heightfields);
     }
 
     // water
     WaterGeometry waterGeometry;
     {
-        const int &bottomLod = lodArray[0];
-        const int &rightLod = lodArray[1];
-        const int gridWidth = chunkSize * lod / bottomLod;
-        const int gridWidthP1 = gridWidth + 1;
-        const int gridHeight = chunkSize * lod / rightLod;
-        const int gridHeightP1 = gridHeight + 1;
         std::vector<Waterfield> waterfields(
             (chunkSize * chunkSize) +
             (gridWidthP1 + gridHeightP1)
@@ -1053,10 +1103,31 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
         );
     }
 
+    // biome
+    BiomeGeometry biomeGeometry;
+    {
+        std::vector<Biomefield> biomefields(
+            (chunkSize * chunkSize) + // center
+            (gridWidthP1 + gridHeightP1) // seams
+        );
+        getBiomeFieldCenter(worldPosition.x, worldPosition.y, lod, heightfields, biomefields);
+        getBiomeFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfields, biomefields);
+
+        generateBiomeGeometry(
+            worldPosition,
+            lod,
+            lodArray,
+            chunkSize,
+            biomefields,
+            biomeGeometry
+        );
+    }
+
     ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
     result->terrainMeshBuffer = terrainGeometry.getBuffer();
     result->waterMeshBuffer = waterGeometry.getBuffer();
-    result->biome = mostCommonBiome;
+    result->biomeMeshBuffer = biomeGeometry.getBuffer();
+    // result->biome = mostCommonBiome;
     return result;
 }
 /* uint8_t *PGInstance::createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
@@ -1599,6 +1670,16 @@ uint8_t PGInstance::getBiome(int bx, int bz) {
     }
     return biome;
 }
+SeedNoise PGInstance::getSeedNoise(int bx, int bz) {    
+    float seedNoiseFloat = (float)noises.seedNoise.in2D(bx, bz);
+    int seed = *((int *)(&seedNoiseFloat));
+    float seedRadius = (float)std::abs(noises.seedRadiusNoise.in2D(bx, bz));
+
+    return SeedNoise{
+        seed,
+        seedRadius
+    };
+}
 
 //
 
@@ -1803,6 +1884,93 @@ Waterfield PGInstance::getWaterField(int bx, int bz) {
 
     return Waterfield{
         waterFactor
+    };
+}
+
+//
+
+void PGInstance::getBiomeFieldCenter(int bx, int bz, int lod, const std::vector<Heightfield> &heightfields, std::vector<Biomefield> &biomefields) {
+    for (int z = 0; z < chunkSize; z++)
+    {
+        for (int x = 0; x < chunkSize; x++)
+        {
+            int index2D = x + z * chunkSize;
+            Biomefield &localBiomefield = biomefields[index2D];
+            const Heightfield &localHeightfield = heightfields[index2D];
+            localBiomefield = getBiomeField(bx + x * lod, bz + z * lod, localHeightfield);
+        }
+    }
+}
+void PGInstance::getBiomeFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, const std::vector<Heightfield> &heightfields, std::vector<Biomefield> &biomefields) {
+    const int &bottomLod = lodArray[0];
+    const int &rightLod = lodArray[1];
+
+    const int gridWidth = chunkSize * lod / bottomLod;
+    const int gridWidthP1 = gridWidth + 1;
+
+    const int gridHeight = chunkSize * lod / rightLod;
+    const int gridHeightP1 = gridHeight + 1;
+
+    const int biomefieldsCenterDataOffset = chunkSize * chunkSize;
+
+    // bottom
+    int index = biomefieldsCenterDataOffset;
+    {
+        const int z = chunkSize;
+        for (int x = 0; x < gridWidthP1; x++) {
+            Biomefield &localBiomefieldSeam = biomefields[index];
+            const Heightfield &localHeightfield = heightfields[index];
+            localBiomefieldSeam = getBiomeField(bx + x * bottomLod, bz + z * lod, localHeightfield);
+
+            index++;
+        }
+    }
+    // right
+    {
+        const int x = chunkSize;
+        for (int z = 0; z < gridHeightP1; z++) {
+            Biomefield &localBiomefieldSeam = biomefields[index];
+            const Heightfield &localHeightfield = heightfields[index];
+            localBiomefieldSeam = getBiomeField(bx + x * lod, bz + z * rightLod, localHeightfield);
+
+            index++;
+        }
+    }
+}
+Biomefield PGInstance::getBiomeField(int x, int z, const Heightfield &heightfield) {
+    const uint8_t &biome = heightfield.biomesVectorField[0];
+
+    const int seedRange = chunkSize * 2;
+    x += seedRange / 2;
+    z += seedRange / 2;
+    vm::ivec2 basePosition{
+        x - (x % seedRange),
+        z - (z % seedRange)
+    };
+    int kingSeed = 0;
+    float kingSeedSdf = std::numeric_limits<float>::infinity();
+    for (int dz = -1; dz <= 1; dz++) {
+        for (int dx = -1; dx <= 1; dx++) {
+            const SeedNoise &seedNoise = getSeedNoise(
+                basePosition.x + dx * seedRange,
+                basePosition.y + dz * seedRange
+            );
+            const int &seed = seedNoise.seed;
+            const float &seedRadius = seedNoise.seedRadius;
+
+            const float distance = (float)std::sqrt((float)dx * (float)dx + (float)dz * (float)dz);
+
+            const float sdf = distance - seedRadius;
+            if (sdf < kingSeedSdf) {
+                kingSeed = seed;
+                kingSeedSdf = sdf;
+            }
+        }
+    }
+
+    return Biomefield{
+        biome,
+        seed
     };
 }
 

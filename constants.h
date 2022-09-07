@@ -8,6 +8,8 @@ constexpr int WORLD_BASE_HEIGHT = 64;
 constexpr int MIN_WORLD_HEIGHT = 0;
 constexpr int MAX_WORLD_HEIGHT = 512;
 
+constexpr float BIOME_DEBUG_MESH_BASE_HEIGHT = 0.1;
+
 // constexpr int chunkSize = 16;
 // constexpr int CHUNK_CACHE_RANGE = 8;
 // constexpr int cacheWidth = chunkSize * CHUNK_CACHE_RANGE;

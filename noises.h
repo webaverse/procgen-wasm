@@ -19,6 +19,8 @@ public:
   Noise grassNoise;
   Noise vegetationNoise;
   Noise mobNoise;
+  Noise seedNoise;
+  Noise seedRadiusNoise;
 
   Noises() = delete;
   Noises(int seed) :
@@ -34,7 +36,9 @@ public:
     lavaNoise(rng(), 0.01, 4),
     grassNoise(rng(), 0.01, 4),
     vegetationNoise(rng(), 0.1, 4),
-    mobNoise(rng(), 2, 4)
+    mobNoise(rng(), 2, 4),
+    seedNoise(rng(), 0.01, 4),
+    seedRadiusNoise(rng(), 0.01, 4)
   {}
   Noises(const Noises&) = delete;
 };

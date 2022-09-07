@@ -18,7 +18,8 @@ typedef std::vector<vm::ivec4> BiomesBuffer;
 typedef std::vector<vm::vec4> BiomesWeightBuffer;
 typedef std::vector<std::array<UV, 2>> BiomesUvsBuffer;
 typedef std::vector<uint32_t> IndexBuffer;
-// typedef std::vector<int> BiomeBuffer;
+typedef std::vector<int> BiomeBuffer;
+typedef std::vector<int> SeedBuffer;
 typedef std::vector<float> FactorBuffer;
 typedef std::vector<uint8_t> LightBuffer;
 typedef unsigned char PeekBuffer[15];
@@ -77,6 +78,20 @@ public:
     // PeekBuffer peeks;
 
     void pushPointMetadata(const Waterfield &fieldValue);
+
+    uint8_t *getBuffer() const;
+};
+
+class BiomeGeometry {
+public:
+    PositionBuffer positions;
+    NormalBuffer normals;
+    IndexBuffer indices;
+
+    BiomeBuffer biomes;
+    SeedBuffer seeds;
+
+    void pushPointMetadata(const Biomefield &fieldValue);
 
     uint8_t *getBuffer() const;
 };

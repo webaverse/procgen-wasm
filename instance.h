@@ -26,14 +26,19 @@ class ChunkResult {
 public:
     uint8_t *terrainMeshBuffer;
     uint8_t *waterMeshBuffer;
-    uint8_t biome;
-    uint8_t padding[3];
+    uint8_t *biomeMeshBuffer;
 
     void free() {
         std::free(terrainMeshBuffer);
         std::free(waterMeshBuffer);
         std::free(this);
     }
+};
+
+class SeedNoise {
+public:
+    int seed;
+    float seedRadius;
 };
 
 class PGInstance {
@@ -52,7 +57,8 @@ public:
 
     NoiseField getNoise(int bx, int by);
     uint8_t getBiome(int bx, int bz);
-    
+    SeedNoise getSeedNoise(int bx, int bz);
+
     void getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfield);
     void getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Heightfield> &heightfieldSeams);
     Heightfield getHeightField(int bx, int bz);
@@ -60,6 +66,10 @@ public:
     void getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfield);
     void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfieldSeams);
     Waterfield getWaterField(int bx, int bz);
+
+    void getBiomeFieldCenter(int bx, int bz, int lod, const std::vector<Heightfield> &heightfield, std::vector<Biomefield> &biomefield);
+    void getBiomeFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, const std::vector<Heightfield> &heightfield, std::vector<Biomefield> &biomefieldSeams);
+    Biomefield getBiomeField(int bx, int bz, const Heightfield &heightField);
 
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
 

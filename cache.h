@@ -46,6 +46,19 @@ public:
     }
 };
 
+class Biomefield {
+public:
+    unsigned char biome;
+    int seed;
+
+    float getHeight() const {
+      return BIOME_DEBUG_MESH_BASE_HEIGHT;
+    }
+    bool acceptIndex() const {
+      return true;
+    }
+};
+
 class NoiseField {
 public:
     float temperature;
