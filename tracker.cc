@@ -507,12 +507,10 @@ void splitPointToLod(OctreeContext &octreeContext, const vm::ivec2 &absolutePosi
     }
   }
 }
-void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &currentCoord, int lod1Range, int _maxLod) {
+void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &currentCoord, int lod1Range, int minLod, int maxLod) {
   auto &nodeMap = octreeContext.nodeMap;
 
-  // initialize lod 1
-  constexpr int minLod = 1;
-  constexpr int maxLod = (1 << 6);
+  // initialize base lod
   vm::ivec2 maxLodCenter{
     (int)std::floor((float)currentCoord.x / (float)maxLod) * maxLod,
     (int)std::floor((float)currentCoord.y / (float)maxLod) * maxLod
@@ -596,7 +594,7 @@ void ensurePeers(OctreeContext &octreeContext, OctreeNode *node, int maxLod) {
         printf(" ");
     }
 } */
-std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec2 &currentCoord, int lod1Range, int maxLod) {
+std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec2 &currentCoord, int lod1Range, int minLod, int maxLod) {
   OctreeContext octreeContext;
   auto &nodeMap = octreeContext.nodeMap;
 
@@ -604,6 +602,7 @@ std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec2 &currentCoord,
     octreeContext,
     currentCoord,
     lod1Range,
+    minLod,
     maxLod
   );
 
@@ -1024,6 +1023,7 @@ TrackerUpdate Tracker::update(const vm::vec3 &position) {
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(
     currentCoord,
     this->lod1Range,
+    1,
     1 << (this->lods - 1)
   );
   sortNodes(octreeLeafNodes);
