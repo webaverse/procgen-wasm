@@ -37,7 +37,7 @@ public:
 
 class SeedNoise {
 public:
-    int seed;
+    float seed;
     float seedRadius;
 };
 
@@ -67,9 +67,7 @@ public:
     void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfieldSeams);
     Waterfield getWaterField(int bx, int bz);
 
-    void getBiomeFieldCenter(int bx, int bz, int lod, const std::vector<Heightfield> &heightfield, std::vector<Biomefield> &biomefield);
-    void getBiomeFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, const std::vector<Heightfield> &heightfield, std::vector<Biomefield> &biomefieldSeams);
-    Biomefield getBiomeField(int bx, int bz, const Heightfield &heightField);
+    float getSeed(int bx, int bz);
 
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
 

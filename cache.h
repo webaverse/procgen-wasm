@@ -25,6 +25,7 @@ public:
     float heightField;
     std::array<unsigned char, 4> biomesVectorField;
     std::array<unsigned char, 4> biomesWeightsVectorField;
+    float seed;
 
     float getHeight() const {
       return heightField;
@@ -43,19 +44,6 @@ public:
     }
     bool acceptIndex() const {
       return waterFactor > 0;
-    }
-};
-
-class Biomefield {
-public:
-    unsigned char biome;
-    int seed;
-
-    float getHeight() const {
-      return BIOME_DEBUG_MESH_BASE_HEIGHT;
-    }
-    bool acceptIndex() const {
-      return true;
     }
 };
 
