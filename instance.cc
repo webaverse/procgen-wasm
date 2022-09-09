@@ -2069,7 +2069,7 @@ void PGInstance::getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterf
         {
             int index2D = x + z * chunkSize;
             Waterfield &localWaterfield = waterfields[index2D];
-            localWaterfield = getWaterField(bx + x * lod, bz + z * lod);
+            localWaterfield = getWaterField(bx + x * lod, bz + z * lod, lod);
         }
     }
 }
@@ -2091,7 +2091,7 @@ void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<in
         const int z = chunkSize;
         for (int x = 0; x < gridWidthP1; x++) {
             Waterfield &localWaterfieldSeam = waterfields[index];
-            localWaterfieldSeam = getWaterField(bx + x * bottomLod, bz + z * lod);
+            localWaterfieldSeam = getWaterField(bx + x * bottomLod, bz + z * lod, lod);
 
             index++;
         }
@@ -2101,14 +2101,14 @@ void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<in
         const int x = chunkSize;
         for (int z = 0; z < gridHeightP1; z++) {
             Waterfield &localWaterfieldSeam = waterfields[index];
-            localWaterfieldSeam = getWaterField(bx + x * lod, bz + z * rightLod);
+            localWaterfieldSeam = getWaterField(bx + x * lod, bz + z * rightLod, lod);
 
             index++;
         }
     }
 }
 
-// compile-time sqrt
+/* // compile-time sqrt
 template <typename T>
 constexpr T sqrt_helper(T x, T lo, T hi) {
   if (lo == hi)
@@ -2124,22 +2124,22 @@ constexpr T sqrt_helper(T x, T lo, T hi) {
 template <typename T>
 constexpr T ct_sqrt(T x) {
   return sqrt_helper<T>(x, 0, x / 2 + 1);
-}
+} */
 
-Waterfield PGInstance::getWaterField(int bx, int bz) {
-    constexpr int range = 2;
+Waterfield PGInstance::getWaterField(int bx, int bz, int lod) {
+    constexpr int range = 4;
     // constexpr float maxWaterFactorSqrt = (2 * range) + 1;
     // constexpr float maxWaterFactor = maxWaterFactorSqrt * maxWaterFactorSqrt;
-    constexpr float maxDistance = ct_sqrt<float>((float)range * (float)range);
+    const float maxDistance = (float)std::sqrt((float)range * (float)range);
     constexpr float baseFactor = 0.25;
 
     float waterFactor = 0;
     float maxWaterFactor = 0;
     for (int dz = -range; dz <= range; dz++) {
-        const int az = bz + dz;
+        const int az = bz + dz * lod;
 
         for (int dx = -range; dx <= range; dx++) {
-            const int ax = bx + dx;
+            const int ax = bx + dx * lod;
 
             const float distance = (float)std::sqrt((float)dx * (float)dx + (float)dz * (float)dz);
             const float localFactor = baseFactor + (1.f - baseFactor) * (1. - distance / maxDistance);

@@ -69,7 +69,7 @@ public:
     
     void getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfield);
     void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfieldSeams);
-    Waterfield getWaterField(int bx, int bz);
+    Waterfield getWaterField(int bx, int bz, int lod);
 
     float getSeed(int bx, int bz);
 
