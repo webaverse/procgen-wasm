@@ -1,7 +1,6 @@
 #ifndef _TRACKER_H_
 #define _TRACKER_H_
 
-#include "octree.h"
 #include "vectorMath.h"
 #include <vector>
 #include <unordered_map>
@@ -11,6 +10,7 @@
 
 //
 
+class PGInstance;
 class OctreeNode;
 
 //
@@ -28,6 +28,7 @@ public:
   std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>> nodeMap;
 
   OctreeNodePtr alloc(const vm::ivec2 &min, int lod);
+  std::vector<OctreeNodePtr> getLeafNodes();
 };
 
 //
@@ -108,6 +109,10 @@ bool containsNode(const OctreeNode &node, const OctreeNode &other);
 bool equalsNode(const OctreeNode &node, const OctreeNode &other);
 bool equalsNodeLod(const OctreeNode &node, const OctreeNode &other);
 // bool intersectsNode(const OctreeNode &node, const OctreeNode &other);
+
+void constructSeedTree(OctreeContext &octreeContext, const vm::ivec2 &maxLodCenter, const int maxLod, const std::vector<std::pair<vm::ivec2, int>> &lodSplits);
+// std::vector<OctreeNodePtr> constructOctreeForSeed(const vm::ivec2 &maxLodCenter, const int maxLod, const std::vector<std::pair<vm::ivec2, int>> &lodSplits);
+std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>>::iterator findNodeIterAtPoint(OctreeContext &octreeContext, const vm::ivec2 &position);
 
 //
 

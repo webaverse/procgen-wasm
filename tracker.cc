@@ -320,6 +320,14 @@ OctreeNodePtr OctreeContext::alloc(const vm::ivec2 &min, int lod) {
   return node;
 }
 // OctreeContext::OctreeContext() {}
+std::vector<OctreeNodePtr> OctreeContext::getLeafNodes() {
+  std::vector<OctreeNodePtr> leafNodes;
+  for (const auto &iter : nodeMap) {
+    auto node = iter.second;
+    leafNodes.push_back(node);
+  }
+  return leafNodes;
+}
 
 //
 
@@ -392,7 +400,7 @@ OctreeNodePtr getOrCreateNode(OctreeContext &octreeContext, const vm::ivec2 &min
 std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>>::iterator findNodeIterAtPoint(OctreeContext &octreeContext, const vm::ivec2 &position) {
   auto &nodeMap = octreeContext.nodeMap;
 
-  std::vector<OctreeNodePtr> leafNodes;
+  // std::vector<OctreeNodePtr> leafNodes;
   for (auto iter = nodeMap.begin(); iter != nodeMap.end(); iter++) {
     auto node = iter->second;
     if (containsPoint(node->min, node->lod, position)) {
@@ -404,7 +412,7 @@ std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>>::iterator findNodeIter
 OctreeNodePtr findContainedNode(OctreeContext &octreeContext, const vm::ivec2 &min, const int lod) {
   auto &nodeMap = octreeContext.nodeMap;
 
-  std::vector<OctreeNodePtr> leafNodes;
+  // std::vector<OctreeNodePtr> leafNodes;
   for (const auto &iter : nodeMap) {
     auto node = iter.second;
     if (containsPoint(min, lod, node->min)) {
@@ -507,10 +515,34 @@ void splitPointToLod(OctreeContext &octreeContext, const vm::ivec2 &absolutePosi
     }
   }
 }
-void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &currentCoord, int lod1Range, int minLod, int maxLod) {
+void initializeLodArrays(OctreeContext &octreeContext) {
+  auto &nodeMap = octreeContext.nodeMap;
+  
+  for (auto iter = nodeMap.begin(); iter != nodeMap.end(); iter++) {
+    auto &node = iter->second;
+    auto &min = node->min;
+    auto &lod = node->lod;
+    
+    vm::ivec2 bottomNodePosition{
+      min.x,
+      min.y + lod
+    };
+    auto bottomNodeIter = findNodeIterAtPoint(octreeContext, bottomNodePosition);
+
+    vm::ivec2 rightNodePosition{
+      min.x + lod,
+      min.y
+    };
+    auto rightNodeIter = findNodeIterAtPoint(octreeContext, rightNodePosition);
+
+    node->lodArray[0] = bottomNodeIter != nodeMap.end() ? bottomNodeIter->second->lod : (lod * 2);
+    node->lodArray[1] = rightNodeIter != nodeMap.end() ? rightNodeIter->second->lod : (lod * 2);
+  }
+}
+void constructLodTree(OctreeContext &octreeContext, const vm::ivec2 &currentCoord, int lod1Range, int minLod, int maxLod) {
   auto &nodeMap = octreeContext.nodeMap;
 
-  // initialize base lod
+  // initialize max lod
   vm::ivec2 maxLodCenter{
     (int)std::floor((float)currentCoord.x / (float)maxLod) * maxLod,
     (int)std::floor((float)currentCoord.y / (float)maxLod) * maxLod
@@ -546,59 +578,33 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec2 &current
     }
   }
 
-  // initalize lodArrays
-  for (auto iter = nodeMap.begin(); iter != nodeMap.end(); iter++) {
-    auto &node = iter->second;
-    auto &min = node->min;
-    auto &lod = node->lod;
-    
-    vm::ivec2 bottomNodePosition{
-      min.x,
-      min.y + lod
-    };
-    auto bottomNodeIter = findNodeIterAtPoint(octreeContext, bottomNodePosition);
-
-    vm::ivec2 rightNodePosition{
-      min.x + lod,
-      min.y
-    };
-    auto rightNodeIter = findNodeIterAtPoint(octreeContext, rightNodePosition);
-
-    node->lodArray[0] = bottomNodeIter != nodeMap.end() ? bottomNodeIter->second->lod : (lod * 2);
-    node->lodArray[1] = rightNodeIter != nodeMap.end() ? rightNodeIter->second->lod : (lod * 2);
-  }
+  initializeLodArrays(octreeContext);
 }
-/* // ensure that every neighbor of this lod also is at least at this lod (it could be a lower/more detailed leaf)
-void ensurePeers(OctreeContext &octreeContext, OctreeNode *node, int maxLod) {
-  for (int dx = -1; dx <= 1; dx++) {
-    for (int dy = -1; dy <= 1; dy++) {
-      for (int dz = -1; dz <= 1; dz++) {
-        if (dx == 0 && dy == 0 && dz == 0) {
-          continue;
-        }
-
-        vm::ivec3 neighborMin = node->min + vm::ivec3{dx, dy, dz} * node->size;
-        constructTreeUpwards(
-          octreeContext,
-          neighborMin,
-          node->size,
-          maxLod,
-          ConstructTreeFlags_None
-        );
-      }
-    }
-  }
-} */
-/* void stdoutSpaces(int numSpaces) {
-    for (int i = 0; i < numSpaces; i++) {
-        printf(" ");
-    }
-} */
-std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec2 &currentCoord, int lod1Range, int minLod, int maxLod) {
-  OctreeContext octreeContext;
+void constructSeedTree(OctreeContext &octreeContext, const vm::ivec2 &maxLodCenter, const int maxLod, const std::vector<std::pair<vm::ivec2, int>> &lodSplits) {
   auto &nodeMap = octreeContext.nodeMap;
 
-  constructTreeUpwards(
+  // initialize max lod
+  /* vm::ivec2 maxLodCenter{
+    (int)std::floor((float)currentCoord.x / (float)maxLod) * maxLod,
+    (int)std::floor((float)currentCoord.y / (float)maxLod) * maxLod
+  }; */
+  OctreeNodePtr childNode = getOrCreateNode(
+    octreeContext,
+    maxLodCenter,
+    maxLod
+  );
+
+  // initialize other lods
+  for (const std::pair<vm::ivec2, int> &lodSplit : lodSplits) {
+    const vm::ivec2 &splitPosition = lodSplit.first;
+    const int &lod = lodSplit.second;
+    splitPointToLod(octreeContext, splitPosition, lod);
+  }
+}
+std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec2 &currentCoord, int lod1Range, int minLod, int maxLod) {
+  OctreeContext octreeContext;
+
+  constructLodTree(
     octreeContext,
     currentCoord,
     lod1Range,
@@ -615,11 +621,7 @@ std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec2 &currentCoord,
   } */
 
   // collect all nodes in the nodeMap
-  std::vector<OctreeNodePtr> leafNodes;
-  for (const auto &iter : nodeMap) {
-    auto node = iter.second;
-    leafNodes.push_back(node);
-  }
+  std::vector<OctreeNodePtr> leafNodes = octreeContext.getLeafNodes();
 
   /* // sanity check lod1Nodes for duplicates
   {
@@ -638,7 +640,7 @@ std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec2 &currentCoord,
   } */
 
   // sanity check that no leaf node contains another leaf node
-  for (auto leafNode : leafNodes) {
+  /* for (auto leafNode : leafNodes) {
     for (auto leafNode2 : leafNodes) {
       if (leafNode != leafNode2 && containsNode(*leafNode, *leafNode2)) {
         EM_ASM(
@@ -650,7 +652,7 @@ std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec2 &currentCoord,
         );
       }
     }
-  }
+  } */
 
   /* // assign lodArray for each node based on the minimum lod of the target point in the world
   for (const auto &iter : nodeMap) {
@@ -673,6 +675,21 @@ std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec2 &currentCoord,
   // return
   return leafNodes;
 }
+/* std::vector<OctreeNodePtr> constructOctreeForSeed(const vm::ivec2 &maxLodCenter, const int maxLod, const std::vector<std::pair<vm::ivec2, int>> &lodSplits) {
+  OctreeContext octreeContext;
+
+  constructSeedTree(
+    octreeContext,
+    currentCoord,
+    lod1Range,
+    minLod,
+    maxLod
+  );
+  
+  std::vector<OctreeNodePtr> leafNodes = octreeContext.getLeafNodes();
+  
+  return leafNodes;
+} */
 /* OctreeNodePtr getMaxLodNode(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes, const vm::ivec3 &min) {
     auto newLeafNode = getLeafNodeFromPoint(newLeafNodes, min);
     auto oldLeafNode = getLeafNodeFromPoint(oldLeafNodes, min);

@@ -89,6 +89,16 @@ public:
             boxMin + Vec{(float)lod, height, (float)lod}
         );
     }
+    uint8_t *getBuffer() const {
+        constexpr size_t size = sizeof(min) + sizeof(lod);
+        uint8_t *buffer = (uint8_t *)malloc(size);
+        int index = 0;
+        memcpy(buffer + index, &min, sizeof(min));
+        index += sizeof(min);
+        memcpy(buffer + index, &lod, sizeof(lod));
+        index += sizeof(lod);
+        return buffer;
+    }
 };
 
 //

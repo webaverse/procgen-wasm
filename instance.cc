@@ -946,6 +946,255 @@ void generateWaterfieldSeamsMesh(
 
 //
 
+void generateBarrierMesh(
+    const vm::ivec2 &worldPosition,
+    int lod,
+    int chunkSize,
+    OctreeContext &octreeContext,
+    BarrierGeometry &geometry
+) {
+    // const int worldSize = chunkSize * lod;
+    // const int worldSizeM1 = worldSize - lod;
+    // const int chunkSizeM1 = chunkSize - 1;
+    // createPlaneGeometry<Waterfield, WaterGeometry>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, waterfields, geometry);
+    
+    constexpr float barrierHeight = 16;
+    
+    int index = 0;
+    std::vector<OctreeNodePtr> seedLeafNodes = octreeContext.getLeafNodes();
+    for (auto iter = seedLeafNodes.begin(); iter != seedLeafNodes.end(); iter++) {
+        OctreeNodePtr node = *iter;
+        const vm::ivec2 &position = node->min;
+        const vm::vec3 position3D{
+            (float)position.x,
+            0,
+            (float)position.y
+        };
+
+        // top
+        {
+            // top left
+            vm::vec3 a{
+                (float)lod,
+                barrierHeight,
+                0
+            };
+            a += position3D;
+            // bottom left
+            vm::vec3 b{
+                (float)lod,
+                0,
+                0
+            };
+            b += position3D;
+            // bottom right
+            vm::vec3 c{
+                0,
+                0,
+                0
+            };
+            c += position3D;
+            // top right
+            vm::vec3 d{
+                0,
+                barrierHeight,
+                0
+            };
+            d += position3D;
+
+            geometry.positions.push_back(a);
+            geometry.positions.push_back(b);
+            geometry.positions.push_back(c);
+            geometry.positions.push_back(d);
+
+            vm::vec3 normal{
+                0,
+                0,
+                -1
+            };
+            geometry.normals.push_back(normal);
+            geometry.normals.push_back(normal);
+            geometry.normals.push_back(normal);
+            geometry.normals.push_back(normal);
+
+            geometry.indices.push_back(index + 0); // a
+            geometry.indices.push_back(index + 1); // b
+            geometry.indices.push_back(index + 3); // d
+            geometry.indices.push_back(index + 1); // b
+            geometry.indices.push_back(index + 2); // c
+            geometry.indices.push_back(index + 3); // d
+            index += 4;
+        }
+
+        // bottom
+        {
+            // top left
+            vm::vec3 a{
+                0,
+                barrierHeight,
+                (float)lod
+            };
+            a += position3D;
+            // bottom left
+            vm::vec3 b{
+                0,
+                0,
+                (float)lod
+            };
+            b += position3D;
+            // bottom right
+            vm::vec3 c{
+                (float)lod,
+                0,
+                (float)lod
+            };
+            c += position3D;
+            // top right
+            vm::vec3 d{
+                (float)lod,
+                barrierHeight,
+                (float)lod
+            };
+            d += position3D;
+
+            geometry.positions.push_back(a);
+            geometry.positions.push_back(b);
+            geometry.positions.push_back(c);
+            geometry.positions.push_back(d);
+
+            vm::vec3 normal{
+                0,
+                0,
+                1
+            };
+            geometry.normals.push_back(normal);
+            geometry.normals.push_back(normal);
+            geometry.normals.push_back(normal);
+            geometry.normals.push_back(normal);
+
+            geometry.indices.push_back(index + 0); // a
+            geometry.indices.push_back(index + 1); // b
+            geometry.indices.push_back(index + 3); // d
+            geometry.indices.push_back(index + 1); // b
+            geometry.indices.push_back(index + 2); // c
+            geometry.indices.push_back(index + 3); // d
+            index += 4;
+        }
+
+        // left
+        {
+            // top left
+            vm::vec3 a{
+                0,
+                barrierHeight,
+                0
+            };
+            a += position3D;
+            // bottom left
+            vm::vec3 b{
+                0,
+                0,
+                0
+            };
+            b += position3D;
+            // bottom right
+            vm::vec3 c{
+                0,
+                0,
+                (float)lod
+            };
+            c += position3D;
+            // top right
+            vm::vec3 d{
+                0,
+                barrierHeight,
+                (float)lod
+            };
+            d += position3D;
+
+            geometry.positions.push_back(a);
+            geometry.positions.push_back(b);
+            geometry.positions.push_back(c);
+            geometry.positions.push_back(d);
+
+            vm::vec3 normal{
+                -1,
+                0,
+                0
+            };
+            geometry.normals.push_back(normal);
+            geometry.normals.push_back(normal);
+            geometry.normals.push_back(normal);
+            geometry.normals.push_back(normal);
+
+            geometry.indices.push_back(index + 0); // a
+            geometry.indices.push_back(index + 1); // b
+            geometry.indices.push_back(index + 3); // d
+            geometry.indices.push_back(index + 1); // b
+            geometry.indices.push_back(index + 2); // c
+            geometry.indices.push_back(index + 3); // d
+            index += 4;
+        }
+
+        // right
+        {
+            // top left
+            vm::vec3 a{
+                0,
+                barrierHeight,
+                (float)lod
+            };
+            a += position3D;
+            // bottom left
+            vm::vec3 b{
+                0,
+                0,
+                (float)lod
+            };
+            b += position3D;
+            // bottom right
+            vm::vec3 c{
+                0,
+                0,
+                0
+            };
+            c += position3D;
+            // top right
+            vm::vec3 d{
+                0,
+                barrierHeight,
+                0
+            };
+            d += position3D;
+
+            geometry.positions.push_back(a);
+            geometry.positions.push_back(b);
+            geometry.positions.push_back(c);
+            geometry.positions.push_back(d);
+
+            vm::vec3 normal{
+                -1,
+                0,
+                0
+            };
+            geometry.normals.push_back(normal);
+            geometry.normals.push_back(normal);
+            geometry.normals.push_back(normal);
+            geometry.normals.push_back(normal);
+
+            geometry.indices.push_back(index + 0); // a
+            geometry.indices.push_back(index + 1); // b
+            geometry.indices.push_back(index + 3); // d
+            geometry.indices.push_back(index + 1); // b
+            geometry.indices.push_back(index + 2); // c
+            geometry.indices.push_back(index + 3); // d
+            index += 4;
+        }
+    }
+}
+
+//
+
 void generateTerrainGeometry(
     const vm::ivec2 &worldPosition,
     int lod,
@@ -978,6 +1227,20 @@ void generateWaterGeometry(
 
 //
 
+void generateBarrierGeometry(
+    const vm::ivec2 &worldPosition,
+    int lod,
+    int chunkSize,
+    OctreeContext &octreeContext,
+    BarrierGeometry &geometry
+) {
+    generateBarrierMesh(worldPosition, lod, chunkSize, octreeContext, geometry);
+    offsetGeometry(geometry, worldPosition);
+    // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
+}
+
+//
+
 /* Geometry &mergeGeometry(Geometry &a, Geometry &b) {
     for (size_t i = 0; i < b.positions.size(); i++) {
         a.positions.push_back(b.positions[i]);
@@ -990,7 +1253,7 @@ void generateWaterGeometry(
     }
     return a;
 } */
-uint8_t getMostCommonBiome(const std::vector<Heightfield> &heightfields) {
+/* uint8_t getMostCommonBiome(const std::vector<Heightfield> &heightfields) {
     std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
     for (const auto &hf : heightfields) {
         biomeCounts[hf.biomesVectorField[0]]++;
@@ -1012,6 +1275,63 @@ uint8_t getMostCommonBiome(const std::vector<Heightfield> &heightfields) {
         }
     );
     return *iter;
+} */
+OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int lod) {
+    constexpr int minLodRange = 1;
+    constexpr int maxLodRange = 6;
+    constexpr int maxLod = 1 << maxLodRange;
+    vm::ivec2 maxLodCenter{
+        (int)std::floor((float)worldPosition.x / (float)maxLod) * maxLod,
+        (int)std::floor((float)worldPosition.y / (float)maxLod) * maxLod
+    };
+
+    // compute splits
+    std::vector<std::pair<vm::ivec2, int>> lodSplits;
+    {
+        float numSplits = (float)noises.numSplitsNoise.in2D(maxLodCenter.x, maxLodCenter.y);
+        uint32_t numSplitsHash;
+        MurmurHash3_x86_32(&numSplits, sizeof(numSplits), 0, &numSplitsHash);
+        numSplitsHash *= 8 / 0xFFFFFFFFu;
+
+        for (uint32_t i = 0; i < numSplitsHash; i++) {
+            float splitsLodNoise = (float)noises.numSplitsNoise.in2D(maxLodCenter.x, maxLodCenter.y);
+
+            int splitLodDX;
+            MurmurHash3_x86_32(&splitsLodNoise, sizeof(splitsLodNoise), 0, &splitLodDX);
+            splitLodDX = (int)((float)splitLodDX * (float)maxLod / (float)0x7FFFFFFF);
+            splitsLodNoise++;
+
+            int splitLodDZ;
+            MurmurHash3_x86_32(&splitsLodNoise, sizeof(splitsLodNoise), 1, &splitLodDZ);
+            splitLodDZ = (int)((float)splitLodDZ * (float)maxLod / (float)0x7FFFFFFF);
+            splitsLodNoise++;
+
+            int splitLod;
+            MurmurHash3_x86_32(&splitsLodNoise, sizeof(splitsLodNoise), 1, &splitLod);
+            splitLod = (int)((float)splitLod * (float)(maxLodRange - minLodRange) / (float)0x7FFFFFFF);
+            splitsLodNoise++;
+
+            lodSplits.push_back(
+                std::make_pair(
+                    vm::ivec2{
+                        /*maxLodCenter.x + */splitLodDX,
+                        /*maxLodCenter.y + */splitLodDZ
+                    },
+                    splitLod
+                )
+            );
+        }
+    }
+
+    OctreeContext octreeContext;
+    constructSeedTree(
+        octreeContext,
+        maxLodCenter,
+        maxLod,
+        lodSplits
+    );
+
+    return octreeContext;
 }
 ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray) {
     // biomes
@@ -1028,7 +1348,7 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
         (chunkSize * chunkSize) + // center
         (gridWidthP1 + gridHeightP1) // seams
     );
-    // uint8_t mostCommonBiome;
+
     {
         getHeightFieldCenter(worldPosition.x, worldPosition.y, lod, heightfields);
         getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfields);
@@ -1041,8 +1361,6 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
             heightfields,
             terrainGeometry
         );
-
-        // mostCommonBiome = getMostCommonBiome(heightfields);
     }
 
     // water
@@ -1065,10 +1383,32 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
         );
     }
 
+    // barrier
+    BarrierGeometry barrierGeometry;
+    OctreeContext octreeContext = getChunkSeedOctree(worldPosition, lod);
+    auto nodeIter = findNodeIterAtPoint(octreeContext, worldPosition);
+    OctreeNodePtr node;
+    if (nodeIter != octreeContext.nodeMap.end()) {
+        node = nodeIter->second;
+    } else {
+        std::cerr << "could not find node at point " << worldPosition.x << " " << worldPosition.y << std::endl;
+        abort();
+    }
+    {
+        generateBarrierGeometry(
+            worldPosition,
+            lod,
+            chunkSize,
+            octreeContext,
+            barrierGeometry
+        );
+    }
+
     ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
     result->terrainMeshBuffer = terrainGeometry.getBuffer();
     result->waterMeshBuffer = waterGeometry.getBuffer();
-    // result->biome = mostCommonBiome;
+    result->barrierMeshBuffer = barrierGeometry.getBuffer();
+    result->barrierNodeBuffer = node->getBuffer();
     return result;
 }
 /* uint8_t *PGInstance::createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
@@ -1611,15 +1951,6 @@ uint8_t PGInstance::getBiome(int bx, int bz) {
     }
     return biome;
 }
-SeedNoise PGInstance::getSeedNoise(int bx, int bz) {    
-    float seed = (float)noises.seedNoise.in2D(bx, bz);
-    float seedRadius = (float)std::abs(noises.seedRadiusNoise.in2D(bx, bz));
-
-    return SeedNoise{
-        seed,
-        seedRadius
-    };
-}
 
 //
 
@@ -1725,8 +2056,6 @@ Heightfield PGInstance::getHeightField(int bx, int bz) {
 
     float elevation = elevationSum / (float)numSamples;
     localHeightfield.heightField = elevation;
-
-    localHeightfield.seed = getSeed(bx, bz);
 
     return localHeightfield;
 }

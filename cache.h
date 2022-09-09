@@ -25,7 +25,6 @@ public:
     float heightField;
     std::array<unsigned char, 4> biomesVectorField;
     std::array<unsigned char, 4> biomesWeightsVectorField;
-    float seed;
 
     float getHeight() const {
       return heightField;

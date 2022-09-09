@@ -13,36 +13,17 @@
 //
 
 typedef std::vector<vm::vec3> PositionBuffer;
+typedef std::vector<vm::ivec2> PositionInt2DBuffer;
 typedef std::vector<vm::vec3> NormalBuffer;
 typedef std::vector<vm::ivec4> BiomesBuffer;
 typedef std::vector<vm::vec4> BiomesWeightBuffer;
 typedef std::vector<std::array<UV, 2>> BiomesUvsBuffer;
 typedef std::vector<uint32_t> IndexBuffer;
 typedef std::vector<int> BiomeBuffer;
-typedef std::vector<float> SeedBuffer;
+// typedef std::vector<float> SeedBuffer;
 typedef std::vector<float> FactorBuffer;
 typedef std::vector<uint8_t> LightBuffer;
 typedef unsigned char PeekBuffer[15];
-
-//
-
-/* struct VertexData
-{
-    int index;
-    int corners;
-
-    vm::vec3 position;
-    vm::vec3 normal;
-
-    vm::ivec4 biomes;
-    vm::vec4 biomesWeights;
-
-    std::array<UV, 2> biomeUvs1; // needs to be broken up to fit into vec4
-    std::array<UV, 2> biomeUvs2;
-
-    uint8_t skylight;
-    uint8_t ao;
-}; */
 
 //
 
@@ -57,7 +38,7 @@ public:
     BiomesUvsBuffer biomesUvs1;
     BiomesUvsBuffer biomesUvs2;
 
-    SeedBuffer seeds;
+    // SeedBuffer seeds;
 
     // LightBuffer skylights;
     // LightBuffer aos;
@@ -80,6 +61,17 @@ public:
     // PeekBuffer peeks;
 
     void pushPointMetadata(const Waterfield &fieldValue);
+
+    uint8_t *getBuffer() const;
+};
+
+class BarrierGeometry {
+public:
+    PositionBuffer positions;
+    NormalBuffer normals;
+    IndexBuffer indices;
+
+    PositionInt2DBuffer positions2D;
 
     uint8_t *getBuffer() const;
 };
