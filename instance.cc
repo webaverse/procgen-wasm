@@ -939,7 +939,7 @@ void generateHeightfieldCenterMesh(
     const int worldSize = chunkSize * lod;
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
-    createPlaneGeometry<Heightfield, TerrainGeometry>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, heightfields, geometry);
+    createPlaneGeometry<Heightfield, TerrainGeometry, WindingDirection::CCW>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, heightfields, geometry);
 }
 void generateHeightfieldSeamsMesh(
     int lod,
@@ -948,7 +948,7 @@ void generateHeightfieldSeamsMesh(
     const std::vector<Heightfield> &heightfields,
     TerrainGeometry &geometry
 ) {
-    createPlaneSeamsGeometry<Heightfield, TerrainGeometry>(lod, lodArray, chunkSize, heightfields, geometry);
+    createPlaneSeamsGeometry<Heightfield, TerrainGeometry, WindingDirection::CCW>(lod, lodArray, chunkSize, heightfields, geometry);
 }
 
 //
@@ -962,7 +962,7 @@ void generateWaterfieldCenterMesh(
     const int worldSize = chunkSize * lod;
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
-    createPlaneGeometry<Waterfield, WaterGeometry>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, waterfields, geometry);
+    createPlaneGeometry<Waterfield, WaterGeometry, WindingDirection::CCW>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, waterfields, geometry);
 }
 void generateWaterfieldSeamsMesh(
     int lod,
@@ -971,7 +971,7 @@ void generateWaterfieldSeamsMesh(
     const std::vector<Waterfield> &waterfields,
     WaterGeometry &geometry
 ) {
-    createPlaneSeamsGeometry<Waterfield, WaterGeometry>(lod, lodArray, chunkSize, waterfields, geometry);
+    createPlaneSeamsGeometry<Waterfield, WaterGeometry, WindingDirection::CCW>(lod, lodArray, chunkSize, waterfields, geometry);
 }
 
 //
