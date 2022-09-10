@@ -976,249 +976,290 @@ void generateWaterfieldSeamsMesh(
 
 //
 
+void generateCavefieldCenterMesh(
+    int lod,
+    int chunkSize,
+    const std::vector<Cavefield> &cavefields,
+    CaveGeometry &geometry
+) {
+    const int worldSize = chunkSize * lod;
+    const int worldSizeM1 = worldSize - lod;
+    const int chunkSizeM1 = chunkSize - 1;
+    createDualPlaneGeometry<Cavefield, CavefieldTop, CavefieldBottom, CaveGeometry>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, cavefields, geometry);
+}
+void generateCavefieldSeamsMesh(
+    int lod,
+    const std::array<int, 2> &lodArray,
+    int chunkSize,
+    const std::vector<Cavefield> &cavefields,
+    CaveGeometry &geometry
+) {
+    createDualPlaneSeamsGeometry<Cavefield, CavefieldTop, CavefieldBottom, CaveGeometry>(lod, lodArray, chunkSize, cavefields, geometry);
+}
+
+//
+
 void generateBarrierMesh(
     const vm::ivec2 &worldPosition,
     int lod,
     int chunkSize,
     OctreeContext &octreeContext,
+    PGInstance *inst,
     BarrierGeometry &geometry
 ) {
-    // const int worldSize = chunkSize * lod;
-    // const int worldSizeM1 = worldSize - lod;
-    // const int chunkSizeM1 = chunkSize - 1;
-    // createPlaneGeometry<Waterfield, WaterGeometry>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, waterfields, geometry);
-    
-    constexpr float barrierHeight = 16;
-    
     int index = 0;
     std::vector<OctreeNodePtr> seedLeafNodes = octreeContext.getLeafNodes();
     for (auto iter = seedLeafNodes.begin(); iter != seedLeafNodes.end(); iter++) {
         OctreeNodePtr node = *iter;
-        const vm::ivec2 &position = node->min;
-        const vm::vec3 position3D{
-            (float)position.x,
-            0,
-            (float)position.y
-        };
+        const vm::ivec2 &nodePosition = node->min;
+        const int &nodeLod = node->lod;
 
-        // top
-        {
-            // top left
-            vm::vec3 a{
-                (float)lod,
-                barrierHeight,
-                0
-            };
-            a += position3D;
-            // bottom left
-            vm::vec3 b{
-                (float)lod,
-                0,
-                0
-            };
-            b += position3D;
-            // bottom right
-            vm::vec3 c{
-                0,
-                0,
-                0
-            };
-            c += position3D;
-            // top right
-            vm::vec3 d{
-                0,
-                barrierHeight,
-                0
-            };
-            d += position3D;
+        if (chunksIntersect(worldPosition, lod, nodePosition, nodeLod)) {
+            // compute min/max height for this octree node
+            float barrierMinHeight = std::numeric_limits<float>::infinity();
+            float barrierMaxHeight = -std::numeric_limits<float>::infinity();
+            for (int dz = 0; dz < chunkSize; dz++) {
+                for (int dx = 0; dx < chunkSize; dx++) {
+                    const float height = inst->getHeight(
+                        nodePosition.x + dx * nodeLod,
+                        nodePosition.y + dz * nodeLod
+                    );
+                    if (height < barrierMinHeight) {
+                        barrierMinHeight = height;
+                    }
+                    if (height > barrierMaxHeight) {
+                        barrierMaxHeight = height;
+                    }
+                }
+            }
+            barrierMinHeight = std::floor(barrierMinHeight);
+            barrierMaxHeight = std::ceil(barrierMaxHeight);
 
-            geometry.positions.push_back(a);
-            geometry.positions.push_back(b);
-            geometry.positions.push_back(c);
-            geometry.positions.push_back(d);
+            const vm::vec3 position3D{
+                (float)nodePosition.x,
+                0,
+                (float)nodePosition.y
+            };
 
-            vm::vec3 normal{
-                0,
-                0,
-                -1
-            };
-            geometry.normals.push_back(normal);
-            geometry.normals.push_back(normal);
-            geometry.normals.push_back(normal);
-            geometry.normals.push_back(normal);
+            // top
+            {
+                // top left
+                vm::vec3 a{
+                    (float)lod,
+                    barrierMaxHeight,
+                    0
+                };
+                a += position3D;
+                // bottom left
+                vm::vec3 b{
+                    (float)lod,
+                    barrierMinHeight,
+                    0
+                };
+                b += position3D;
+                // bottom right
+                vm::vec3 c{
+                    0,
+                    barrierMinHeight,
+                    0
+                };
+                c += position3D;
+                // top right
+                vm::vec3 d{
+                    0,
+                    barrierMaxHeight,
+                    0
+                };
+                d += position3D;
 
-            geometry.indices.push_back(index + 0); // a
-            geometry.indices.push_back(index + 1); // b
-            geometry.indices.push_back(index + 3); // d
-            geometry.indices.push_back(index + 1); // b
-            geometry.indices.push_back(index + 2); // c
-            geometry.indices.push_back(index + 3); // d
-            index += 4;
-        }
+                geometry.positions.push_back(a);
+                geometry.positions.push_back(b);
+                geometry.positions.push_back(c);
+                geometry.positions.push_back(d);
 
-        // bottom
-        {
-            // top left
-            vm::vec3 a{
-                0,
-                barrierHeight,
-                (float)lod
-            };
-            a += position3D;
-            // bottom left
-            vm::vec3 b{
-                0,
-                0,
-                (float)lod
-            };
-            b += position3D;
-            // bottom right
-            vm::vec3 c{
-                (float)lod,
-                0,
-                (float)lod
-            };
-            c += position3D;
-            // top right
-            vm::vec3 d{
-                (float)lod,
-                barrierHeight,
-                (float)lod
-            };
-            d += position3D;
+                vm::vec3 normal{
+                    0,
+                    0,
+                    -1
+                };
+                geometry.normals.push_back(normal);
+                geometry.normals.push_back(normal);
+                geometry.normals.push_back(normal);
+                geometry.normals.push_back(normal);
 
-            geometry.positions.push_back(a);
-            geometry.positions.push_back(b);
-            geometry.positions.push_back(c);
-            geometry.positions.push_back(d);
+                geometry.indices.push_back(index + 0); // a
+                geometry.indices.push_back(index + 1); // b
+                geometry.indices.push_back(index + 3); // d
+                geometry.indices.push_back(index + 1); // b
+                geometry.indices.push_back(index + 2); // c
+                geometry.indices.push_back(index + 3); // d
+                index += 4;
+            }
 
-            vm::vec3 normal{
-                0,
-                0,
-                1
-            };
-            geometry.normals.push_back(normal);
-            geometry.normals.push_back(normal);
-            geometry.normals.push_back(normal);
-            geometry.normals.push_back(normal);
+            // bottom
+            {
+                // top left
+                vm::vec3 a{
+                    0,
+                    barrierMaxHeight,
+                    (float)lod
+                };
+                a += position3D;
+                // bottom left
+                vm::vec3 b{
+                    0,
+                    barrierMinHeight,
+                    (float)lod
+                };
+                b += position3D;
+                // bottom right
+                vm::vec3 c{
+                    (float)lod,
+                    barrierMinHeight,
+                    (float)lod
+                };
+                c += position3D;
+                // top right
+                vm::vec3 d{
+                    (float)lod,
+                    barrierMaxHeight,
+                    (float)lod
+                };
+                d += position3D;
 
-            geometry.indices.push_back(index + 0); // a
-            geometry.indices.push_back(index + 1); // b
-            geometry.indices.push_back(index + 3); // d
-            geometry.indices.push_back(index + 1); // b
-            geometry.indices.push_back(index + 2); // c
-            geometry.indices.push_back(index + 3); // d
-            index += 4;
-        }
+                geometry.positions.push_back(a);
+                geometry.positions.push_back(b);
+                geometry.positions.push_back(c);
+                geometry.positions.push_back(d);
 
-        // left
-        {
-            // top left
-            vm::vec3 a{
-                0,
-                barrierHeight,
-                0
-            };
-            a += position3D;
-            // bottom left
-            vm::vec3 b{
-                0,
-                0,
-                0
-            };
-            b += position3D;
-            // bottom right
-            vm::vec3 c{
-                0,
-                0,
-                (float)lod
-            };
-            c += position3D;
-            // top right
-            vm::vec3 d{
-                0,
-                barrierHeight,
-                (float)lod
-            };
-            d += position3D;
+                vm::vec3 normal{
+                    0,
+                    0,
+                    1
+                };
+                geometry.normals.push_back(normal);
+                geometry.normals.push_back(normal);
+                geometry.normals.push_back(normal);
+                geometry.normals.push_back(normal);
 
-            geometry.positions.push_back(a);
-            geometry.positions.push_back(b);
-            geometry.positions.push_back(c);
-            geometry.positions.push_back(d);
+                geometry.indices.push_back(index + 0); // a
+                geometry.indices.push_back(index + 1); // b
+                geometry.indices.push_back(index + 3); // d
+                geometry.indices.push_back(index + 1); // b
+                geometry.indices.push_back(index + 2); // c
+                geometry.indices.push_back(index + 3); // d
+                index += 4;
+            }
 
-            vm::vec3 normal{
-                -1,
-                0,
-                0
-            };
-            geometry.normals.push_back(normal);
-            geometry.normals.push_back(normal);
-            geometry.normals.push_back(normal);
-            geometry.normals.push_back(normal);
+            // left
+            {
+                // top left
+                vm::vec3 a{
+                    0,
+                    barrierMaxHeight,
+                    0
+                };
+                a += position3D;
+                // bottom left
+                vm::vec3 b{
+                    0,
+                    barrierMinHeight,
+                    0
+                };
+                b += position3D;
+                // bottom right
+                vm::vec3 c{
+                    0,
+                    barrierMinHeight,
+                    (float)lod
+                };
+                c += position3D;
+                // top right
+                vm::vec3 d{
+                    0,
+                    barrierMaxHeight,
+                    (float)lod
+                };
+                d += position3D;
 
-            geometry.indices.push_back(index + 0); // a
-            geometry.indices.push_back(index + 1); // b
-            geometry.indices.push_back(index + 3); // d
-            geometry.indices.push_back(index + 1); // b
-            geometry.indices.push_back(index + 2); // c
-            geometry.indices.push_back(index + 3); // d
-            index += 4;
-        }
+                geometry.positions.push_back(a);
+                geometry.positions.push_back(b);
+                geometry.positions.push_back(c);
+                geometry.positions.push_back(d);
 
-        // right
-        {
-            // top left
-            vm::vec3 a{
-                0,
-                barrierHeight,
-                (float)lod
-            };
-            a += position3D;
-            // bottom left
-            vm::vec3 b{
-                0,
-                0,
-                (float)lod
-            };
-            b += position3D;
-            // bottom right
-            vm::vec3 c{
-                0,
-                0,
-                0
-            };
-            c += position3D;
-            // top right
-            vm::vec3 d{
-                0,
-                barrierHeight,
-                0
-            };
-            d += position3D;
+                vm::vec3 normal{
+                    -1,
+                    0,
+                    0
+                };
+                geometry.normals.push_back(normal);
+                geometry.normals.push_back(normal);
+                geometry.normals.push_back(normal);
+                geometry.normals.push_back(normal);
 
-            geometry.positions.push_back(a);
-            geometry.positions.push_back(b);
-            geometry.positions.push_back(c);
-            geometry.positions.push_back(d);
+                geometry.indices.push_back(index + 0); // a
+                geometry.indices.push_back(index + 1); // b
+                geometry.indices.push_back(index + 3); // d
+                geometry.indices.push_back(index + 1); // b
+                geometry.indices.push_back(index + 2); // c
+                geometry.indices.push_back(index + 3); // d
+                index += 4;
+            }
 
-            vm::vec3 normal{
-                -1,
-                0,
-                0
-            };
-            geometry.normals.push_back(normal);
-            geometry.normals.push_back(normal);
-            geometry.normals.push_back(normal);
-            geometry.normals.push_back(normal);
+            // right
+            {
+                // top left
+                vm::vec3 a{
+                    0,
+                    barrierMaxHeight,
+                    (float)lod
+                };
+                a += position3D;
+                // bottom left
+                vm::vec3 b{
+                    0,
+                    barrierMinHeight,
+                    (float)lod
+                };
+                b += position3D;
+                // bottom right
+                vm::vec3 c{
+                    0,
+                    barrierMinHeight,
+                    0
+                };
+                c += position3D;
+                // top right
+                vm::vec3 d{
+                    0,
+                    barrierMaxHeight,
+                    0
+                };
+                d += position3D;
 
-            geometry.indices.push_back(index + 0); // a
-            geometry.indices.push_back(index + 1); // b
-            geometry.indices.push_back(index + 3); // d
-            geometry.indices.push_back(index + 1); // b
-            geometry.indices.push_back(index + 2); // c
-            geometry.indices.push_back(index + 3); // d
-            index += 4;
+                geometry.positions.push_back(a);
+                geometry.positions.push_back(b);
+                geometry.positions.push_back(c);
+                geometry.positions.push_back(d);
+
+                vm::vec3 normal{
+                    -1,
+                    0,
+                    0
+                };
+                geometry.normals.push_back(normal);
+                geometry.normals.push_back(normal);
+                geometry.normals.push_back(normal);
+                geometry.normals.push_back(normal);
+
+                geometry.indices.push_back(index + 0); // a
+                geometry.indices.push_back(index + 1); // b
+                geometry.indices.push_back(index + 3); // d
+                geometry.indices.push_back(index + 1); // b
+                geometry.indices.push_back(index + 2); // c
+                geometry.indices.push_back(index + 3); // d
+                index += 4;
+            }
         }
     }
 }
