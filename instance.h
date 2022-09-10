@@ -66,6 +66,7 @@ public:
     void getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfield);
     void getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Heightfield> &heightfieldSeams);
     Heightfield getHeightField(int bx, int bz);
+    float getHeight(int bx, int bz);
     
     void getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfield);
     void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfieldSeams);
