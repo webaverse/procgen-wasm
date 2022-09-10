@@ -194,7 +194,7 @@ uint8_t *BarrierGeometry::getBuffer() const {
     // normals
     sizeof(uint32_t) +
     normals.size() * sizeof(normals[0]) +
-    // factors
+    // positions2D
     sizeof(positions2D) +
     positions2D.size() * sizeof(positions2D[0]) +
     // indices
