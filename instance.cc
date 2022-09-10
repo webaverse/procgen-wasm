@@ -7,6 +7,7 @@
 #include "vector.h"
 #include "util.h"
 #include "MurmurHash3.h"
+#include "worley.h"
 #include <emscripten.h>
 // #include "peek.h"
 
@@ -1298,6 +1299,22 @@ void generateWaterGeometry(
 
 //
 
+void generateCaveGeometry(
+    const vm::ivec2 &worldPosition,
+    int lod,
+    const std::array<int, 2> &lodArray,
+    int chunkSize,
+    const std::vector<Cavefield> &cavefields,
+    CaveGeometry &geometry
+) {
+    generateCavefieldCenterMesh(lod, chunkSize, cavefields, geometry);
+    generateCavefieldSeamsMesh(lod, lodArray, chunkSize, cavefields, geometry);
+    offsetGeometry(geometry, worldPosition);
+    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
+}
+
+//
+
 void generateBarrierGeometry(
     const vm::ivec2 &worldPosition,
     int lod,
@@ -1454,6 +1471,26 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
         );
     }
 
+    // cave
+    CaveGeometry caveGeometry;
+    std::vector<Cavefield> cavefields(
+        (chunkSize * chunkSize) + // center
+        (gridWidthP1 + gridHeightP1) // seams
+    );
+    {
+        getCaveFieldCenter(worldPosition.x, worldPosition.y, lod, cavefields);
+        getCaveFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, cavefields);
+
+        generateCaveGeometry(
+            worldPosition,
+            lod,
+            lodArray,
+            chunkSize,
+            cavefields,
+            caveGeometry
+        );
+    }
+
     // barrier
     BarrierGeometry barrierGeometry;
     OctreeContext octreeContext = getChunkSeedOctree(worldPosition, lod);
@@ -1479,6 +1516,7 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
     ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
     result->terrainMeshBuffer = terrainGeometry.getBuffer();
     result->waterMeshBuffer = waterGeometry.getBuffer();
+    result->caveMeshBuffer = caveGeometry.getBuffer();
     result->barrierMeshBuffer = barrierGeometry.getBuffer();
     result->barrierNodeBuffer = node->getBuffer();
     return result;
@@ -2131,6 +2169,32 @@ Heightfield PGInstance::getHeightField(int bx, int bz) {
 
     return localHeightfield;
 }
+float PGInstance::getHeight(int bx, int bz) {
+    std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
+    int numSamples = 0;
+    for (int dz = -chunkSize/2; dz < chunkSize/2; dz++)
+    {
+        for (int dx = -chunkSize/2; dx < chunkSize/2; dx++)
+        {
+            int ax = bx + dx;
+            int az = bz + dz;
+            unsigned char b = getBiome(ax, az);
+
+            biomeCounts[b]++;
+            numSamples++;
+        }
+    }
+
+    float elevationSum = 0.f;
+    vm::vec2 fWorldPosition{(float)bx, (float)bz};
+    for (auto const &iter : biomeCounts)
+    {
+        elevationSum += iter.second * getComputedBiomeHeight(iter.first, fWorldPosition);
+    }
+
+    float elevation = elevationSum / (float)numSamples;
+    return elevation;
+}
 
 //
 
@@ -2178,6 +2242,99 @@ void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<in
             index++;
         }
     }
+}
+
+//
+
+void PGInstance::getCaveFieldCenter(int bx, int bz, int lod, std::vector<Cavefield> &cavefields) {
+    for (int z = 0; z < chunkSize; z++)
+    {
+        for (int x = 0; x < chunkSize; x++)
+        {
+            int index2D = x + z * chunkSize;
+            Cavefield &localCavefield = cavefields[index2D];
+            localCavefield = getCavefield(bx + x * lod, bz + z * lod);
+        }
+    }
+}
+void PGInstance::getCaveFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Cavefield> &cavefields) {
+    const int &bottomLod = lodArray[0];
+    const int &rightLod = lodArray[1];
+
+    const int gridWidth = chunkSize * lod / bottomLod;
+    const int gridWidthP1 = gridWidth + 1;
+
+    const int gridHeight = chunkSize * lod / rightLod;
+    const int gridHeightP1 = gridHeight + 1;
+
+    const int cavefieldsCenterDataOffset = chunkSize * chunkSize;
+
+    // bottom
+    int index = cavefieldsCenterDataOffset;
+    {
+        const int z = chunkSize;
+        for (int x = 0; x < gridWidthP1; x++) {
+            Cavefield &localCavefieldSeam = cavefields[index];
+            localCavefieldSeam = getCavefield(bx + x * bottomLod, bz + z * lod);
+
+            index++;
+        }
+    }
+    // right
+    {
+        const int x = chunkSize;
+        for (int z = 0; z < gridHeightP1; z++) {
+            Cavefield &localCavefieldSeam = cavefields[index];
+            localCavefieldSeam = getCavefield(bx + x * lod, bz + z * rightLod);
+
+            index++;
+        }
+    }
+}
+Cavefield PGInstance::getCavefield(int bx, int bz) {
+    Cavefield cavefield;
+
+    constexpr size_t max_order = 3;
+    std::vector<double> at = {
+        (double)bx * 0.1,
+        0,
+        (double)bz * 0.1
+    };
+    std::vector<double> F;
+    F.resize(max_order + 1);
+    std::vector<dvec3> delta;
+    delta.resize(max_order + 1);
+    std::vector<uint32_t> ID;
+    ID.resize(max_order + 1);
+
+    Worley(at, max_order, F, delta, ID);
+
+    vm::vec3 deltaPoint1{
+        (float)delta[0].x,
+        (float)delta[0].y,
+        (float)delta[0].z
+    };
+    float distance1 = length(deltaPoint1);
+
+    // std::cout << "delete 3" << std::endl;
+
+    vm::vec3 deltaPoint3{
+        (float)delta[2].x,
+        (float)delta[2].y,
+        (float)delta[2].z
+    };
+    // std::cout << "delete 4" << std::endl;
+    float distance3 = length(deltaPoint3);
+    // constexpr float multiplier = 1.1f;
+    constexpr float multiplier = 1.0f;
+    float caveValue = std::min(std::max((distance3 != 0.f ? (distance1 / distance3) : 0.f) * multiplier, 0.f), 1.f);
+    // std::cout << "return" << std::endl;
+    // return caveValue;
+
+    cavefield.topHeight = caveValue;
+    cavefield.bottomHeight = caveValue;
+
+    return cavefield;
 }
 
 /* // compile-time sqrt

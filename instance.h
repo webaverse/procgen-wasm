@@ -27,12 +27,14 @@ class ChunkResult {
 public:
     uint8_t *terrainMeshBuffer;
     uint8_t *waterMeshBuffer;
+    uint8_t *caveMeshBuffer;
     uint8_t *barrierMeshBuffer;
     uint8_t *barrierNodeBuffer;
 
     void free() {
         std::free(terrainMeshBuffer);
         std::free(waterMeshBuffer);
+        std::free(caveMeshBuffer);
         std::free(barrierMeshBuffer);
         std::free(barrierNodeBuffer);
         std::free(this);
@@ -71,6 +73,10 @@ public:
     void getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfield);
     void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfieldSeams);
     Waterfield getWaterField(int bx, int bz, int lod);
+
+    void getCaveFieldCenter(int bx, int bz, int lod, std::vector<Cavefield> &cavefields);
+    void getCaveFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Cavefield> &cavefields);
+    Cavefield getCavefield(int bx, int bz);
 
     float getSeed(int bx, int bz);
 
