@@ -76,4 +76,15 @@ public:
     uint8_t *getBuffer() const;
 };
 
+class CaveGeometry {
+public:
+    PositionBuffer positions;
+    NormalBuffer normals;
+    IndexBuffer indices;
+
+    void pushPointMetadata(const Cavefield &fieldValue);
+
+    uint8_t *getBuffer() const;
+};
+
 #endif // MESH_H
