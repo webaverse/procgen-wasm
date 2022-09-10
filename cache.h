@@ -46,6 +46,30 @@ public:
     }
 };
 
+class Cavefield {
+public:
+    float topHeight;
+    float bottomHeight;
+
+    bool acceptIndex() const {
+      return true;
+    }
+};
+
+class CavefieldTop : public Cavefield {
+public:
+    float getHeight() const {
+      return topHeight;
+    }
+};
+
+class CavefieldBottom : public Cavefield {
+public:
+    float getHeight() const {
+      return bottomHeight;
+    }
+};
+
 class NoiseField {
 public:
     float temperature;
