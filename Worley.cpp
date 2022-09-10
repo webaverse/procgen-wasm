@@ -12,10 +12,10 @@
 
 Worley::Worley() :
   scales{
-    1.f / std::sqrt(2),
-    0.5f / std::sqrt(2),
-    0.5f / std::sqrt(2),
-    0.5f / std::sqrt(2)
+    1.f / std::sqrt(2.f),
+    0.5f / std::sqrt(2.f),
+    0.5f / std::sqrt(2.f),
+    0.5f / std::sqrt(2.f)
   }
 {
   function = WorleyFunction_F1;
