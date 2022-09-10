@@ -2,6 +2,7 @@
 #define NOISE_H
 
 #include "FastNoise.h"
+#include "Worley.hpp"
 
 class Noise {
  public:

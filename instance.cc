@@ -7,7 +7,6 @@
 #include "vector.h"
 #include "util.h"
 #include "MurmurHash3.h"
-#include "worley.h"
 #include <emscripten.h>
 // #include "peek.h"
 
@@ -2294,45 +2293,21 @@ void PGInstance::getCaveFieldSeams(int bx, int bz, int lod, const std::array<int
 Cavefield PGInstance::getCavefield(int bx, int bz) {
     Cavefield cavefield;
 
-    constexpr size_t max_order = 3;
-    std::vector<double> at = {
-        (double)bx * 0.1,
-        0,
-        (double)bz * 0.1
-    };
-    std::vector<double> F;
-    F.resize(max_order + 1);
-    std::vector<dvec3> delta;
-    delta.resize(max_order + 1);
-    std::vector<uint32_t> ID;
-    ID.resize(max_order + 1);
+    float caveRadius = noises.caveRadius.Get({
+        (float)bx,
+        (float)bz
+    }, 1.f) * 10.f;
+    float caveTopOffset = noises.caveTopOffset.in2D(
+        (float)bx,
+        (float)bz
+    );
+    float caveBottomOffset = noises.caveBottomOffset.in2D(
+        (float)bx,
+        (float)bz
+    );
 
-    Worley(at, max_order, F, delta, ID);
-
-    vm::vec3 deltaPoint1{
-        (float)delta[0].x,
-        (float)delta[0].y,
-        (float)delta[0].z
-    };
-    float distance1 = length(deltaPoint1);
-
-    // std::cout << "delete 3" << std::endl;
-
-    vm::vec3 deltaPoint3{
-        (float)delta[2].x,
-        (float)delta[2].y,
-        (float)delta[2].z
-    };
-    // std::cout << "delete 4" << std::endl;
-    float distance3 = length(deltaPoint3);
-    // constexpr float multiplier = 1.1f;
-    constexpr float multiplier = 1.0f;
-    float caveValue = std::min(std::max((distance3 != 0.f ? (distance1 / distance3) : 0.f) * multiplier, 0.f), 1.f);
-    // std::cout << "return" << std::endl;
-    // return caveValue;
-
-    cavefield.topHeight = caveValue;
-    cavefield.bottomHeight = caveValue;
+    cavefield.topHeight = (float)CAVE_BASE_HEIGHT + caveRadius + caveTopOffset;
+    cavefield.bottomHeight = (float)CAVE_BASE_HEIGHT - caveRadius + caveBottomOffset;
 
     return cavefield;
 }

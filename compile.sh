@@ -22,7 +22,9 @@ emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=104857600 -
   util.cc \
   biomes.cc \
   MurmurHash3.cpp \
-  worley.cc \
+  Worley.cpp \
+  NoiseTools.cpp \
+  NoiseBase.cpp \
   -I. \
   -o bin/pg.js
 

@@ -3,7 +3,6 @@
 #include "instance.h"
 // #include "noises.h"
 // #include "result.h"
-#include "worley.h"
 #include <pthread.h>
 #include <thread>
 
