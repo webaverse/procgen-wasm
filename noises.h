@@ -8,6 +8,7 @@ class Noises {
 public:
   int seed;
   std::mt19937 rng;
+  
   Noise elevationNoise1;
   Noise elevationNoise2;
   Noise elevationNoise3;
@@ -16,11 +17,17 @@ public:
   Noise oceanNoise;
   Noise riverNoise;
   Noise lavaNoise;
+  
   Noise grassNoise;
   Noise vegetationNoise;
   Noise mobNoise;
+  
   Noise numSplitsNoise;
   Noise splitLodNoise;
+
+  Worley caveRadius;
+  Noise caveTopOffset;
+  Noise caveBottomOffset;
 
   Noises() = delete;
   Noises(int seed) :
@@ -38,7 +45,10 @@ public:
     vegetationNoise(rng(), 0.1, 4),
     mobNoise(rng(), 2, 4),
     numSplitsNoise(rng(), 0.01, 4),
-    splitLodNoise(rng(), 0.01, 4)
+    splitLodNoise(rng(), 0.01, 4),
+    caveRadius(rng()),
+    caveTopOffset(rng(), 0.01, 4),
+    caveBottomOffset(rng(), 0.01, 4)
   {}
   Noises(const Noises&) = delete;
 };
