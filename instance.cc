@@ -196,9 +196,7 @@ uint8_t *PGInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const in
         float ax = (float)minX + dx;
         float az = (float)minZ + dz;
 
-        // XXX this can be optimized to not fetch the full spec
-        const Heightfield &heightfield = getHeightField(ax, az);
-        const float &height = heightfield.heightField;
+        const float height = getHeight(ax, az);
 
         ps.push_back(ax);
         ps.push_back(height);
@@ -273,8 +271,7 @@ uint8_t *PGInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, con
         {
             int index = 0;
 
-            const Heightfield &heightfield = getHeightField(ax, az);
-            const float &height = heightfield.heightField;
+            const float height = getHeight(ax, az);
 
             ps.push_back(ax);
             ps.push_back(height);
@@ -347,8 +344,7 @@ uint8_t *PGInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int 
 
         if (noiseValue < mobRate)
         {
-            const Heightfield &heightfield = getHeightField(ax, az);
-            const float &height = heightfield.heightField;
+            const float height = getHeight(ax, az);
 
             ps.push_back(ax);
             ps.push_back(height);
