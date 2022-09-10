@@ -1303,10 +1303,11 @@ void generateBarrierGeometry(
     int lod,
     int chunkSize,
     OctreeContext &octreeContext,
+    PGInstance *inst,
     BarrierGeometry &geometry
 ) {
-    generateBarrierMesh(worldPosition, lod, chunkSize, octreeContext, geometry);
-    offsetGeometry(geometry, worldPosition);
+    generateBarrierMesh(worldPosition, lod, chunkSize, octreeContext, inst, geometry);
+    // offsetGeometry(geometry, worldPosition);
     // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
 
@@ -1385,8 +1386,8 @@ OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int
             lodSplits.push_back(
                 std::make_pair(
                     vm::ivec2{
-                        /*maxLodCenter.x + */splitLodDX,
-                        /*maxLodCenter.y + */splitLodDZ
+                        maxLodCenter.x + splitLodDX,
+                        maxLodCenter.y + splitLodDZ
                     },
                     splitLod
                 )
@@ -1419,7 +1420,6 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
         (chunkSize * chunkSize) + // center
         (gridWidthP1 + gridHeightP1) // seams
     );
-
     {
         getHeightFieldCenter(worldPosition.x, worldPosition.y, lod, heightfields);
         getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfields);
@@ -1471,6 +1471,7 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
             lod,
             chunkSize,
             octreeContext,
+            this,
             barrierGeometry
         );
     }
