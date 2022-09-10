@@ -275,6 +275,11 @@ bool equalsNodeLodArray(const OctreeNode &node, const OctreeNode &other) {
 /* bool intersectsNode(const OctreeNode &node, const OctreeNode &other) {
   return containsNode(node, other) || containsNode(other, node);
 } */
+// returns whether the box of min1 + lod1 intersects the box of min2 + lod2
+bool chunksIntersect(const vm::ivec2 &min1, const int lod1, const vm::ivec2 &min2, const int lod2) {
+  return min1.x < min2.x + lod2 && min1.x + lod1 > min2.x &&
+    min1.y < min2.y + lod2 && min1.y + lod1 > min2.y;
+}
 
 //
 

@@ -109,6 +109,7 @@ bool containsNode(const OctreeNode &node, const OctreeNode &other);
 bool equalsNode(const OctreeNode &node, const OctreeNode &other);
 bool equalsNodeLod(const OctreeNode &node, const OctreeNode &other);
 // bool intersectsNode(const OctreeNode &node, const OctreeNode &other);
+bool chunksIntersect(const vm::ivec2 &min1, const int lod1, const vm::ivec2 &min2, const int lod2);
 
 void constructSeedTree(OctreeContext &octreeContext, const vm::ivec2 &maxLodCenter, const int maxLod, const std::vector<std::pair<vm::ivec2, int>> &lodSplits);
 // std::vector<OctreeNodePtr> constructOctreeForSeed(const vm::ivec2 &maxLodCenter, const int maxLod, const std::vector<std::pair<vm::ivec2, int>> &lodSplits);
