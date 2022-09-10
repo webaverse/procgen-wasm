@@ -543,7 +543,12 @@ void computeVertexNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3
 
 //
 
-template<typename T, typename G>
+enum class WindingDirection {
+    CCW,
+    CW
+};
+
+template<typename T, typename G, WindingDirection windingDirection>
 void createPlaneGeometry(int width, int height, int widthSegments, int heightSegments, const std::vector<T> &heightfields, G &geometry) {
     const int &gridX = widthSegments; // equals chunkSize - 1
     const int &gridY = heightSegments; // equals chunkSize - 1
@@ -596,9 +601,15 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
         const T &hfB = heightfields[b];
         const T &hfC = heightfields[c];
         if (hfA.acceptIndex() && hfB.acceptIndex() && hfC.acceptIndex()) {
-            geometry.indices.push_back(a);
-            geometry.indices.push_back(b);
-            geometry.indices.push_back(c);
+            if (windingDirection == WindingDirection::CCW) {
+                geometry.indices.push_back(a);
+                geometry.indices.push_back(b);
+                geometry.indices.push_back(c);
+            } else {
+                geometry.indices.push_back(a);
+                geometry.indices.push_back(c);
+                geometry.indices.push_back(b);
+            }
         }
     };
 
@@ -619,7 +630,7 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
 
     }
 }
-template<typename T, typename G>
+template<typename T, typename G, WindingDirection windingDirection>
 void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int chunkSize, const std::vector<T> &heightfields, G &geometry) {
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
@@ -696,9 +707,15 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         const T &hfB = heightfields[b];
         const T &hfC = heightfields[c];
         if (hfA.acceptIndex() && hfB.acceptIndex() && hfC.acceptIndex()) {
-            geometry.indices.push_back(a);
-            geometry.indices.push_back(b);
-            geometry.indices.push_back(c);
+            if (windingDirection == WindingDirection::CCW) {
+                geometry.indices.push_back(a);
+                geometry.indices.push_back(b);
+                geometry.indices.push_back(c);
+            } else {
+                geometry.indices.push_back(a);
+                geometry.indices.push_back(c);
+                geometry.indices.push_back(b);
+            }
         }
     };
 
