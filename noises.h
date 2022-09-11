@@ -47,8 +47,8 @@ public:
     numSplitsNoise(rng(), 0.01, 4),
     splitLodNoise(rng(), 0.01, 4),
     caveRadius(rng()),
-    caveTopOffset(rng(), 0.01, 4),
-    caveBottomOffset(rng(), 0.01, 4)
+    caveTopOffset(rng(), 2, 4),
+    caveBottomOffset(rng(), 2, 4)
   {}
   Noises(const Noises&) = delete;
 };

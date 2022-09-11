@@ -899,7 +899,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
     }
 }
 
-template<typename T, typename TTop, typename TBottom, typename G>
+/* template<typename T, typename TTop, typename TBottom, typename G>
 void createDualPlaneGeometry(int width, int height, int widthSegments, int heightSegments, const std::vector<T> &heightfields, G &geometry) {
     const std::vector<TTop> &topHeightfields = *((const std::vector<TTop> *)&heightfields);
     const std::vector<TBottom> &bottomHeightfields = *((const std::vector<TBottom> *)&heightfields);
@@ -914,7 +914,7 @@ void createDualPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, i
 
     createPlaneSeamsGeometry<TTop, G, WindingDirection::CCW>(lod, lodArray, chunkSize, topHeightfields, geometry);
     createPlaneSeamsGeometry<TBottom, G, WindingDirection::CW>(lod, lodArray, chunkSize, bottomHeightfields, geometry);
-}
+} */
 
 //
 
@@ -976,25 +976,27 @@ void generateWaterfieldSeamsMesh(
 
 //
 
+template<typename T, WindingDirection windingDirection>
 void generateCavefieldCenterMesh(
     int lod,
     int chunkSize,
-    const std::vector<Cavefield> &cavefields,
+    const std::vector<T> &cavefields,
     CaveGeometry &geometry
 ) {
     const int worldSize = chunkSize * lod;
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
-    createDualPlaneGeometry<Cavefield, CavefieldTop, CavefieldBottom, CaveGeometry>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, cavefields, geometry);
+    createPlaneGeometry<T, CaveGeometry, windingDirection>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, cavefields, geometry);
 }
+template<typename T, WindingDirection windingDirection>
 void generateCavefieldSeamsMesh(
     int lod,
     const std::array<int, 2> &lodArray,
     int chunkSize,
-    const std::vector<Cavefield> &cavefields,
+    const std::vector<T> &cavefields,
     CaveGeometry &geometry
 ) {
-    createDualPlaneSeamsGeometry<Cavefield, CavefieldTop, CavefieldBottom, CaveGeometry>(lod, lodArray, chunkSize, cavefields, geometry);
+    createPlaneSeamsGeometry<T, CaveGeometry, windingDirection>(lod, lodArray, chunkSize, cavefields, geometry);
 }
 
 //
@@ -1298,6 +1300,36 @@ void generateWaterGeometry(
 
 //
 
+template<typename G>
+G &mergeGeometry(G &dst, G &a, G &b) {
+    dst.positions.reserve(a.positions.size() + b.positions.size());
+    dst.normals.reserve(a.normals.size() + b.normals.size());
+    dst.indices.reserve(a.indices.size() + b.indices.size());
+    
+    for (size_t i = 0; i < a.positions.size(); i++) {
+        dst.positions.push_back(a.positions[i]);
+    }
+    for (size_t i = 0; i < a.normals.size(); i++) {
+        dst.normals.push_back(a.normals[i]);
+    }
+    for (size_t i = 0; i < a.indices.size(); i++) {
+        dst.indices.push_back(a.indices[i]);
+    }
+
+    uint32_t indexOffset = (uint32_t)a.positions.size();
+    for (size_t i = 0; i < b.positions.size(); i++) {
+        dst.positions.push_back(b.positions[i]);
+    }
+    for (size_t i = 0; i < b.normals.size(); i++) {
+        dst.normals.push_back(b.normals[i]);
+    }
+    for (size_t i = 0; i < b.indices.size(); i++) {
+        dst.indices.push_back(indexOffset + b.indices[i]);
+    }
+
+    return dst;
+}
+
 void generateCaveGeometry(
     const vm::ivec2 &worldPosition,
     int lod,
@@ -1306,8 +1338,21 @@ void generateCaveGeometry(
     const std::vector<Cavefield> &cavefields,
     CaveGeometry &geometry
 ) {
-    generateCavefieldCenterMesh(lod, chunkSize, cavefields, geometry);
-    generateCavefieldSeamsMesh(lod, lodArray, chunkSize, cavefields, geometry);
+    const std::vector<CavefieldTop> &cavefieldsTop = *((const std::vector<CavefieldTop> *)&cavefields);
+    const std::vector<CavefieldBottom> &cavefieldsBottom = *((const std::vector<CavefieldBottom> *)&cavefields);
+
+    // CaveGeometry &topGeometry = geometry;
+    CaveGeometry topGeometry;
+    generateCavefieldCenterMesh<CavefieldTop, WindingDirection::CCW>(lod, chunkSize, cavefieldsTop, topGeometry);
+    generateCavefieldSeamsMesh<CavefieldTop, WindingDirection::CCW>(lod, lodArray, chunkSize, cavefieldsTop, topGeometry);
+
+    // CaveGeometry &bottomGeometry = geometry;
+    CaveGeometry bottomGeometry;
+    generateCavefieldCenterMesh<CavefieldBottom, WindingDirection::CW>(lod, chunkSize, cavefieldsBottom, bottomGeometry);
+    generateCavefieldSeamsMesh<CavefieldBottom, WindingDirection::CW>(lod, lodArray, chunkSize, cavefieldsBottom, bottomGeometry);
+
+    mergeGeometry(geometry, topGeometry, bottomGeometry);
+
     offsetGeometry(geometry, worldPosition);
     computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
@@ -1329,18 +1374,6 @@ void generateBarrierGeometry(
 
 //
 
-/* Geometry &mergeGeometry(Geometry &a, Geometry &b) {
-    for (size_t i = 0; i < b.positions.size(); i++) {
-        a.positions.push_back(b.positions[i]);
-    }
-    for (size_t i = 0; i < b.normals.size(); i++) {
-        a.normals.push_back(b.normals[i]);
-    }
-    for (size_t i = 0; i < b.indices.size(); i++) {
-        a.indices.push_back(b.indices[i]);
-    }
-    return a;
-} */
 /* uint8_t getMostCommonBiome(const std::vector<Heightfield> &heightfields) {
     std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
     for (const auto &hf : heightfields) {
@@ -2293,10 +2326,11 @@ void PGInstance::getCaveFieldSeams(int bx, int bz, int lod, const std::array<int
 Cavefield PGInstance::getCavefield(int bx, int bz) {
     Cavefield cavefield;
 
+    constexpr float caveScaleXZ = 0.01f;
     float caveRadius = noises.caveRadius.Get({
-        (float)bx,
-        (float)bz
-    }, 1.f) * 10.f;
+        (float)bx * caveScaleXZ,
+        (float)bz * caveScaleXZ
+    }, 1.f) * 100.f;
     float caveTopOffset = noises.caveTopOffset.in2D(
         (float)bx,
         (float)bz
@@ -2306,8 +2340,10 @@ Cavefield PGInstance::getCavefield(int bx, int bz) {
         (float)bz
     );
 
-    cavefield.topHeight = (float)CAVE_BASE_HEIGHT + caveRadius + caveTopOffset;
-    cavefield.bottomHeight = (float)CAVE_BASE_HEIGHT - caveRadius + caveBottomOffset;
+    // cavefield.topHeight = (float)CAVE_BASE_HEIGHT + caveRadius + caveTopOffset;
+    // cavefield.bottomHeight = (float)CAVE_BASE_HEIGHT - caveRadius + caveBottomOffset;
+    cavefield.topHeight = (float)CAVE_BASE_HEIGHT + caveRadius;
+    cavefield.bottomHeight = (float)CAVE_BASE_HEIGHT - caveRadius;
 
     return cavefield;
 }
