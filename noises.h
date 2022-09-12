@@ -25,9 +25,15 @@ public:
   Noise numSplitsNoise;
   Noise splitLodNoise;
 
-  Worley caveRadius;
-  Noise caveTopOffset;
-  Noise caveBottomOffset;
+  // Worley caveRadius;
+  // Noise caveTopOffset;
+  // Noise caveBottomOffset;
+
+  Noise caveX;
+  Noise caveZ;
+  Noise caveDirectionX;
+  Noise caveDirectionZ;
+  Noise caveMagnitude;
 
   Noises() = delete;
   Noises(int seed) :
@@ -46,9 +52,14 @@ public:
     mobNoise(rng(), 2, 4),
     numSplitsNoise(rng(), 0.01, 4),
     splitLodNoise(rng(), 0.01, 4),
-    caveRadius(rng()),
-    caveTopOffset(rng(), 2, 4),
-    caveBottomOffset(rng(), 2, 4)
+    // caveRadius(rng()),
+    // caveTopOffset(rng(), 2, 4),
+    // caveBottomOffset(rng(), 2, 4),
+    caveX(rng(), 0.01, 4),
+    caveZ(rng(), 0.01, 4),
+    caveDirectionX(rng(), 0.01, 4),
+    caveDirectionZ(rng(), 0.01, 4),
+    caveMagnitude(rng(), 0.01, 4)
   {}
   Noises(const Noises&) = delete;
 };

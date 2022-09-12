@@ -29,7 +29,11 @@ public:
     float getHeight() const {
       return heightField;
     }
-    bool acceptIndex() const {
+    static bool acceptIndices(
+      const Heightfield &a,
+      const Heightfield &b,
+      const Heightfield &c
+    ) {
       return true;
     }
 };
@@ -44,15 +48,31 @@ public:
     bool acceptIndex() const {
       return waterFactor > 0;
     }
+    static bool acceptIndices(
+      const Waterfield &a,
+      const Waterfield &b,
+      const Waterfield &c
+    ) {
+      return a.acceptIndex() && b.acceptIndex() && c.acceptIndex();
+    }
 };
 
 class Cavefield {
 public:
+    float radius;
     float topHeight;
     float bottomHeight;
 
     bool acceptIndex() const {
       return true;
+    }
+    static bool acceptIndices(
+      const Cavefield &a,
+      const Cavefield &b,
+      const Cavefield &c
+    ) {
+      // return a.radius != b.radius || a.radius != c.radius;
+      return a.radius != 0 || b.radius != 0 || c.radius != 0;
     }
 };
 

@@ -21,3 +21,9 @@ double Noise::in2D(double x, double y) {
 double Noise::in3D(double x, double y, double z) {
   return vm::clamp((1.0 + in3DRaw(x, y, z)) / 2.0, 0., 1.);
 }
+double Noise::in2DBidirectional(double x, double y) {
+  return vm::clamp(in2DRaw(x, y), -1., 1.);
+}
+double Noise::in3DBidirectional(double x, double y, double z) {
+  return vm::clamp(in3DRaw(x, y, z), -1., 1.);
+}

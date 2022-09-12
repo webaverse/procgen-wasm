@@ -47,6 +47,29 @@ public:
     float seedRadius;
 };
 
+class Line2 {
+public:
+    vm::vec2 start;
+    vm::vec2 end;
+
+    float distanceToPoint(const vm::vec2 &p) const {
+        vm::vec2 v = end - start;
+        vm::vec2 w = p - start;
+
+        float c1 = vm::dot(w, v);
+        if (c1 <= 0)
+            return vm::length(p - start);
+
+        float c2 = vm::dot(v, v);
+        if (c2 <= c1)
+            return vm::length(p - end);
+
+        float b = c1 / c2;
+        vm::vec2 pb = start + v * b;
+        return vm::length(p - pb);
+    }
+};
+
 class PGInstance {
 public:
     int seed;
@@ -74,9 +97,11 @@ public:
     void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfieldSeams);
     Waterfield getWaterField(int bx, int bz, int lod);
 
-    void getCaveFieldCenter(int bx, int bz, int lod, std::vector<Cavefield> &cavefields);
-    void getCaveFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Cavefield> &cavefields);
-    Cavefield getCavefield(int bx, int bz);
+    // void getCaveFieldCenter(int bx, int bz, int lod, std::vector<Cavefield> &cavefields);
+    // void getCaveFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Cavefield> &cavefields);
+    // Cavefield getCavefield(int bx, int bz);
+    void getCaveFieldChunk(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Cavefield> &cavefields);
+    Cavefield getCavefield(int bx, int bz, const std::vector<Line2> &caveLines);
 
     float getSeed(int bx, int bz);
 

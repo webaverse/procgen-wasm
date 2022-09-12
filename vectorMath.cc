@@ -211,6 +211,13 @@ float vm::distance(const vm::ivec2 &v, const vm::ivec2 &o)
 	return std::sqrt(dx * dx + dy * dy);
 }
 
+float vm::dot(const vm::vec2 &v, const vm::vec2 &o) {
+    return v.x * o.x + v.y * o.y;
+}
+float vm::dot(const vm::vec3 &v, const vm::vec3 &o) {
+    return v.x * o.x + v.y * o.y + v.z * o.z;
+}
+
 // + operator
 vm::vec2 vm::operator+(const vm::vec2 &v1, const vm::vec2 &v2)
 {

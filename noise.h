@@ -16,6 +16,9 @@ class Noise {
 
   double in2D(double x, double y);
   double in3D(double x, double y, double z);
+
+  double in2DBidirectional(double x, double y);
+  double in3DBidirectional(double x, double y, double z);
 };
 
 #endif
