@@ -57,39 +57,6 @@ public:
     }
 };
 
-class Cavefield {
-public:
-    float radius;
-    float topHeight;
-    float bottomHeight;
-
-    bool acceptIndex() const {
-      return true;
-    }
-    static bool acceptIndices(
-      const Cavefield &a,
-      const Cavefield &b,
-      const Cavefield &c
-    ) {
-      // return a.radius != b.radius || a.radius != c.radius;
-      return a.radius != 0 || b.radius != 0 || c.radius != 0;
-    }
-};
-
-class CavefieldTop : public Cavefield {
-public:
-    float getHeight() const {
-      return topHeight;
-    }
-};
-
-class CavefieldBottom : public Cavefield {
-public:
-    float getHeight() const {
-      return bottomHeight;
-    }
-};
-
 class NoiseField {
 public:
     float temperature;

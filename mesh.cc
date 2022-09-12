@@ -142,49 +142,6 @@ uint8_t *WaterGeometry::getBuffer() const {
 
 //
 
-void CaveGeometry::pushPointMetadata(const Cavefield &fieldValue) {
-  // nothing
-}
-uint8_t *CaveGeometry::getBuffer() const {
-  // calculate size
-  size_t neededSize =
-    // positions
-    sizeof(uint32_t) +
-    positions.size() * sizeof(positions[0]) +
-    // normals
-    sizeof(uint32_t) +
-    normals.size() * sizeof(normals[0]) +
-    // indices
-    sizeof(uint32_t) +
-    indices.size() * sizeof(indices[0]);
-
-  // allocate buffer
-  uint8_t *buffer = (uint8_t *)malloc(neededSize);
-  int index = 0;
-
-  // positions
-  *((uint32_t *)(buffer + index)) = positions.size();
-  index += sizeof(uint32_t);
-  std::memcpy(buffer + index, &positions[0], positions.size() * sizeof(positions[0]));
-  index += positions.size() * sizeof(positions[0]);
-
-  // normals
-  *((uint32_t *)(buffer + index)) = normals.size();
-  index += sizeof(uint32_t);
-  std::memcpy(buffer + index, &normals[0], normals.size() * sizeof(normals[0]));
-  index += normals.size() * sizeof(normals[0]);
-
-  // indices
-  *((uint32_t *)(buffer + index)) = indices.size();
-  index += sizeof(uint32_t);
-  std::memcpy(buffer + index, &indices[0], indices.size() * sizeof(indices[0]));
-  index += indices.size() * sizeof(indices[0]);
-
-  return buffer;
-}
-
-//
-
 uint8_t *BarrierGeometry::getBuffer() const {
   // calculate size
   size_t neededSize =

@@ -976,31 +976,6 @@ void generateWaterfieldSeamsMesh(
 
 //
 
-template<typename T, WindingDirection windingDirection>
-void generateCavefieldCenterMesh(
-    int lod,
-    int chunkSize,
-    const std::vector<T> &cavefields,
-    CaveGeometry &geometry
-) {
-    const int worldSize = chunkSize * lod;
-    const int worldSizeM1 = worldSize - lod;
-    const int chunkSizeM1 = chunkSize - 1;
-    createPlaneGeometry<T, CaveGeometry, windingDirection>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, cavefields, geometry);
-}
-template<typename T, WindingDirection windingDirection>
-void generateCavefieldSeamsMesh(
-    int lod,
-    const std::array<int, 2> &lodArray,
-    int chunkSize,
-    const std::vector<T> &cavefields,
-    CaveGeometry &geometry
-) {
-    createPlaneSeamsGeometry<T, CaveGeometry, windingDirection>(lod, lodArray, chunkSize, cavefields, geometry);
-}
-
-//
-
 void generateBarrierMesh(
     const vm::ivec2 &worldPosition,
     int lod,
@@ -1330,33 +1305,6 @@ G &mergeGeometry(G &dst, G &a, G &b) {
     return dst;
 }
 
-void generateCaveGeometry(
-    const vm::ivec2 &worldPosition,
-    int lod,
-    const std::array<int, 2> &lodArray,
-    int chunkSize,
-    const std::vector<Cavefield> &cavefields,
-    CaveGeometry &geometry
-) {
-    const std::vector<CavefieldTop> &cavefieldsTop = *((const std::vector<CavefieldTop> *)&cavefields);
-    const std::vector<CavefieldBottom> &cavefieldsBottom = *((const std::vector<CavefieldBottom> *)&cavefields);
-
-    // CaveGeometry &topGeometry = geometry;
-    CaveGeometry topGeometry;
-    generateCavefieldCenterMesh<CavefieldTop, WindingDirection::CCW>(lod, chunkSize, cavefieldsTop, topGeometry);
-    generateCavefieldSeamsMesh<CavefieldTop, WindingDirection::CCW>(lod, lodArray, chunkSize, cavefieldsTop, topGeometry);
-
-    // CaveGeometry &bottomGeometry = geometry;
-    CaveGeometry bottomGeometry;
-    generateCavefieldCenterMesh<CavefieldBottom, WindingDirection::CW>(lod, chunkSize, cavefieldsBottom, bottomGeometry);
-    generateCavefieldSeamsMesh<CavefieldBottom, WindingDirection::CW>(lod, lodArray, chunkSize, cavefieldsBottom, bottomGeometry);
-
-    mergeGeometry(geometry, topGeometry, bottomGeometry);
-
-    offsetGeometry(geometry, worldPosition);
-    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
-}
-
 //
 
 void generateBarrierGeometry(
@@ -1503,27 +1451,6 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
         );
     }
 
-    // cave
-    CaveGeometry caveGeometry;
-    std::vector<Cavefield> cavefields(
-        (chunkSize * chunkSize) + // center
-        (gridWidthP1 + gridHeightP1) // seams
-    );
-    {
-        // getCaveFieldCenter(worldPosition.x, worldPosition.y, lod, cavefields);
-        // getCaveFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, cavefields);
-        getCaveFieldChunk(worldPosition.x, worldPosition.y, lod, lodArray, cavefields);
-
-        generateCaveGeometry(
-            worldPosition,
-            lod,
-            lodArray,
-            chunkSize,
-            cavefields,
-            caveGeometry
-        );
-    }
-
     // barrier
     BarrierGeometry barrierGeometry;
     OctreeContext octreeContext = getChunkSeedOctree(worldPosition, lod);
@@ -1549,7 +1476,6 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
     ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
     result->terrainMeshBuffer = terrainGeometry.getBuffer();
     result->waterMeshBuffer = waterGeometry.getBuffer();
-    result->caveMeshBuffer = caveGeometry.getBuffer();
     result->barrierMeshBuffer = barrierGeometry.getBuffer();
     result->barrierNodeBuffer = node->getBuffer();
     return result;
@@ -2279,174 +2205,6 @@ void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<in
 
 //
 
-void PGInstance::getCaveFieldChunk(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Cavefield> &cavefields) {
-    std::vector<Line2> lines;
-    // XXX range this to nearby lods
-    {
-        // constexpr int maxLod = 7;
-        // constexpr int maxLodRange = 1 << (maxLod - 1);
-        constexpr int maxLodRange = 128;
-        constexpr float maxCaveLength = 25.f;
-        
-        vm::vec2 maxLodBasePosition{
-            (float)std::floor((float)bx / (float)maxLodRange) * (float)maxLodRange,
-            (float)std::floor((float)bz / (float)maxLodRange) * (float)maxLodRange
-            // (float)((bx / maxLodRange) * maxLodRange),
-            // (float)((bz / maxLodRange) * maxLodRange)
-        };
-        /* vm::vec2 maxLodOffset{
-            (float)bx - maxLodBasePosition.x,
-            (float)bz - maxLodBasePosition.y
-        }; */
-        vm::vec2 caveOffset{
-            (float)noises.caveX.in2D(maxLodBasePosition.x, maxLodBasePosition.y) * (float)maxLodRange,
-            (float)noises.caveZ.in2D(maxLodBasePosition.x, maxLodBasePosition.y) * (float)maxLodRange
-        };
-        vm::vec2 lineStartPosition{
-            (float)maxLodBasePosition.x + caveOffset.x,
-            (float)maxLodBasePosition.y + caveOffset.y
-        };
-        vm::vec2 lineDirection{
-            (float)noises.caveDirectionX.in2DBidirectional(maxLodBasePosition.x, maxLodBasePosition.y),
-            (float)noises.caveDirectionZ.in2DBidirectional(maxLodBasePosition.x, maxLodBasePosition.y)
-        };
-        float magnitude = noises.caveMagnitude.in2D(maxLodBasePosition.x, maxLodBasePosition.y) * maxCaveLength;
-        // std::cout << "magnitude " << magnitude << std::endl;
-        vm::vec2 lineEndPosition{
-            (float)lineStartPosition.x + lineDirection.x * magnitude,
-            (float)lineStartPosition.y + lineDirection.y * magnitude
-        };
-
-        // snap
-        lineStartPosition.x = std::min(std::max(lineStartPosition.x, maxLodBasePosition.x), maxLodBasePosition.x + (float)maxLodRange);
-        lineStartPosition.y = std::min(std::max(lineStartPosition.y, maxLodBasePosition.y), maxLodBasePosition.y + (float)maxLodRange);
-        lineEndPosition.x = std::min(std::max(lineEndPosition.x, maxLodBasePosition.x), maxLodBasePosition.x + (float)maxLodRange);
-        lineEndPosition.y = std::min(std::max(lineEndPosition.y, maxLodBasePosition.y), maxLodBasePosition.y + (float)maxLodRange);
-
-        lines.push_back(Line2{
-            lineStartPosition,
-            lineEndPosition
-        });
-    }
-
-    // center
-    for (int z = 0; z < chunkSize; z++) {
-        for (int x = 0; x < chunkSize; x++) {
-            int index2D = x + z * chunkSize;
-            Cavefield &localCavefield = cavefields[index2D];
-            localCavefield = getCavefield(bx + x * lod, bz + z * lod, lines);
-        }
-    }
-
-    // seams
-    const int &bottomLod = lodArray[0];
-    const int &rightLod = lodArray[1];
-
-    const int gridWidth = chunkSize * lod / bottomLod;
-    const int gridWidthP1 = gridWidth + 1;
-
-    const int gridHeight = chunkSize * lod / rightLod;
-    const int gridHeightP1 = gridHeight + 1;
-
-    const int cavefieldsCenterDataOffset = chunkSize * chunkSize;
-
-    // bottom
-    int index = cavefieldsCenterDataOffset;
-    {
-        const int z = chunkSize;
-        for (int x = 0; x < gridWidthP1; x++) {
-            Cavefield &localCavefieldSeam = cavefields[index];
-            localCavefieldSeam = getCavefield(bx + x * bottomLod, bz + z * lod, lines);
-
-            index++;
-        }
-    }
-    // right
-    {
-        const int x = chunkSize;
-        for (int z = 0; z < gridHeightP1; z++) {
-            Cavefield &localCavefieldSeam = cavefields[index];
-            localCavefieldSeam = getCavefield(bx + x * lod, bz + z * rightLod, lines);
-
-            index++;
-        }
-    }
-}
-Cavefield PGInstance::getCavefield(int bx, int bz, const std::vector<Line2> &lines) {
-    Cavefield cavefield;
-
-    /* constexpr float caveScaleXZ = 0.01f;
-    float caveRadius = noises.caveRadius.Get({
-        (float)bx * caveScaleXZ,
-        (float)bz * caveScaleXZ
-    }, 1.f) * 100.f;
-    float caveTopOffset = noises.caveTopOffset.in2D(
-        (float)bx,
-        (float)bz
-    );
-    float caveBottomOffset = noises.caveBottomOffset.in2D(
-        (float)bx,
-        (float)bz
-    ); */
-    float closestDistance = -std::numeric_limits<float>::infinity();
-    for (auto iter = lines.begin(); iter != lines.end(); iter++) {
-        const Line2 &line = *iter;
-        vm::vec2 point{
-            (float)bx,
-            (float)bz
-        };
-        float distance = line.distanceToPoint(point); // offset to prevent glitches
-        if (distance > closestDistance) {
-            closestDistance = distance;
-        }
-    }
-    constexpr float maxCaveRadius = 3.f;
-    // constexpr float maxCaveHeight = 3.f;
-    // float caveRadius = std::pow(1.f - std::min(std::max(
-    //     maxCaveRadius - closestDistance,
-    // 0.f), 1.f) / maxCaveRadius, 2.f);
-    /* float caveRadius = std::min(std::max(
-        (maxCaveRadius - closestDistance) / maxCaveRadius,
-    0.f), 1.f); */
-    // caveRadius = 1.f - (float)std::pow(1.f - caveRadius, 2.f);
-    // caveRadius = std::sqrt(caveRadius);
-    // caveRadius *= maxCaveRadius;
-    float caveRadius = (closestDistance > -std::numeric_limits<float>::infinity() && closestDistance <= maxCaveRadius) ?
-        std::sqrt(maxCaveRadius*maxCaveRadius - closestDistance*closestDistance)
-    : 0.f;
-    if (caveRadius < 2.f) {
-        caveRadius = 0.f;
-    }
-
-    cavefield.radius = caveRadius;
-    // cavefield.topHeight = (float)CAVE_BASE_HEIGHT + caveRadius + caveTopOffset;
-    // cavefield.bottomHeight = (float)CAVE_BASE_HEIGHT - caveRadius + caveBottomOffset;
-    cavefield.topHeight = (float)CAVE_BASE_HEIGHT + caveRadius;
-    cavefield.bottomHeight = (float)CAVE_BASE_HEIGHT - caveRadius;
-    // cavefield.topHeight = 0;
-    // cavefield.bottomHeight = 0;
-
-    return cavefield;
-}
-
-/* // compile-time sqrt
-template <typename T>
-constexpr T sqrt_helper(T x, T lo, T hi) {
-  if (lo == hi)
-    return lo;
-
-  const T mid = (lo + hi + 1) / 2;
-
-  if (x / mid < mid)
-    return sqrt_helper<T>(x, lo, mid - 1);
-  else
-    return sqrt_helper(x, mid, hi);
-}
-template <typename T>
-constexpr T ct_sqrt(T x) {
-  return sqrt_helper<T>(x, 0, x / 2 + 1);
-} */
-
 Waterfield PGInstance::getWaterField(int bx, int bz, int lod) {
     constexpr int range = 4;
     // constexpr float maxWaterFactorSqrt = (2 * range) + 1;
@@ -2532,9 +2290,6 @@ uint8_t PGInstance::initAoField(PGInstance *inst, int x, int y, int z) {
     }
 
     return numOpens;
-} */
-/* float PGInstance::initCaveField(PGInstance *inst, int x, int y, int z) {
-    return ProcGen::getComputedCaveNoise(x, y, z);
 } */
 float randomFromPoint(int x, int y, int z) {
     uint64_t hash = hashOctreeMin(vm::ivec3{x, y, z});
