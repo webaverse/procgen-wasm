@@ -226,6 +226,10 @@ bool containsPoint(const vm::ivec2 &min, const int lod, const vm::ivec2 &p) {
   return p.x >= min.x && p.x < min.x + lod &&
     p.y >= min.y && p.y < min.y + lod;
 }
+bool containsPoint(const vm::vec2 &min, const int lod, const vm::vec2 &p) {
+  return p.x >= min.x && p.x < min.x + (float)lod &&
+    p.y >= min.y && p.y < min.y + (float)lod;
+}
 bool containsPoint(const OctreeNode &node, const vm::ivec2 &p) {
   return containsPoint(node.min, node.lod, p);
 }
