@@ -1190,6 +1190,21 @@ void generateBarrierMesh(
     ) : seedLeafNodes.end();
     if (iter != seedLeafNodes.end()) {
         OctreeNodePtr node = *iter;
+
+        /* {
+            std::cout << "main leaf node: ";
+            std::cout << node->min.x << "," << node->min.y << "/" << node->lod << ", ";
+            std::cout << std::endl;
+        }
+        {
+            std::cout << "seed leaf nodes: ";
+            for (auto iter = seedLeafNodes.begin(); iter != seedLeafNodes.end(); iter++) {
+                OctreeNodePtr node = *iter;
+                std::cout << node->min.x << "," << node->min.y << "/" << node->lod << ", ";
+            }
+            std::cout << std::endl;
+        } */
+
         const vm::ivec2 &nodePosition = node->min;
         const int &nodeLod = node->lod;
 
