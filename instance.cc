@@ -976,6 +976,198 @@ void generateWaterfieldSeamsMesh(
 
 //
 
+template<typename G>
+void createBoxGeometry(float width, float height, float depth, int widthSegments, int heightSegments, int depthSegments, G &geometry) {
+    // segments
+
+    // widthSegments = Math.floor(widthSegments);
+    // heightSegments = Math.floor(heightSegments);
+    // depthSegments = Math.floor(depthSegments);
+
+    // buffers
+
+    // const indices = [];
+    // const vertices = [];
+    // const normals = [];
+    // const uvs = [];
+
+    // helper variables
+
+    int numberOfVertices = 0;
+    // let groupStart = 0;
+
+    auto buildPlane = [&](std::function<vm::vec3(float z, float y, float x)> &vectorFn, float udir, float vdir, float width, float height, float depth, int gridX, int gridY) -> void {
+        const float segmentWidth = width / gridX;
+        const float segmentHeight = height / gridY;
+
+        const float widthHalf = width / 2.f;
+        const float heightHalf = height / 2.f;
+        const float depthHalf = depth / 2.f;
+
+        const int gridX1 = gridX + 1;
+        const int gridY1 = gridY + 1;
+
+        int vertexCounter = 0;
+        // let groupCount = 0;
+
+        // const vector = new Vector3();
+        vm::vec3 vector;
+
+        // generate vertices, normals and uvs
+
+        for (int iy = 0; iy < gridY1; iy++) {
+
+            const int y = iy * segmentHeight - heightHalf;
+
+            for (int ix = 0; ix < gridX1; ix++) {
+
+                const int x = ix * segmentWidth - widthHalf;
+
+                // set values to correct vector component
+
+                vector = vectorFn(x * udir, y * vdir, depthHalf);
+                // vector[ u ] = x * udir;
+                // vector[ v ] = y * vdir;
+                // vector[ w ] = depthHalf;
+
+                // now apply vector to vertex buffer
+
+                // vertices.push(vector.x, vector.y, vector.z);
+                geometry.positions.push_back(vector);
+
+                // set values to correct vector component
+
+                vector = vectorFn(0, 0, depth > 0 ? 1 : - 1);
+                // vector[ u ] = 0;
+                // vector[ v ] = 0;
+                // vector[ w ] = depth > 0 ? 1 : - 1;
+
+                // now apply vector to normal buffer
+
+                // normals.push(vector.x, vector.y, vector.z);
+                geometry.normals.push_back(vector);
+
+                // uvs
+
+                // uvs.push((float)ix / (float)gridX);
+                // uvs.push(1.f - ((float)iy / (float)gridY));
+                geometry.uvs.push_back(vm::vec2{
+                    (float)ix / (float)gridX,
+                    1.f - ((float)iy / (float)gridY)
+                });
+
+                // counters
+
+                vertexCounter += 1;
+
+            }
+
+        }
+
+        // indices
+
+        // 1. you need three indices to draw a single face
+        // 2. a single segment consists of two faces
+        // 3. so we need to generate six (2*3) indices per segment
+
+        for (int iy = 0; iy < gridY; iy++) {
+
+            for (int ix = 0; ix < gridX; ix++) {
+
+                const int a = numberOfVertices + ix + gridX1 * iy;
+                const int b = numberOfVertices + ix + gridX1 * (iy + 1);
+                const int c = numberOfVertices + (ix + 1) + gridX1 * (iy + 1);
+                const int d = numberOfVertices + (ix + 1) + gridX1 * iy;
+
+                // faces
+
+                geometry.indices.push_back(a);
+                geometry.indices.push_back(b);
+                geometry.indices.push_back(d);
+                geometry.indices.push_back(b);
+                geometry.indices.push_back(c);
+                geometry.indices.push_back(d);
+
+                // increase counter
+
+                // groupCount += 6;
+
+            }
+
+        }
+
+        // add a group to the geometry. this will ensure multi material support
+
+        // scope.addGroup( groupStart, groupCount, materialIndex );
+
+        // calculate new start value for groups
+
+        // groupStart += groupCount;
+
+        // update total number of vertices
+
+        numberOfVertices += vertexCounter;
+    };
+
+    // build each side of the box geometry
+
+    std::function<vm::vec3(float z, float y, float x)> pushVertices1 = [&](float z, float y, float x) -> vm::vec3 {
+        return vm::vec3{
+            x,
+            y,
+            z
+        };
+    };
+    buildPlane(pushVertices1, -1, -1, depth, height, width, depthSegments, heightSegments); // px
+    std::function<vm::vec3(float z, float y, float x)> pushVertices2 = [&](float z, float y, float x) -> vm::vec3 {
+        return vm::vec3{
+            x,
+            y,
+            z
+        };
+    };
+    buildPlane(pushVertices2, 1, -1, depth, height, -width, depthSegments, heightSegments); // nx
+    // std::function<vm::vec3(float z, float y, float x)> pushVertices3 = [&](float x, float z, float y) -> vm::vec3 {
+    //     return vm::vec3{
+    //         x,
+    //         y,
+    //         z
+    //     };
+    // };
+    // buildPlane(pushVertices3, 1, 1, width, depth, height, widthSegments, depthSegments); // py
+    // std::function<vm::vec3(float z, float y, float x)> pushVertices4 = [&](float x, float z, float y) -> vm::vec3 {
+    //     return vm::vec3{
+    //         x,
+    //         y,
+    //         z
+    //     };
+    // };
+    // buildPlane(pushVertices4, 1, -1, width, depth, -height, widthSegments, depthSegments); // ny
+    std::function<vm::vec3(float z, float y, float x)> pushVertices5 = [&](float x, float y, float z) -> vm::vec3 {
+        return vm::vec3{
+            x,
+            y,
+            z
+        };
+    };
+    buildPlane(pushVertices5, 1, -1, width, height, depth, widthSegments, heightSegments); // pz
+    std::function<vm::vec3(float z, float y, float x)> pushVertices6 = [&](float x, float y, float z) -> vm::vec3 {
+        return vm::vec3{
+            x,
+            y,
+            z
+        };
+    };
+    buildPlane(pushVertices6, -1, -1, width, height, -depth, widthSegments, heightSegments); // nz
+
+    // build geometry
+
+    // this.setIndex( indices );
+    // this.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
+    // this.setAttribute( 'normal', new Float32BufferAttribute( normals, 3 ) );
+    // this.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
+}
+
 void generateBarrierMesh(
     const vm::ivec2 &worldPosition,
     int lod,
