@@ -1192,16 +1192,15 @@ void generateBarrierMesh(
         OctreeNodePtr node = *iter;
         const vm::ivec2 &nodePosition = node->min;
         const int &nodeLod = node->lod;
-        const int nodeLodRange = nodeLod * chunkSize;
 
         float barrierMinHeight = std::numeric_limits<float>::infinity();
         float barrierMaxHeight = -std::numeric_limits<float>::infinity();
-        for (int dz = 0; dz < nodeLodRange; dz += nodeLod) {
-            for (int dx = 0; dx < nodeLodRange; dx += nodeLod) {
+        for (int dz = 0; dz < chunkSize; dz++) {
+            for (int dx = 0; dx < chunkSize; dx++) {
                 const float height = inst->getHeight(
-                    nodePosition.x + dx,
-                    nodePosition.y + dz
-                );
+                    nodePosition.x + dx * nodeLod,
+                    nodePosition.y + dz * nodeLod
+                ) - (float)WORLD_BASE_HEIGHT;
                 if (height < barrierMinHeight) {
                     barrierMinHeight = height;
                 }
@@ -1213,9 +1212,9 @@ void generateBarrierMesh(
         barrierMinHeight = std::floor(barrierMinHeight);
         barrierMaxHeight = std::ceil(barrierMaxHeight);
 
-        int width = nodeLodRange / 2 - 2;
+        int width = nodeLod * chunkSize - 2;
         int height = barrierMaxHeight - barrierMinHeight;
-        int depth = nodeLodRange / 2 - 2;
+        int depth = nodeLod * chunkSize - 2;
         createBoxGeometry(
             width,
             height,
@@ -1227,12 +1226,13 @@ void generateBarrierMesh(
         );
         vm::ivec2 worldOffset{
             width / 2 + worldPosition.x,
-            height / 2 + worldPosition.y
+            depth / 2 + worldPosition.y
         };
+        // std::cout << "world offset " << worldOffset.x << " " << worldOffset.y << " : " << width << " " << height << " " << depth << std::endl;
         offsetGeometry(
             geometry,
             worldOffset,
-            height / 2.f - barrierMinHeight
+            height / 2.f + barrierMinHeight
         );
     }
 }
