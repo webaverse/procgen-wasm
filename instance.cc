@@ -1181,333 +1181,59 @@ void generateBarrierMesh(
 
     int index = 0;
     std::vector<OctreeNodePtr> seedLeafNodes = octreeContext.getLeafNodes();
-    for (auto iter = seedLeafNodes.begin(); iter != seedLeafNodes.end(); iter++) {
+    auto iter = (worldPosition.x == 0 && worldPosition.y == 0) ? std::find_if(
+        seedLeafNodes.begin(),
+        seedLeafNodes.end(),
+        [&worldPosition](const OctreeNodePtr &node) {
+            return node->min == worldPosition;
+        }
+    ) : seedLeafNodes.end();
+    if (iter != seedLeafNodes.end()) {
         OctreeNodePtr node = *iter;
         const vm::ivec2 &nodePosition = node->min;
         const int &nodeLod = node->lod;
         const int nodeLodRange = nodeLod * chunkSize;
 
-        if (chunksIntersect(worldPosition, lod, nodePosition, nodeLodRange)) {
-            // std::cout << "chunks lod " << nodeLod << std::endl;
-
-            // compute min/max height for this octree node
-            float barrierMinHeight = std::numeric_limits<float>::infinity();
-            float barrierMaxHeight = -std::numeric_limits<float>::infinity();
-            for (int dz = 0; dz < nodeLodRange; dz += nodeLodRange / chunkSize) {
-                for (int dx = 0; dx < nodeLodRange; dx += nodeLodRange / chunkSize) {
-                    const float height = inst->getHeight(
-                        nodePosition.x + dx,
-                        nodePosition.y + dz
-                    );
-                    if (height < barrierMinHeight) {
-                        barrierMinHeight = height;
-                    }
-                    if (height > barrierMaxHeight) {
-                        barrierMaxHeight = height;
-                    }
+        float barrierMinHeight = std::numeric_limits<float>::infinity();
+        float barrierMaxHeight = -std::numeric_limits<float>::infinity();
+        for (int dz = 0; dz < nodeLodRange; dz += nodeLod) {
+            for (int dx = 0; dx < nodeLodRange; dx += nodeLod) {
+                const float height = inst->getHeight(
+                    nodePosition.x + dx,
+                    nodePosition.y + dz
+                );
+                if (height < barrierMinHeight) {
+                    barrierMinHeight = height;
+                }
+                if (height > barrierMaxHeight) {
+                    barrierMaxHeight = height;
                 }
             }
-            barrierMinHeight = std::floor(barrierMinHeight);
-            barrierMaxHeight = std::ceil(barrierMaxHeight);
-
-            const vm::vec3 position3D{
-                (float)nodePosition.x,
-                0,
-                (float)nodePosition.y
-            };
-
-            // top
-            {
-                // top left
-                vm::vec3 a{
-                    (float)nodeLodRange,
-                    barrierMaxHeight,
-                    0
-                };
-                a += position3D;
-                // bottom left
-                vm::vec3 b{
-                    (float)nodeLodRange,
-                    barrierMinHeight,
-                    0
-                };
-                b += position3D;
-                // bottom right
-                vm::vec3 c{
-                    0,
-                    barrierMinHeight,
-                    0
-                };
-                c += position3D;
-                // top right
-                vm::vec3 d{
-                    0,
-                    barrierMaxHeight,
-                    0
-                };
-                d += position3D;
-                
-                // clamp
-                a.x = std::min(std::max(a.x, (float)worldPosition.x), (float)worldPosition.x + (float)lodRange);
-                b.x = std::min(std::max(b.x, (float)worldPosition.x), (float)worldPosition.x + (float)lodRange);
-                c.x = std::min(std::max(c.x, (float)worldPosition.x), (float)worldPosition.x + (float)lodRange);
-                d.x = std::min(std::max(d.x, (float)worldPosition.x), (float)worldPosition.x + (float)lodRange);
-
-                vm::vec3 normal{
-                    0,
-                    0,
-                    -1
-                };
-
-                vm::vec3 midpoint = ((b + c) / 2.f) - normal;
-                vm::vec2 midpoint2D{
-                    midpoint.x,
-                    midpoint.z
-                };
-                vm::vec2 worldPosition2DF{
-                    (float)worldPosition.x,
-                    (float)worldPosition.y
-                };
-                // if (containsPoint(worldPosition2DF, lodRange, midpoint2D)) {
-                    geometry.positions.push_back(a);
-                    geometry.positions.push_back(b);
-                    geometry.positions.push_back(c);
-                    geometry.positions.push_back(d);
-
-                    geometry.normals.push_back(normal);
-                    geometry.normals.push_back(normal);
-                    geometry.normals.push_back(normal);
-                    geometry.normals.push_back(normal);
-
-                    geometry.indices.push_back(index + 0); // a
-                    geometry.indices.push_back(index + 1); // b
-                    geometry.indices.push_back(index + 3); // d
-                    geometry.indices.push_back(index + 1); // b
-                    geometry.indices.push_back(index + 2); // c
-                    geometry.indices.push_back(index + 3); // d
-                    index += 4;
-                // }
-            }
-
-            // bottom
-            {
-                // top left
-                vm::vec3 a{
-                    0,
-                    barrierMaxHeight,
-                    (float)nodeLodRange
-                };
-                a += position3D;
-                // bottom left
-                vm::vec3 b{
-                    0,
-                    barrierMinHeight,
-                    (float)nodeLodRange
-                };
-                b += position3D;
-                // bottom right
-                vm::vec3 c{
-                    (float)nodeLodRange,
-                    barrierMinHeight,
-                    (float)nodeLodRange
-                };
-                c += position3D;
-                // top right
-                vm::vec3 d{
-                    (float)nodeLodRange,
-                    barrierMaxHeight,
-                    (float)nodeLodRange
-                };
-                d += position3D;
-
-                // clamp
-                a.x = std::min(std::max(a.x, (float)worldPosition.x), (float)worldPosition.x + (float)lodRange);
-                b.x = std::min(std::max(b.x, (float)worldPosition.x), (float)worldPosition.x + (float)lodRange);
-                c.x = std::min(std::max(c.x, (float)worldPosition.x), (float)worldPosition.x + (float)lodRange);
-                d.x = std::min(std::max(d.x, (float)worldPosition.x), (float)worldPosition.x + (float)lodRange);
-
-                vm::vec3 normal{
-                    0,
-                    0,
-                    1
-                };
-
-                vm::vec3 midpoint = ((b + c) / 2.f) - normal;
-                vm::vec2 midpoint2D{
-                    midpoint.x,
-                    midpoint.z
-                };
-                vm::vec2 worldPosition2DF{
-                    (float)worldPosition.x,
-                    (float)worldPosition.y
-                };
-                // if (containsPoint(worldPosition2DF, lodRange, midpoint2D)) {
-                    geometry.positions.push_back(a);
-                    geometry.positions.push_back(b);
-                    geometry.positions.push_back(c);
-                    geometry.positions.push_back(d);
-
-                    geometry.normals.push_back(normal);
-                    geometry.normals.push_back(normal);
-                    geometry.normals.push_back(normal);
-                    geometry.normals.push_back(normal);
-
-                    geometry.indices.push_back(index + 0); // a
-                    geometry.indices.push_back(index + 1); // b
-                    geometry.indices.push_back(index + 3); // d
-                    geometry.indices.push_back(index + 1); // b
-                    geometry.indices.push_back(index + 2); // c
-                    geometry.indices.push_back(index + 3); // d
-                    index += 4;
-                // }
-            }
-
-            // left
-            {
-                // top left
-                vm::vec3 a{
-                    0,
-                    barrierMaxHeight,
-                    0
-                };
-                a += position3D;
-                // bottom left
-                vm::vec3 b{
-                    0,
-                    barrierMinHeight,
-                    0
-                };
-                b += position3D;
-                // bottom right
-                vm::vec3 c{
-                    0,
-                    barrierMinHeight,
-                    (float)nodeLodRange
-                };
-                c += position3D;
-                // top right
-                vm::vec3 d{
-                    0,
-                    barrierMaxHeight,
-                    (float)nodeLodRange
-                };
-                d += position3D;
-
-                // clamp
-                a.z = std::min(std::max(a.z, (float)worldPosition.y), (float)worldPosition.y + (float)lodRange);
-                b.z = std::min(std::max(b.z, (float)worldPosition.y), (float)worldPosition.y + (float)lodRange);
-                c.z = std::min(std::max(c.z, (float)worldPosition.y), (float)worldPosition.y + (float)lodRange);
-                d.z = std::min(std::max(d.z, (float)worldPosition.y), (float)worldPosition.y + (float)lodRange);
-
-                vm::vec3 normal{
-                    -1,
-                    0,
-                    0
-                };
-
-                vm::vec3 midpoint = ((b + c) / 2.f) - normal;
-                vm::vec2 midpoint2D{
-                    midpoint.x,
-                    midpoint.z
-                };
-                vm::vec2 worldPosition2DF{
-                    (float)worldPosition.x,
-                    (float)worldPosition.y
-                };
-                // if (containsPoint(worldPosition2DF, lodRange, midpoint2D)) {
-                    geometry.positions.push_back(a);
-                    geometry.positions.push_back(b);
-                    geometry.positions.push_back(c);
-                    geometry.positions.push_back(d);
-
-                    geometry.normals.push_back(normal);
-                    geometry.normals.push_back(normal);
-                    geometry.normals.push_back(normal);
-                    geometry.normals.push_back(normal);
-
-                    geometry.indices.push_back(index + 0); // a
-                    geometry.indices.push_back(index + 1); // b
-                    geometry.indices.push_back(index + 3); // d
-                    geometry.indices.push_back(index + 1); // b
-                    geometry.indices.push_back(index + 2); // c
-                    geometry.indices.push_back(index + 3); // d
-                    index += 4;
-                // }
-            }
-
-            // right
-            {
-                // top left
-                vm::vec3 a{
-                    0,
-                    barrierMaxHeight,
-                    (float)nodeLodRange
-                };
-                a += position3D;
-                // bottom left
-                vm::vec3 b{
-                    0,
-                    barrierMinHeight,
-                    (float)nodeLodRange
-                };
-                b += position3D;
-                // bottom right
-                vm::vec3 c{
-                    0,
-                    barrierMinHeight,
-                    0
-                };
-                c += position3D;
-                // top right
-                vm::vec3 d{
-                    0,
-                    barrierMaxHeight,
-                    0
-                };
-                d += position3D;
-
-                // clamp
-                a.z = std::min(std::max(a.z, (float)worldPosition.y), (float)worldPosition.y + (float)lodRange);
-                b.z = std::min(std::max(b.z, (float)worldPosition.y), (float)worldPosition.y + (float)lodRange);
-                c.z = std::min(std::max(c.z, (float)worldPosition.y), (float)worldPosition.y + (float)lodRange);
-                d.z = std::min(std::max(d.z, (float)worldPosition.y), (float)worldPosition.y + (float)lodRange);
-
-                vm::vec3 normal{
-                    -1,
-                    0,
-                    0
-                };
-
-                vm::vec3 midpoint = ((b + c) / 2.f) - normal;
-                vm::vec2 midpoint2D{
-                    midpoint.x,
-                    midpoint.z
-                };
-                vm::vec2 worldPosition2DF{
-                    (float)worldPosition.x,
-                    (float)worldPosition.y
-                };
-                // if (containsPoint(worldPosition2DF, lodRange, midpoint2D)) {
-                    geometry.positions.push_back(a);
-                    geometry.positions.push_back(b);
-                    geometry.positions.push_back(c);
-                    geometry.positions.push_back(d);
-
-                    geometry.normals.push_back(normal);
-                    geometry.normals.push_back(normal);
-                    geometry.normals.push_back(normal);
-                    geometry.normals.push_back(normal);
-
-                    geometry.indices.push_back(index + 0); // a
-                    geometry.indices.push_back(index + 1); // b
-                    geometry.indices.push_back(index + 3); // d
-                    geometry.indices.push_back(index + 1); // b
-                    geometry.indices.push_back(index + 2); // c
-                    geometry.indices.push_back(index + 3); // d
-                    index += 4;
-                // }
-            }
         }
+        barrierMinHeight = std::floor(barrierMinHeight);
+        barrierMaxHeight = std::ceil(barrierMaxHeight);
+
+        int width = nodeLodRange / 2 - 2;
+        int height = barrierMaxHeight - barrierMinHeight;
+        int depth = nodeLodRange / 2 - 2;
+        createBoxGeometry(
+            width,
+            height,
+            depth,
+            1,
+            1,
+            1,
+            geometry
+        );
+        vm::ivec2 worldOffset{
+            width / 2 + worldPosition.x,
+            height / 2 + worldPosition.y
+        };
+        offsetGeometry(
+            geometry,
+            worldOffset,
+            height / 2.f - barrierMinHeight
+        );
     }
 }
 
