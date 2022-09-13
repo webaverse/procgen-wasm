@@ -499,6 +499,8 @@ void splitPointToLod(OctreeContext &octreeContext, const vm::ivec2 &absolutePosi
         const vm::ivec2 &parentPosition = node->min;
         int childLod = parentLod / 2;
 
+        // std::cout << "split parent node: " << parentPosition.x << " " << parentPosition.y << " " << parentLod << std::endl;
+
         nodeMap.erase(iter);
 
         for (int dx = 0; dx < 2; dx++) {
@@ -519,7 +521,13 @@ void splitPointToLod(OctreeContext &octreeContext, const vm::ivec2 &absolutePosi
         break;
       }
     } else {
-      std::cerr << "could not find split point node" << std::endl;
+      std::cerr << "could not find split point node: " << absolutePosition.x << " " << absolutePosition.y << std::endl;
+      std::cout << "existing nodes: ";
+      for (auto iter = nodeMap.begin(); iter != nodeMap.end(); iter++) {
+        auto node = iter->second;
+        std::cout << node->min.x << " " << node->min.y << " " << node->lod << ", ";
+      }
+      std::cout << std::endl;
       abort();
     }
   }
@@ -602,6 +610,7 @@ void constructSeedTree(OctreeContext &octreeContext, const vm::ivec2 &maxLodCent
     maxLodCenter,
     maxLod
   );
+  // std::cout << "construct seed tree " << maxLodCenter.x << " " << maxLodCenter.y << " " << maxLod << std::endl;
 
   // initialize other lods
   for (const std::pair<vm::ivec2, int> &lodSplit : lodSplits) {
