@@ -103,18 +103,18 @@ public:
 
 //
 
-template <typename DCContextType>
-vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, const int lod, DCInstance *inst)
-{
-    // finding the surface normal with the derivative
-    constexpr float H = 0.001f;
-    const float dx = DCContextType::densityFn(p + vm::vec3{H, 0.f, 0.f}, lod, inst) -
-                     DCContextType::densityFn(p - vm::vec3{H, 0.f, 0.f}, lod, inst);
-    const float dy = DCContextType::densityFn(p + vm::vec3{0.f, H, 0.f}, lod, inst) -
-                     DCContextType::densityFn(p - vm::vec3{0.f, H, 0.f}, lod, inst);
-    const float dz = DCContextType::densityFn(p + vm::vec3{0.f, 0.f, H}, lod, inst) -
-                     DCContextType::densityFn(p - vm::vec3{0.f, 0.f, H}, lod, inst);
-    return vm::normalize(vm::vec3{dx, dy, dz});
-}
+// template <typename DCContextType>
+// vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, const int lod, DCInstance *inst)
+// {
+//     // finding the surface normal with the derivative
+//     constexpr float H = 0.001f;
+//     const float dx = DCContextType::densityFn(p + vm::vec3{H, 0.f, 0.f}, lod, inst) -
+//                      DCContextType::densityFn(p - vm::vec3{H, 0.f, 0.f}, lod, inst);
+//     const float dy = DCContextType::densityFn(p + vm::vec3{0.f, H, 0.f}, lod, inst) -
+//                      DCContextType::densityFn(p - vm::vec3{0.f, H, 0.f}, lod, inst);
+//     const float dz = DCContextType::densityFn(p + vm::vec3{0.f, 0.f, H}, lod, inst) -
+//                      DCContextType::densityFn(p - vm::vec3{0.f, 0.f, H}, lod, inst);
+//     return vm::normalize(vm::vec3{dx, dy, dz});
+// }
 
 #endif // OCTREE_H
