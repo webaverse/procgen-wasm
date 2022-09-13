@@ -1341,13 +1341,14 @@ void generateBarrierGeometry(
     );
     return *iter;
 } */
-OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int lod) {
-    constexpr int minLodRange = 1;
-    constexpr int maxLodRange = 6;
-    constexpr int maxLod = 1 << maxLodRange;
+OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int lod, int chunkSize) {
+    constexpr int minLod = 1;
+    // const int minLodRange = (1 << (minLod - 1)) * chunkSize;
+    constexpr int maxLod = 7;
+    const int maxLodRange = (1 << (maxLod - 1)) * chunkSize;
     vm::ivec2 maxLodCenter{
-        (int)std::floor((float)worldPosition.x / (float)maxLod) * maxLod,
-        (int)std::floor((float)worldPosition.y / (float)maxLod) * maxLod
+        (int)std::floor((float)worldPosition.x / (float)maxLodRange) * maxLodRange,
+        (int)std::floor((float)worldPosition.y / (float)maxLodRange) * maxLodRange
     };
 
     // compute splits
@@ -1356,33 +1357,52 @@ OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int
         float numSplits = (float)noises.numSplitsNoise.in2D(maxLodCenter.x, maxLodCenter.y);
         uint32_t numSplitsHash;
         MurmurHash3_x86_32(&numSplits, sizeof(numSplits), 0, &numSplitsHash);
-        numSplitsHash *= 8 / 0xFFFFFFFFu;
+        numSplitsHash = (uint32_t)((float)numSplitsHash * 8.f / (float)0xFFFFFFFFu);
 
+        // if (worldPosition.x == 0 && worldPosition.y == 0) {
+            // std::cout << "num splits hash: " << maxLodCenter.x << " " << maxLodCenter.y << " " << numSplitsHash << std::endl;
+        // }
+
+        float splitsLodNoise = (float)noises.numSplitsNoise.in2D(maxLodCenter.x, maxLodCenter.y);
         for (uint32_t i = 0; i < numSplitsHash; i++) {
-            float splitsLodNoise = (float)noises.numSplitsNoise.in2D(maxLodCenter.x, maxLodCenter.y);
-
-            int splitLodDX;
+            uint32_t splitLodDX;
             MurmurHash3_x86_32(&splitsLodNoise, sizeof(splitsLodNoise), 0, &splitLodDX);
-            splitLodDX = (int)((float)splitLodDX * (float)maxLod / (float)0x7FFFFFFF);
+            splitLodDX = (uint32_t)((float)splitLodDX * (float)maxLodRange / (float)0xFFFFFFFFu);
             splitsLodNoise++;
 
-            int splitLodDZ;
+            uint32_t splitLodDZ;
             MurmurHash3_x86_32(&splitsLodNoise, sizeof(splitsLodNoise), 1, &splitLodDZ);
-            splitLodDZ = (int)((float)splitLodDZ * (float)maxLod / (float)0x7FFFFFFF);
+            splitLodDZ = (uint32_t)((float)splitLodDZ * (float)maxLodRange / (float)0xFFFFFFFFu);
             splitsLodNoise++;
 
-            int splitLod;
+            uint32_t splitLod;
             MurmurHash3_x86_32(&splitsLodNoise, sizeof(splitsLodNoise), 1, &splitLod);
-            splitLod = (int)((float)splitLod * (float)(maxLodRange - minLodRange) / (float)0x7FFFFFFF);
+            splitLod = (uint32_t)((float)minLod + (float)splitLod * (float)(maxLod - minLod) / (float)0xFFFFFFFFu);
             splitsLodNoise++;
+
+            int splitLodDXInt = maxLodCenter.x + (int)splitLodDX;
+            int splitLodDZInt = maxLodCenter.y + (int)splitLodDZ;
+            int splitLodInt = 1 << ((int)splitLod - 1);
+
+            // std::cout << "get split " << maxLodCenter.x << " " << maxLodCenter.y << " " << splitLodDXInt << ", " << splitLodDZInt << ", " << splitLodInt << std::endl;
+
+            if (
+                splitLodDXInt >= maxLodCenter.x && splitLodDXInt < maxLodCenter.x + maxLodRange &&
+                splitLodDZInt >= maxLodCenter.y && splitLodDZInt < maxLodCenter.y + maxLodRange
+            ) {
+                // nothing
+            } else {
+                std::cout << "invalid split lod: " << splitLodDXInt << " " << splitLodDZInt << " " << splitLodInt << std::endl;
+                abort();
+            }
 
             lodSplits.push_back(
                 std::make_pair(
                     vm::ivec2{
-                        maxLodCenter.x + splitLodDX,
-                        maxLodCenter.y + splitLodDZ
+                        splitLodDXInt,
+                        splitLodDZInt
                     },
-                    splitLod
+                    splitLodInt
                 )
             );
         }
@@ -1392,7 +1412,7 @@ OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int
     constructSeedTree(
         octreeContext,
         maxLodCenter,
-        maxLod,
+        maxLodRange,
         lodSplits
     );
 
@@ -1449,7 +1469,7 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
 
     // barrier
     BarrierGeometry barrierGeometry;
-    OctreeContext octreeContext = getChunkSeedOctree(worldPosition, lod);
+    OctreeContext octreeContext = getChunkSeedOctree(worldPosition, lod, chunkSize);
     auto nodeIter = findNodeIterAtPoint(octreeContext, worldPosition);
     OctreeNodePtr node;
     if (nodeIter != octreeContext.nodeMap.end()) {
