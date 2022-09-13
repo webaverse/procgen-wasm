@@ -919,11 +919,11 @@ void createDualPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, i
 //
 
 template<typename G>
-void offsetGeometry(G &geometry, const vm::ivec2 &worldPosition) {
+void offsetGeometry(G &geometry, const vm::ivec2 &worldPosition, float height = -(float)WORLD_BASE_HEIGHT) {
     for (size_t i = 0; i < geometry.positions.size(); i++) {
         vm::vec3 &p = geometry.positions[i]; 
         p.x += (float)worldPosition.x;
-        p.y -= (float)WORLD_BASE_HEIGHT;
+        p.y += height;
         p.z += (float)worldPosition.y;
     }
 }
