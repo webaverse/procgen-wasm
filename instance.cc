@@ -1313,7 +1313,7 @@ void generateBarrierGeometry(
 ) {
     generateBarrierMesh(worldPosition, lod, chunkSize, octreeContext, inst, geometry);
     // offsetGeometry(geometry, worldPosition);
-    // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
+    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
 
 //
