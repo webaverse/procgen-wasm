@@ -1243,7 +1243,6 @@ void generateBarrierMesh(
             width / 2 + worldPosition.x,
             depth / 2 + worldPosition.y
         };
-        // std::cout << "world offset " << worldOffset.x << " " << worldOffset.y << " : " << width << " " << height << " " << depth << std::endl;
         offsetGeometry(
             geometry,
             worldOffset,
@@ -1374,9 +1373,9 @@ OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int
         MurmurHash3_x86_32(&numSplits, sizeof(numSplits), 0, &numSplitsHash);
         numSplitsHash = (uint32_t)((float)numSplitsHash * 8.f / (float)0xFFFFFFFFu);
 
-        // if (worldPosition.x == 0 && worldPosition.y == 0) {
-            // std::cout << "num splits hash: " << maxLodCenter.x << " " << maxLodCenter.y << " " << numSplitsHash << std::endl;
-        // }
+        /* if (worldPosition.x == 0 && worldPosition.y == 0) {
+            std::cout << "num splits hash: " << maxLodCenter.x << " " << maxLodCenter.y << " " << numSplitsHash << std::endl;
+        } */
 
         float splitsLodNoise = (float)noises.numSplitsNoise.in2D(maxLodCenter.x, maxLodCenter.y);
         for (uint32_t i = 0; i < numSplitsHash; i++) {
@@ -1399,9 +1398,11 @@ OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int
             int splitLodDZInt = maxLodCenter.y + (int)splitLodDZ;
             int splitLodInt = 1 << ((int)splitLod - 1);
 
-            // std::cout << "get split " << maxLodCenter.x << " " << maxLodCenter.y << " " << splitLodDXInt << ", " << splitLodDZInt << ", " << splitLodInt << std::endl;
+            /* if (worldPosition.x == 0 && worldPosition.y == 0) {
+              std::cout << "get split " << maxLodCenter.x << " " << maxLodCenter.y << " : " << splitLodDXInt << ", " << splitLodDZInt << " : " << splitLodInt << std::endl;
+            } */
 
-            if (
+            /* if (
                 splitLodDXInt >= maxLodCenter.x && splitLodDXInt < maxLodCenter.x + maxLodRange &&
                 splitLodDZInt >= maxLodCenter.y && splitLodDZInt < maxLodCenter.y + maxLodRange
             ) {
@@ -1409,7 +1410,7 @@ OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int
             } else {
                 std::cout << "invalid split lod: " << splitLodDXInt << " " << splitLodDZInt << " " << splitLodInt << std::endl;
                 abort();
-            }
+            } */
 
             lodSplits.push_back(
                 std::make_pair(
