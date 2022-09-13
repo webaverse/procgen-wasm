@@ -1227,13 +1227,13 @@ void generateBarrierMesh(
         barrierMinHeight = std::floor(barrierMinHeight);
         barrierMaxHeight = std::ceil(barrierMaxHeight);
 
-        int width = nodeLod * chunkSize - 2;
+        int width = nodeLod;
         int height = barrierMaxHeight - barrierMinHeight;
-        int depth = nodeLod * chunkSize - 2;
+        int depth = nodeLod;
         createBoxGeometry(
-            width,
+            width - 2,
             height,
-            depth,
+            depth - 2,
             1,
             1,
             1,
