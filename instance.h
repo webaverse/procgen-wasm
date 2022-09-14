@@ -28,13 +28,13 @@ public:
     uint8_t *terrainMeshBuffer;
     uint8_t *waterMeshBuffer;
     uint8_t *barrierMeshBuffer;
-    uint8_t *barrierNodeBuffer;
+    // uint8_t *barrierNodeBuffer;
 
     void free() {
         std::free(terrainMeshBuffer);
         std::free(waterMeshBuffer);
         std::free(barrierMeshBuffer);
-        std::free(barrierNodeBuffer);
+        // std::free(barrierNodeBuffer);
         std::free(this);
     }
 };

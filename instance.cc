@@ -1496,14 +1496,14 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
     // barrier
     BarrierGeometry barrierGeometry;
     OctreeContext octreeContext = getChunkSeedOctree(worldPosition, lod, chunkSize);
-    auto nodeIter = findNodeIterAtPoint(octreeContext, worldPosition);
-    OctreeNodePtr node;
+    // auto nodeIter = findNodeIterAtPoint(octreeContext, worldPosition);
+    /* OctreeNodePtr node;
     if (nodeIter != octreeContext.nodeMap.end()) {
         node = nodeIter->second;
     } else {
         std::cerr << "could not find node at point " << worldPosition.x << " " << worldPosition.y << std::endl;
         abort();
-    }
+    } */
     {
         generateBarrierGeometry(
             worldPosition,
@@ -1519,7 +1519,7 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
     result->terrainMeshBuffer = terrainGeometry.getBuffer();
     result->waterMeshBuffer = waterGeometry.getBuffer();
     result->barrierMeshBuffer = barrierGeometry.getBuffer();
-    result->barrierNodeBuffer = node->getBuffer();
+    // result->barrierNodeBuffer = node->getBuffer();
     return result;
 }
 /* uint8_t *PGInstance::createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
