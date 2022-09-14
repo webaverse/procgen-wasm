@@ -1190,13 +1190,13 @@ void generateBarrierMesh(
 
     int index = 0;
     std::vector<OctreeNodePtr> seedLeafNodes = octreeContext.getLeafNodes();
-    auto iter = (worldPosition.x == 0 && worldPosition.y == 0) ? std::find_if(
+    auto iter = std::find_if(
         seedLeafNodes.begin(),
         seedLeafNodes.end(),
         [&worldPosition](const OctreeNodePtr &node) {
             return node->min == worldPosition;
         }
-    ) : seedLeafNodes.end();
+    );
     if (iter != seedLeafNodes.end()) {
         OctreeNodePtr node = *iter;
 
@@ -1240,9 +1240,9 @@ void generateBarrierMesh(
         int height = barrierMaxHeight - barrierMinHeight;
         int depth = nodeLod;
         createBoxGeometry(
-            width /*- 2*/,
+            width,
             height,
-            depth /*- 2*/,
+            depth,
             1,
             1,
             1,
