@@ -1240,9 +1240,9 @@ void generateBarrierMesh(
         int height = barrierMaxHeight - barrierMinHeight;
         int depth = nodeLod;
         createBoxGeometry(
-            width - 2,
+            width /*- 2*/,
             height,
-            depth - 2,
+            depth /*- 2*/,
             1,
             1,
             1,
