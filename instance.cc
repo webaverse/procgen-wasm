@@ -1186,7 +1186,6 @@ void generateBarrierMesh(
     PGInstance *inst,
     BarrierGeometry &geometry
 ) {
-    // std::cout << "barrier lod " << lod << std::endl;
     const int lodRange = lod * chunkSize;
 
     int index = 0;
@@ -1258,7 +1257,7 @@ void generateBarrierMesh(
             worldOffset,
             height / 2.f + barrierMinHeight
         );
-        setPositions2D(geometry, node->min);
+        setPositions2D(geometry, node->min / chunkSize);
     }
 }
 
