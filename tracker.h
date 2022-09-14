@@ -95,6 +95,7 @@ public:
   std::vector<DataRequestPtr> newDataRequests;
   std::vector<DataRequestPtr> keepDataRequests;
   std::vector<DataRequestPtr> cancelDataRequests;
+  vm::ivec2 chunkPosition;
 
   // std::unordered_map<uint64_t, Dominator> dominators;
 
