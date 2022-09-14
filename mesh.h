@@ -13,7 +13,7 @@
 //
 
 typedef std::vector<vm::vec3> PositionBuffer;
-typedef std::vector<vm::ivec2> PositionInt2DBuffer;
+typedef std::vector<vm::vec2> Position2DBuffer;
 typedef std::vector<vm::vec3> NormalBuffer;
 typedef std::vector<vm::vec2> UvBuffer;
 typedef std::vector<vm::ivec4> BiomesBuffer;
@@ -73,7 +73,7 @@ public:
     IndexBuffer indices;
     
     UvBuffer uvs;
-    PositionInt2DBuffer positions2D;
+    Position2DBuffer positions2D;
 
     uint8_t *getBuffer() const;
 };

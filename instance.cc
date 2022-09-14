@@ -1051,9 +1051,13 @@ void createBoxGeometry(float width, float height, float depth, int widthSegments
 
                 // uvs.push((float)ix / (float)gridX);
                 // uvs.push(1.f - ((float)iy / (float)gridY));
-                geometry.uvs.push_back(vm::vec2{
+                /* geometry.uvs.push_back(vm::vec2{
                     (float)ix / (float)gridX,
                     1.f - ((float)iy / (float)gridY)
+                }); */
+                geometry.uvs.push_back(vm::vec2{
+                    (float)ix * width,
+                    (1.f - (float)iy) * height
                 });
 
                 // counters
@@ -1168,6 +1172,16 @@ void createBoxGeometry(float width, float height, float depth, int widthSegments
     // this.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
 }
 
+void setPositions2D(BarrierGeometry &geometry, const vm::ivec2 position2D) {
+    vm::vec2 position2DF{
+        (float)position2D.x,
+        (float)position2D.y
+    };
+    geometry.positions2D.reserve(geometry.positions.size());
+    for (size_t i = 0; i < geometry.positions.size(); i++) {
+        geometry.positions2D.push_back(position2DF);
+    }
+}
 void generateBarrierMesh(
     const vm::ivec2 &worldPosition,
     int lod,
@@ -1248,6 +1262,7 @@ void generateBarrierMesh(
             worldOffset,
             height / 2.f + barrierMinHeight
         );
+        setPositions2D(geometry, node->min);
     }
 }
 
