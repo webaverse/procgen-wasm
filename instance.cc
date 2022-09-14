@@ -1173,13 +1173,9 @@ void createBoxGeometry(float width, float height, float depth, int widthSegments
 }
 
 void setPositions2D(BarrierGeometry &geometry, const vm::ivec2 position2D) {
-    vm::vec2 position2DF{
-        (float)position2D.x,
-        (float)position2D.y
-    };
     geometry.positions2D.reserve(geometry.positions.size());
     for (size_t i = 0; i < geometry.positions.size(); i++) {
-        geometry.positions2D.push_back(position2DF);
+        geometry.positions2D.push_back(position2D);
     }
 }
 void generateBarrierMesh(
