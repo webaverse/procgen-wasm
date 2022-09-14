@@ -1113,7 +1113,7 @@ TrackerUpdate Tracker::update(const vm::vec3 &position) {
   result.newDataRequests = std::move(dataRequestUpdate.newDataRequests);
   result.keepDataRequests = std::move(dataRequestUpdate.keepDataRequests);
   result.cancelDataRequests = std::move(dataRequestUpdate.cancelDataRequests);
-  result.chunkPosition = node->min;
+  result.chunkPosition = node->min / chunkSize;
 
   //
 
