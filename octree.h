@@ -20,9 +20,6 @@
 #include <emscripten.h>
 
 #define M_PI 3.14159265358979323846
-
-constexpr int NUM_LOD_ARR = 4;
-
 //
 
 
