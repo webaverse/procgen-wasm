@@ -21,6 +21,8 @@
 
 #define M_PI 3.14159265358979323846
 
+constexpr int NUM_LOD_ARR = 4;
+
 //
 
 
@@ -46,7 +48,7 @@ class OctreeNodeSpec {
 public:
     vm::ivec2 min;
     int lod;
-    int lodArray[2];
+    int lodArray[NUM_LOD_ARR];
 };
 
 class OctreeNode;
@@ -56,7 +58,7 @@ class OctreeNode : public OctreeNodeSpec
 {
 public:
     OctreeNode(const vm::ivec2 &min, int lod) :
-      OctreeNodeSpec{min, lod, {0, 0}}
+      OctreeNodeSpec{min, lod, {0, 0, 0, 0}}
       {}
 
     /* bool isLeaf() const {

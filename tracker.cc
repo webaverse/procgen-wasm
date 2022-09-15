@@ -559,8 +559,22 @@ void initializeLodArrays(OctreeContext &octreeContext) {
     };
     auto rightNodeIter = findNodeIterAtPoint(octreeContext, rightNodePosition);
 
+    vm::ivec2 topNodePosition{
+      min.x,
+      min.y - lod
+    };
+    auto topNodeIter = findNodeIterAtPoint(octreeContext, topNodePosition);
+
+    vm::ivec2 leftNodePosition{
+      min.x - lod,
+      min.y
+    };
+    auto leftNodeIter = findNodeIterAtPoint(octreeContext, leftNodePosition);
+
     node->lodArray[0] = bottomNodeIter != nodeMap.end() ? bottomNodeIter->second->lod : (lod * 2);
     node->lodArray[1] = rightNodeIter != nodeMap.end() ? rightNodeIter->second->lod : (lod * 2);
+    node->lodArray[2] = topNodeIter != nodeMap.end() ? topNodeIter->second->lod : (lod * 2);
+    node->lodArray[3] = leftNodeIter != nodeMap.end() ? leftNodeIter->second->lod : (lod * 2);
   }
 }
 void constructLodTree(OctreeContext &octreeContext, const vm::ivec2 &currentCoord, int lod1Range, int minLod, int maxLod) {
