@@ -125,6 +125,10 @@ void serializeDataRequests(const std::vector<DataRequestPtr> &datas, uint8_t *pt
     index += sizeof(int[2]);
   }
 }
+void serializeChunkPosition(const vm::ivec2 &chunkPosition, uint8_t *ptr, int &index) {
+  memcpy(ptr + index, &chunkPosition, sizeof(chunkPosition));
+  index += sizeof(vm::ivec2);
+}
 
 uint8_t *TrackerUpdate::getBuffer() const {
   // compute size
@@ -144,6 +148,8 @@ uint8_t *TrackerUpdate::getBuffer() const {
   size += sizeof(int32_t); // numCancelDataRequests
   size += octreeNodeSize * cancelDataRequests.size();
 
+  size += sizeof(vm::ivec2); // chunkPosition
+
   // serialize
   uint8_t *ptr = (uint8_t *)malloc(size);
   int index = 0;
@@ -152,6 +158,7 @@ uint8_t *TrackerUpdate::getBuffer() const {
   serializeDataRequests(newDataRequests, ptr, index);
   serializeDataRequests(keepDataRequests, ptr, index);
   serializeDataRequests(cancelDataRequests, ptr, index);
+  serializeChunkPosition(chunkPosition, ptr, index);
 
   return ptr;
 }
@@ -225,6 +232,10 @@ std::vector<uint8_t> Dominator::getBuffer() const {
 bool containsPoint(const vm::ivec2 &min, const int lod, const vm::ivec2 &p) {
   return p.x >= min.x && p.x < min.x + lod &&
     p.y >= min.y && p.y < min.y + lod;
+}
+bool containsPoint(const vm::vec2 &min, const int lod, const vm::vec2 &p) {
+  return p.x >= min.x && p.x < min.x + (float)lod &&
+    p.y >= min.y && p.y < min.y + (float)lod;
 }
 bool containsPoint(const OctreeNode &node, const vm::ivec2 &p) {
   return containsPoint(node.min, node.lod, p);
@@ -495,6 +506,8 @@ void splitPointToLod(OctreeContext &octreeContext, const vm::ivec2 &absolutePosi
         const vm::ivec2 &parentPosition = node->min;
         int childLod = parentLod / 2;
 
+        // std::cout << "split parent node: " << parentPosition.x << " " << parentPosition.y << " " << parentLod << std::endl;
+
         nodeMap.erase(iter);
 
         for (int dx = 0; dx < 2; dx++) {
@@ -515,7 +528,13 @@ void splitPointToLod(OctreeContext &octreeContext, const vm::ivec2 &absolutePosi
         break;
       }
     } else {
-      std::cerr << "could not find split point node" << std::endl;
+      std::cerr << "could not find split point node: " << absolutePosition.x << " " << absolutePosition.y << std::endl;
+      std::cout << "existing nodes: ";
+      for (auto iter = nodeMap.begin(); iter != nodeMap.end(); iter++) {
+        auto node = iter->second;
+        std::cout << node->min.x << " " << node->min.y << " " << node->lod << ", ";
+      }
+      std::cout << std::endl;
       abort();
     }
   }
@@ -598,6 +617,7 @@ void constructSeedTree(OctreeContext &octreeContext, const vm::ivec2 &maxLodCent
     maxLodCenter,
     maxLod
   );
+  // std::cout << "construct seed tree " << maxLodCenter.x << " " << maxLodCenter.y << " " << maxLod << std::endl;
 
   // initialize other lods
   for (const std::pair<vm::ivec2, int> &lodSplit : lodSplits) {
@@ -1041,12 +1061,14 @@ DataRequestUpdate Tracker::updateDataRequests(
 } */
 TrackerUpdate Tracker::update(const vm::vec3 &position) {
   // new octrees
-  vm::ivec2 currentCoord = getCurrentCoord(position, this->inst->chunkSize);
+  int chunkSize = this->inst->chunkSize;
+  vm::ivec2 currentCoord = getCurrentCoord(position, chunkSize);
+  int lod = 1 << (this->lods - 1);
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(
     currentCoord,
     this->lod1Range,
     1,
-    1 << (this->lods - 1)
+    lod
   );
   sortNodes(octreeLeafNodes);
 
@@ -1067,6 +1089,23 @@ TrackerUpdate Tracker::update(const vm::vec3 &position) {
 
   //
 
+  vm::ivec2 worldPosition{
+    currentCoord.x * chunkSize,
+    currentCoord.y * chunkSize
+  };
+  int lodRange = lod * chunkSize;
+  OctreeContext octreeContext = inst->getChunkSeedOctree(worldPosition, lodRange, chunkSize);
+  auto nodeIter = findNodeIterAtPoint(octreeContext, worldPosition);
+  OctreeNodePtr node;
+  if (nodeIter != octreeContext.nodeMap.end()) {
+      node = nodeIter->second;
+  } else {
+      std::cerr << "could not find node at point " << worldPosition.x << " " << worldPosition.y << std::endl;
+      abort();
+  }
+
+  //
+
   TrackerUpdate result;
 
   result.leafNodes = std::move(octreeLeafNodes);
@@ -1074,6 +1113,7 @@ TrackerUpdate Tracker::update(const vm::vec3 &position) {
   result.newDataRequests = std::move(dataRequestUpdate.newDataRequests);
   result.keepDataRequests = std::move(dataRequestUpdate.keepDataRequests);
   result.cancelDataRequests = std::move(dataRequestUpdate.cancelDataRequests);
+  result.chunkPosition = node->min / chunkSize;
 
   //
 

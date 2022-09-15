@@ -28,13 +28,13 @@ public:
     uint8_t *terrainMeshBuffer;
     uint8_t *waterMeshBuffer;
     uint8_t *barrierMeshBuffer;
-    uint8_t *barrierNodeBuffer;
+    // uint8_t *barrierNodeBuffer;
 
     void free() {
         std::free(terrainMeshBuffer);
         std::free(waterMeshBuffer);
         std::free(barrierMeshBuffer);
-        std::free(barrierNodeBuffer);
+        // std::free(barrierNodeBuffer);
         std::free(this);
     }
 };
@@ -148,7 +148,7 @@ public:
     
     ChunkResult *createChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
     // uint8_t *createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
-    OctreeContext getChunkSeedOctree(const vm::ivec2 &worldPosition, int lod);
+    OctreeContext getChunkSeedOctree(const vm::ivec2 &worldPosition, int lod, int chunkSize);
 
     //
 

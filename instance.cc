@@ -1109,14 +1109,12 @@ void createDualPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, i
 
 //
 
-template <typename G>
-void offsetGeometry(G &geometry, const vm::ivec2 &worldPosition)
-{
-    for (size_t i = 0; i < geometry.positions.size(); i++)
-    {
-        vm::vec3 &p = geometry.positions[i];
+template<typename G>
+void offsetGeometry(G &geometry, const vm::ivec2 &worldPosition, float height = -(float)WORLD_BASE_HEIGHT) {
+    for (size_t i = 0; i < geometry.positions.size(); i++) {
+        vm::vec3 &p = geometry.positions[i]; 
         p.x += (float)worldPosition.x;
-        p.y -= (float)WORLD_BASE_HEIGHT;
+        p.y += height;
         p.z += (float)worldPosition.y;
     }
 }
@@ -1209,252 +1207,288 @@ void generateWaterfieldSeamsMesh(
 
 //
 
+template<typename G>
+void createBoxGeometry(float width, float height, float depth, int widthSegments, int heightSegments, int depthSegments, G &geometry) {
+    // segments
+
+    // widthSegments = Math.floor(widthSegments);
+    // heightSegments = Math.floor(heightSegments);
+    // depthSegments = Math.floor(depthSegments);
+
+    // buffers
+
+    // const indices = [];
+    // const vertices = [];
+    // const normals = [];
+    // const uvs = [];
+
+    // helper variables
+
+    int numberOfVertices = 0;
+    // let groupStart = 0;
+
+    auto buildPlane = [&](std::function<vm::vec3(float z, float y, float x)> &vectorFn, float udir, float vdir, float width, float height, float depth, int gridX, int gridY) -> void {
+        const float segmentWidth = width / gridX;
+        const float segmentHeight = height / gridY;
+
+        const float widthHalf = width / 2.f;
+        const float heightHalf = height / 2.f;
+        const float depthHalf = depth / 2.f;
+
+        const int gridX1 = gridX + 1;
+        const int gridY1 = gridY + 1;
+
+        int vertexCounter = 0;
+        // let groupCount = 0;
+
+        // const vector = new Vector3();
+        vm::vec3 vector;
+
+        // generate vertices, normals and uvs
+
+        for (int iy = 0; iy < gridY1; iy++) {
+
+            const int y = iy * segmentHeight - heightHalf;
+
+            for (int ix = 0; ix < gridX1; ix++) {
+
+                const int x = ix * segmentWidth - widthHalf;
+
+                // set values to correct vector component
+
+                vector = vectorFn(x * udir, y * vdir, depthHalf);
+                // vector[ u ] = x * udir;
+                // vector[ v ] = y * vdir;
+                // vector[ w ] = depthHalf;
+
+                // now apply vector to vertex buffer
+
+                // vertices.push(vector.x, vector.y, vector.z);
+                geometry.positions.push_back(vector);
+
+                // set values to correct vector component
+
+                vector = vectorFn(0, 0, depth > 0 ? 1 : - 1);
+                // vector[ u ] = 0;
+                // vector[ v ] = 0;
+                // vector[ w ] = depth > 0 ? 1 : - 1;
+
+                // now apply vector to normal buffer
+
+                // normals.push(vector.x, vector.y, vector.z);
+                geometry.normals.push_back(vector);
+
+                // uvs
+
+                // uvs.push((float)ix / (float)gridX);
+                // uvs.push(1.f - ((float)iy / (float)gridY));
+                /* geometry.uvs.push_back(vm::vec2{
+                    (float)ix / (float)gridX,
+                    1.f - ((float)iy / (float)gridY)
+                }); */
+                geometry.uvs.push_back(vm::vec2{
+                    (float)ix * width,
+                    (1.f - (float)iy) * height
+                });
+
+                // counters
+
+                vertexCounter += 1;
+
+            }
+
+        }
+
+        // indices
+
+        // 1. you need three indices to draw a single face
+        // 2. a single segment consists of two faces
+        // 3. so we need to generate six (2*3) indices per segment
+
+        for (int iy = 0; iy < gridY; iy++) {
+
+            for (int ix = 0; ix < gridX; ix++) {
+
+                const int a = numberOfVertices + ix + gridX1 * iy;
+                const int b = numberOfVertices + ix + gridX1 * (iy + 1);
+                const int c = numberOfVertices + (ix + 1) + gridX1 * (iy + 1);
+                const int d = numberOfVertices + (ix + 1) + gridX1 * iy;
+
+                // faces
+
+                geometry.indices.push_back(a);
+                geometry.indices.push_back(b);
+                geometry.indices.push_back(d);
+                geometry.indices.push_back(b);
+                geometry.indices.push_back(c);
+                geometry.indices.push_back(d);
+
+                // increase counter
+
+                // groupCount += 6;
+
+            }
+
+        }
+
+        // add a group to the geometry. this will ensure multi material support
+
+        // scope.addGroup( groupStart, groupCount, materialIndex );
+
+        // calculate new start value for groups
+
+        // groupStart += groupCount;
+
+        // update total number of vertices
+
+        numberOfVertices += vertexCounter;
+    };
+
+    // build each side of the box geometry
+
+    std::function<vm::vec3(float z, float y, float x)> pushVertices1 = [&](float z, float y, float x) -> vm::vec3 {
+        return vm::vec3{
+            x,
+            y,
+            z
+        };
+    };
+    buildPlane(pushVertices1, -1, -1, depth, height, width, depthSegments, heightSegments); // px
+    std::function<vm::vec3(float z, float y, float x)> pushVertices2 = [&](float z, float y, float x) -> vm::vec3 {
+        return vm::vec3{
+            x,
+            y,
+            z
+        };
+    };
+    buildPlane(pushVertices2, 1, -1, depth, height, -width, depthSegments, heightSegments); // nx
+    // std::function<vm::vec3(float z, float y, float x)> pushVertices3 = [&](float x, float z, float y) -> vm::vec3 {
+    //     return vm::vec3{
+    //         x,
+    //         y,
+    //         z
+    //     };
+    // };
+    // buildPlane(pushVertices3, 1, 1, width, depth, height, widthSegments, depthSegments); // py
+    // std::function<vm::vec3(float z, float y, float x)> pushVertices4 = [&](float x, float z, float y) -> vm::vec3 {
+    //     return vm::vec3{
+    //         x,
+    //         y,
+    //         z
+    //     };
+    // };
+    // buildPlane(pushVertices4, 1, -1, width, depth, -height, widthSegments, depthSegments); // ny
+    std::function<vm::vec3(float z, float y, float x)> pushVertices5 = [&](float x, float y, float z) -> vm::vec3 {
+        return vm::vec3{
+            x,
+            y,
+            z
+        };
+    };
+    buildPlane(pushVertices5, 1, -1, width, height, depth, widthSegments, heightSegments); // pz
+    std::function<vm::vec3(float z, float y, float x)> pushVertices6 = [&](float x, float y, float z) -> vm::vec3 {
+        return vm::vec3{
+            x,
+            y,
+            z
+        };
+    };
+    buildPlane(pushVertices6, -1, -1, width, height, -depth, widthSegments, heightSegments); // nz
+
+    // build geometry
+
+    // this.setIndex( indices );
+    // this.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
+    // this.setAttribute( 'normal', new Float32BufferAttribute( normals, 3 ) );
+    // this.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
+}
+
+void setPositions2D(BarrierGeometry &geometry, const vm::ivec2 position2D) {
+    geometry.positions2D.reserve(geometry.positions.size());
+    for (size_t i = 0; i < geometry.positions.size(); i++) {
+        geometry.positions2D.push_back(position2D);
+    }
+}
 void generateBarrierMesh(
     const vm::ivec2 &worldPosition,
     int lod,
     int chunkSize,
     OctreeContext &octreeContext,
     PGInstance *inst,
-    BarrierGeometry &geometry)
-{
+    BarrierGeometry &geometry
+) {
+    const int lodRange = lod * chunkSize;
+
     int index = 0;
     std::vector<OctreeNodePtr> seedLeafNodes = octreeContext.getLeafNodes();
-    for (auto iter = seedLeafNodes.begin(); iter != seedLeafNodes.end(); iter++)
-    {
+    auto iter = std::find_if(
+        seedLeafNodes.begin(),
+        seedLeafNodes.end(),
+        [&worldPosition](const OctreeNodePtr &node) {
+            return node->min == worldPosition;
+        }
+    );
+    if (iter != seedLeafNodes.end()) {
         OctreeNodePtr node = *iter;
+
+        /* {
+            std::cout << "main leaf node: ";
+            std::cout << node->min.x << "," << node->min.y << "/" << node->lod << ", ";
+            std::cout << std::endl;
+        }
+        {
+            std::cout << "seed leaf nodes: ";
+            for (auto iter = seedLeafNodes.begin(); iter != seedLeafNodes.end(); iter++) {
+                OctreeNodePtr node = *iter;
+                std::cout << node->min.x << "," << node->min.y << "/" << node->lod << ", ";
+            }
+            std::cout << std::endl;
+        } */
+
         const vm::ivec2 &nodePosition = node->min;
         const int &nodeLod = node->lod;
 
-        if (chunksIntersect(worldPosition, lod, nodePosition, nodeLod))
-        {
-            // compute min/max height for this octree node
-            float barrierMinHeight = std::numeric_limits<float>::infinity();
-            float barrierMaxHeight = -std::numeric_limits<float>::infinity();
-            for (int dz = 0; dz < chunkSize; dz++)
-            {
-                for (int dx = 0; dx < chunkSize; dx++)
-                {
-                    const float height = inst->getHeight(
-                        nodePosition.x + dx * nodeLod,
-                        nodePosition.y + dz * nodeLod);
-                    if (height < barrierMinHeight)
-                    {
-                        barrierMinHeight = height;
-                    }
-                    if (height > barrierMaxHeight)
-                    {
-                        barrierMaxHeight = height;
-                    }
+        float barrierMinHeight = std::numeric_limits<float>::infinity();
+        float barrierMaxHeight = -std::numeric_limits<float>::infinity();
+        for (int dz = 0; dz < chunkSize; dz++) {
+            for (int dx = 0; dx < chunkSize; dx++) {
+                const float height = inst->getHeight(
+                    nodePosition.x + dx * nodeLod,
+                    nodePosition.y + dz * nodeLod
+                ) - (float)WORLD_BASE_HEIGHT;
+                if (height < barrierMinHeight) {
+                    barrierMinHeight = height;
+                }
+                if (height > barrierMaxHeight) {
+                    barrierMaxHeight = height;
                 }
             }
-            barrierMinHeight = std::floor(barrierMinHeight);
-            barrierMaxHeight = std::ceil(barrierMaxHeight);
-
-            const vm::vec3 position3D{
-                (float)nodePosition.x,
-                0,
-                (float)nodePosition.y};
-
-            // top
-            {
-                // top left
-                vm::vec3 a{
-                    (float)lod,
-                    barrierMaxHeight,
-                    0};
-                a += position3D;
-                // bottom left
-                vm::vec3 b{
-                    (float)lod,
-                    barrierMinHeight,
-                    0};
-                b += position3D;
-                // bottom right
-                vm::vec3 c{
-                    0,
-                    barrierMinHeight,
-                    0};
-                c += position3D;
-                // top right
-                vm::vec3 d{
-                    0,
-                    barrierMaxHeight,
-                    0};
-                d += position3D;
-
-                geometry.positions.push_back(a);
-                geometry.positions.push_back(b);
-                geometry.positions.push_back(c);
-                geometry.positions.push_back(d);
-
-                vm::vec3 normal{
-                    0,
-                    0,
-                    -1};
-                geometry.normals.push_back(normal);
-                geometry.normals.push_back(normal);
-                geometry.normals.push_back(normal);
-                geometry.normals.push_back(normal);
-
-                geometry.indices.push_back(index + 0); // a
-                geometry.indices.push_back(index + 1); // b
-                geometry.indices.push_back(index + 3); // d
-                geometry.indices.push_back(index + 1); // b
-                geometry.indices.push_back(index + 2); // c
-                geometry.indices.push_back(index + 3); // d
-                index += 4;
-            }
-
-            // bottom
-            {
-                // top left
-                vm::vec3 a{
-                    0,
-                    barrierMaxHeight,
-                    (float)lod};
-                a += position3D;
-                // bottom left
-                vm::vec3 b{
-                    0,
-                    barrierMinHeight,
-                    (float)lod};
-                b += position3D;
-                // bottom right
-                vm::vec3 c{
-                    (float)lod,
-                    barrierMinHeight,
-                    (float)lod};
-                c += position3D;
-                // top right
-                vm::vec3 d{
-                    (float)lod,
-                    barrierMaxHeight,
-                    (float)lod};
-                d += position3D;
-
-                geometry.positions.push_back(a);
-                geometry.positions.push_back(b);
-                geometry.positions.push_back(c);
-                geometry.positions.push_back(d);
-
-                vm::vec3 normal{
-                    0,
-                    0,
-                    1};
-                geometry.normals.push_back(normal);
-                geometry.normals.push_back(normal);
-                geometry.normals.push_back(normal);
-                geometry.normals.push_back(normal);
-
-                geometry.indices.push_back(index + 0); // a
-                geometry.indices.push_back(index + 1); // b
-                geometry.indices.push_back(index + 3); // d
-                geometry.indices.push_back(index + 1); // b
-                geometry.indices.push_back(index + 2); // c
-                geometry.indices.push_back(index + 3); // d
-                index += 4;
-            }
-
-            // left
-            {
-                // top left
-                vm::vec3 a{
-                    0,
-                    barrierMaxHeight,
-                    0};
-                a += position3D;
-                // bottom left
-                vm::vec3 b{
-                    0,
-                    barrierMinHeight,
-                    0};
-                b += position3D;
-                // bottom right
-                vm::vec3 c{
-                    0,
-                    barrierMinHeight,
-                    (float)lod};
-                c += position3D;
-                // top right
-                vm::vec3 d{
-                    0,
-                    barrierMaxHeight,
-                    (float)lod};
-                d += position3D;
-
-                geometry.positions.push_back(a);
-                geometry.positions.push_back(b);
-                geometry.positions.push_back(c);
-                geometry.positions.push_back(d);
-
-                vm::vec3 normal{
-                    -1,
-                    0,
-                    0};
-                geometry.normals.push_back(normal);
-                geometry.normals.push_back(normal);
-                geometry.normals.push_back(normal);
-                geometry.normals.push_back(normal);
-
-                geometry.indices.push_back(index + 0); // a
-                geometry.indices.push_back(index + 1); // b
-                geometry.indices.push_back(index + 3); // d
-                geometry.indices.push_back(index + 1); // b
-                geometry.indices.push_back(index + 2); // c
-                geometry.indices.push_back(index + 3); // d
-                index += 4;
-            }
-
-            // right
-            {
-                // top left
-                vm::vec3 a{
-                    0,
-                    barrierMaxHeight,
-                    (float)lod};
-                a += position3D;
-                // bottom left
-                vm::vec3 b{
-                    0,
-                    barrierMinHeight,
-                    (float)lod};
-                b += position3D;
-                // bottom right
-                vm::vec3 c{
-                    0,
-                    barrierMinHeight,
-                    0};
-                c += position3D;
-                // top right
-                vm::vec3 d{
-                    0,
-                    barrierMaxHeight,
-                    0};
-                d += position3D;
-
-                geometry.positions.push_back(a);
-                geometry.positions.push_back(b);
-                geometry.positions.push_back(c);
-                geometry.positions.push_back(d);
-
-                vm::vec3 normal{
-                    -1,
-                    0,
-                    0};
-                geometry.normals.push_back(normal);
-                geometry.normals.push_back(normal);
-                geometry.normals.push_back(normal);
-                geometry.normals.push_back(normal);
-
-                geometry.indices.push_back(index + 0); // a
-                geometry.indices.push_back(index + 1); // b
-                geometry.indices.push_back(index + 3); // d
-                geometry.indices.push_back(index + 1); // b
-                geometry.indices.push_back(index + 2); // c
-                geometry.indices.push_back(index + 3); // d
-                index += 4;
-            }
         }
+        barrierMinHeight = std::floor(barrierMinHeight);
+        barrierMaxHeight = std::ceil(barrierMaxHeight);
+
+        int width = nodeLod;
+        int height = barrierMaxHeight - barrierMinHeight;
+        int depth = nodeLod;
+        createBoxGeometry(
+            width,
+            height,
+            depth,
+            1,
+            1,
+            1,
+            geometry
+        );
+        vm::ivec2 worldOffset{
+            width / 2 + worldPosition.x,
+            depth / 2 + worldPosition.y
+        };
+        offsetGeometry(
+            geometry,
+            worldOffset,
+            height / 2.f + barrierMinHeight
+        );
+        setPositions2D(geometry, node->min / chunkSize);
     }
 }
 
@@ -1543,7 +1577,7 @@ void generateBarrierGeometry(
 {
     generateBarrierMesh(worldPosition, lod, chunkSize, octreeContext, inst, geometry);
     // offsetGeometry(geometry, worldPosition);
-    // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
+    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
 
 //
@@ -1571,14 +1605,15 @@ void generateBarrierGeometry(
     );
     return *iter;
 } */
-OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int lod)
-{
-    constexpr int minLodRange = 1;
-    constexpr int maxLodRange = 6;
-    constexpr int maxLod = 1 << maxLodRange;
+OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int lod, int chunkSize) {
+    constexpr int minLod = 1;
+    // const int minLodRange = (1 << (minLod - 1)) * chunkSize;
+    constexpr int maxLod = 7;
+    const int maxLodRange = (1 << (maxLod - 1)) * chunkSize;
     vm::ivec2 maxLodCenter{
-        (int)std::floor((float)worldPosition.x / (float)maxLod) * maxLod,
-        (int)std::floor((float)worldPosition.y / (float)maxLod) * maxLod};
+        (int)std::floor((float)worldPosition.x / (float)maxLodRange) * maxLodRange,
+        (int)std::floor((float)worldPosition.y / (float)maxLodRange) * maxLodRange
+    };
 
     // compute splits
     std::vector<std::pair<vm::ivec2, int>> lodSplits;
@@ -1586,33 +1621,56 @@ OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int
         float numSplits = (float)noises.numSplitsNoise.in2D(maxLodCenter.x, maxLodCenter.y);
         uint32_t numSplitsHash;
         MurmurHash3_x86_32(&numSplits, sizeof(numSplits), 0, &numSplitsHash);
-        numSplitsHash *= 8 / 0xFFFFFFFFu;
+        numSplitsHash = (uint32_t)((float)numSplitsHash * 8.f / (float)0xFFFFFFFFu);
 
-        for (uint32_t i = 0; i < numSplitsHash; i++)
-        {
-            float splitsLodNoise = (float)noises.numSplitsNoise.in2D(maxLodCenter.x, maxLodCenter.y);
+        /* if (worldPosition.x == 0 && worldPosition.y == 0) {
+            std::cout << "num splits hash: " << maxLodCenter.x << " " << maxLodCenter.y << " " << numSplitsHash << std::endl;
+        } */
 
-            int splitLodDX;
+        float splitsLodNoise = (float)noises.numSplitsNoise.in2D(maxLodCenter.x, maxLodCenter.y);
+        for (uint32_t i = 0; i < numSplitsHash; i++) {
+            uint32_t splitLodDX;
             MurmurHash3_x86_32(&splitsLodNoise, sizeof(splitsLodNoise), 0, &splitLodDX);
-            splitLodDX = (int)((float)splitLodDX * (float)maxLod / (float)0x7FFFFFFF);
+            splitLodDX = (uint32_t)((float)splitLodDX * (float)maxLodRange / (float)0xFFFFFFFFu);
             splitsLodNoise++;
 
-            int splitLodDZ;
+            uint32_t splitLodDZ;
             MurmurHash3_x86_32(&splitsLodNoise, sizeof(splitsLodNoise), 1, &splitLodDZ);
-            splitLodDZ = (int)((float)splitLodDZ * (float)maxLod / (float)0x7FFFFFFF);
+            splitLodDZ = (uint32_t)((float)splitLodDZ * (float)maxLodRange / (float)0xFFFFFFFFu);
             splitsLodNoise++;
 
-            int splitLod;
+            uint32_t splitLod;
             MurmurHash3_x86_32(&splitsLodNoise, sizeof(splitsLodNoise), 1, &splitLod);
-            splitLod = (int)((float)splitLod * (float)(maxLodRange - minLodRange) / (float)0x7FFFFFFF);
+            splitLod = (uint32_t)((float)minLod + (float)splitLod * (float)(maxLod - minLod) / (float)0xFFFFFFFFu);
             splitsLodNoise++;
+
+            int splitLodDXInt = maxLodCenter.x + (int)splitLodDX;
+            int splitLodDZInt = maxLodCenter.y + (int)splitLodDZ;
+            int splitLodInt = 1 << ((int)splitLod - 1);
+
+            /* if (worldPosition.x == 0 && worldPosition.y == 0) {
+              std::cout << "get split " << maxLodCenter.x << " " << maxLodCenter.y << " : " << splitLodDXInt << ", " << splitLodDZInt << " : " << splitLodInt << std::endl;
+            } */
+
+            /* if (
+                splitLodDXInt >= maxLodCenter.x && splitLodDXInt < maxLodCenter.x + maxLodRange &&
+                splitLodDZInt >= maxLodCenter.y && splitLodDZInt < maxLodCenter.y + maxLodRange
+            ) {
+                // nothing
+            } else {
+                std::cout << "invalid split lod: " << splitLodDXInt << " " << splitLodDZInt << " " << splitLodInt << std::endl;
+                abort();
+            } */
 
             lodSplits.push_back(
                 std::make_pair(
                     vm::ivec2{
-                        maxLodCenter.x + splitLodDX,
-                        maxLodCenter.y + splitLodDZ},
-                    splitLod));
+                        splitLodDXInt,
+                        splitLodDZInt
+                    },
+                    splitLodInt
+                )
+            );
         }
     }
 
@@ -1620,8 +1678,9 @@ OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int
     constructSeedTree(
         octreeContext,
         maxLodCenter,
-        maxLod,
-        lodSplits);
+        maxLodRange,
+        lodSplits
+    );
 
     return octreeContext;
 }
@@ -1681,18 +1740,17 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
 
     // barrier
     BarrierGeometry barrierGeometry;
-    OctreeContext octreeContext = getChunkSeedOctree(worldPosition, lod);
-    auto nodeIter = findNodeIterAtPoint(octreeContext, worldPosition);
-    OctreeNodePtr node;
-    if (nodeIter != octreeContext.nodeMap.end())
-    {
+    OctreeContext octreeContext = getChunkSeedOctree(worldPosition, lod, chunkSize);
+    // auto nodeIter = findNodeIterAtPoint(octreeContext, worldPosition);
+    /* OctreeNodePtr node;
+    if (nodeIter != octreeContext.nodeMap.end()) {
         node = nodeIter->second;
     }
     else
     {
         std::cerr << "could not find node at point " << worldPosition.x << " " << worldPosition.y << std::endl;
         abort();
-    }
+    } */
     {
         generateBarrierGeometry(
             worldPosition,
@@ -1707,7 +1765,7 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
     result->terrainMeshBuffer = terrainGeometry.getBuffer();
     result->waterMeshBuffer = waterGeometry.getBuffer();
     result->barrierMeshBuffer = barrierGeometry.getBuffer();
-    result->barrierNodeBuffer = node->getBuffer();
+    // result->barrierNodeBuffer = node->getBuffer();
     return result;
 }
 /* uint8_t *PGInstance::createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)

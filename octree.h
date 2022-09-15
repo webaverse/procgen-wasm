@@ -97,6 +97,9 @@ public:
         index += sizeof(min);
         memcpy(buffer + index, &lod, sizeof(lod));
         index += sizeof(lod);
+
+        // std::cout << "output node " << min.x << " " << min.y << " : " << lod << std::endl;
+
         return buffer;
     }
 };

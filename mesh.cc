@@ -151,6 +151,9 @@ uint8_t *BarrierGeometry::getBuffer() const {
     // normals
     sizeof(uint32_t) +
     normals.size() * sizeof(normals[0]) +
+    // uvs
+    sizeof(uvs) +
+    uvs.size() * sizeof(uvs[0]) +
     // positions2D
     sizeof(positions2D) +
     positions2D.size() * sizeof(positions2D[0]) +
@@ -173,6 +176,12 @@ uint8_t *BarrierGeometry::getBuffer() const {
   index += sizeof(uint32_t);
   std::memcpy(buffer + index, &normals[0], normals.size() * sizeof(normals[0]));
   index += normals.size() * sizeof(normals[0]);
+
+  // uvs
+  *((uint32_t *)(buffer + index)) = uvs.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &uvs[0], uvs.size() * sizeof(uvs[0]));
+  index += uvs.size() * sizeof(uvs[0]);
 
   // positions2D
   *((uint32_t *)(buffer + index)) = positions2D.size();
