@@ -564,21 +564,52 @@ float getHeightByPosition(PGInstance *inst,
                           const std::vector<T> &heightfields,
                           const vm::ivec2 &location,
                           const vm::ivec2 &worldPosition,
-                          const vm::ivec2 &worldPositionMax)
+                          int lod,
+                          const std::array<int, 2> &lodArray)
 {
-    const int gridSizeX = worldPositionMax.x - worldPosition.x;
-    const int gridSizeY = worldPositionMax.y - worldPosition.x;
+    // if (location.x >= 0 && location.y >= 0)
+    // {
+    //     if (location.x < inst->chunkSize - 1 && location.y < inst->chunkSize - 1)
+    //     {
+    //         const int index2D = location.x + location.y * inst->chunkSize;
+    //         return heightfields[index2D].getHeight();
+    //     }
 
-    if (location.x < gridSizeX && location.y < gridSizeY)
-    {
-        const int index2D = location.x + location.y * inst->chunkSize;
-        return heightfields[index2D].getHeight();
-    }
-    else
-    {
-        const vm::ivec2 samplePosition = location + worldPosition;
-        return inst->getHeight(samplePosition.x, samplePosition.y);
-    }
+        // const int heightfieldsCenterDataOffset = inst->chunkSize * inst->chunkSize;
+        // int seamIndex = heightfieldsCenterDataOffset;
+
+        // if (location.y == inst->chunkSize)
+        // {
+        //     if (location.x < inst->chunkSize + 1)
+        //     {
+        //         const int seamPointIndex = seamIndex + location.x;
+        //         return heightfields[seamPointIndex].getHeight();
+        //     }
+        // }
+
+        // const int &bottomLod = lodArray[0];
+        // // const int &rightLod = lodArray[1];
+
+        // const int gridWidth = inst->chunkSize * lod / bottomLod;
+        // const int gridWidthP1 = gridWidth + 1;
+
+        // // const int gridHeight = inst->chunkSize * lod / rightLod;
+        // // const int gridHeightP1 = gridHeight + 1;
+
+        // seamIndex += gridWidthP1;
+
+        // if (location.x == inst->chunkSize)
+        // {
+        //     if (location.y < inst->chunkSize + 1)
+        //     {
+        //         const int seamPointIndex = seamIndex + location.y;
+        //         return heightfields[seamPointIndex].getHeight();
+        //     }
+        // }
+    // }
+
+    const vm::ivec2 samplePosition = location + worldPosition;
+    return inst->getHeight(samplePosition.x, samplePosition.y);
 }
 
 template <typename T>
@@ -586,10 +617,11 @@ float getBilinearHeight(PGInstance *inst,
                         const std::vector<T> &heightfields,
                         const vm::vec2 position,
                         const vm::ivec2 &worldPosition,
-                        const vm::ivec2 &worldPositionMax)
+                        int lod,
+                        const std::array<int, 2> &lodArray)
 {
-    float rx = std::round(position.x);
-    float rz = std::round(position.y);
+    float rx = std::floor(position.x);
+    float rz = std::floor(position.y);
 
     int ix = int(rx);
     int iz = int(rz);
@@ -599,10 +631,10 @@ float getBilinearHeight(PGInstance *inst,
     vm::ivec2 p01{ix, iz + 1};
     vm::ivec2 p11{ix + 1, iz + 1};
 
-    float v00 = getHeightByPosition(inst, heightfields, p00, worldPosition, worldPositionMax);
-    float v10 = getHeightByPosition(inst, heightfields, p10, worldPosition, worldPositionMax);
-    float v01 = getHeightByPosition(inst, heightfields, p01, worldPosition, worldPositionMax);
-    float v11 = getHeightByPosition(inst, heightfields, p11, worldPosition, worldPositionMax);
+    float v00 = getHeightByPosition(inst, heightfields, p00, worldPosition, lod, lodArray);
+    float v10 = getHeightByPosition(inst, heightfields, p10, worldPosition, lod, lodArray);
+    float v01 = getHeightByPosition(inst, heightfields, p01, worldPosition, lod, lodArray);
+    float v11 = getHeightByPosition(inst, heightfields, p11, worldPosition, lod, lodArray);
 
     float tx = position.x - p00.x;
     float tz = position.y - p00.y;
@@ -616,7 +648,8 @@ vm::vec3 calculateSurfaceNormal(PGInstance *inst,
                                 const vm::vec2 &p,
                                 const std::vector<T> &heightfields,
                                 const vm::ivec2 &worldPosition,
-                                const vm::ivec2 &worldPositionMax)
+                                int lod,
+                                const std::array<int, 2> &lodArray)
 {
     // finding the surface normal with the derivative
     constexpr float H = 0.001f;
@@ -627,36 +660,32 @@ vm::vec3 calculateSurfaceNormal(PGInstance *inst,
     const vm::vec2 z1 = p + vm::vec2{0.f, H};
     const vm::vec2 z2 = p - vm::vec2{0.f, H};
 
-    const float dx = getBilinearHeight(inst, heightfields, x1, worldPosition, worldPositionMax) -
-                     getBilinearHeight(inst, heightfields, x2, worldPosition, worldPositionMax);
+    const float dx = getBilinearHeight(inst, heightfields, x1, worldPosition, lod, lodArray) -
+                     getBilinearHeight(inst, heightfields, x2, worldPosition, lod, lodArray);
 
-    const float dz = getBilinearHeight(inst, heightfields, z1, worldPosition, worldPositionMax) -
-                     getBilinearHeight(inst, heightfields, z2, worldPosition, worldPositionMax);
+    const float dz = getBilinearHeight(inst, heightfields, z1, worldPosition, lod, lodArray) -
+                     getBilinearHeight(inst, heightfields, z2, worldPosition, lod, lodArray);
 
     return vm::normalize(vm::vec3{dx, 2.f * H, dz});
 }
 
 template <typename T, typename G, WindingDirection windingDirection>
 void createPlaneGeometry(PGInstance *inst,
+                         int lod,
+                         const std::array<int, 2> &lodArray,
                          int width,
                          int height,
                          int widthSegments,
                          int heightSegments,
                          const std::vector<T> &heightfields,
                          G &geometry,
-                         const vm::ivec2 &worldPosition
-                         )
+                         const vm::ivec2 &worldPosition)
 {
     const int &gridX = widthSegments;  // equals chunkSize - 1
     const int &gridY = heightSegments; // equals chunkSize - 1
 
     const int gridX1 = gridX + 1; // equals chunkSize
     const int gridY1 = gridY + 1; // equals chunkSize
-
-    const int chunkGridX1 = gridX1 + 1; // equals chunkSize + 1
-    const int chunkGridY1 = gridY1 + 1; // equals chunkSize + 1
-
-    const vm::ivec2 worldPositionMax = worldPosition + vm::ivec2{chunkGridX1, chunkGridY1};
 
     const int segment_width = width / gridX;   // equals lod
     const int segment_height = height / gridY; // equals lod
@@ -671,7 +700,7 @@ void createPlaneGeometry(PGInstance *inst,
             height,
             (float)y});
 
-        vm::vec3 surfaceNormal = calculateSurfaceNormal(inst, vm::vec2{(float)x, (float)y}, heightfields, worldPosition, worldPositionMax);
+        vm::vec3 surfaceNormal = calculateSurfaceNormal(inst, vm::vec2{(float)x, (float)y}, heightfields, worldPosition, lod, lodArray);
         // vm::vec3 surfaceNormal = calculateSurfaceNormal(inst, vm::vec2{(float)x, (float)y} + vm::vec2{(float)worldPosition.x, (float)worldPosition.y}, heightfields, worldPosition);
 
         geometry.normals.push_back(vm::vec3{
@@ -742,12 +771,12 @@ void createPlaneGeometry(PGInstance *inst,
 }
 template <typename T, typename G, WindingDirection windingDirection>
 void createPlaneSeamsGeometry(PGInstance *inst,
-                              int lod, c onst std::array<int, 2> &lodArray,
+                              int lod,
+                              const std::array<int, 2> &lodArray,
                               int chunkSize,
                               const std::vector<T> &heightfields,
                               G &geometry,
-                              const vm::ivec2 &worldPosition
-                              )
+                              const vm::ivec2 &worldPosition)
 {
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
@@ -763,8 +792,6 @@ void createPlaneSeamsGeometry(PGInstance *inst,
     const int chunkGridX1 = chunkSize + 1; // equals chunkSize + 1
     const int chunkGridY1 = chunkSize + 1; // equals chunkSize + 1
 
-    const vm::ivec2 worldPositionMax = worldPosition + vm::ivec2{chunkGridX1, chunkGridY1};
-
     //
 
     auto pushPoint = [&](int x, int y, const T &fieldValue) -> void
@@ -775,7 +802,7 @@ void createPlaneSeamsGeometry(PGInstance *inst,
             height,
             (float)y});
 
-        vm::vec3 surfaceNormal = calculateSurfaceNormal(inst, vm::vec2{(float)x, (float)y}, heightfields, worldPosition, worldPositionMax);
+        vm::vec3 surfaceNormal = calculateSurfaceNormal(inst, vm::vec2{(float)x, (float)y}, heightfields, worldPosition, lod, lodArray);
         // vm::vec3 surfaceNormal = calculateSurfaceNormal(inst, vm::vec2{(float)x, (float)y} + vm::vec2{(float)worldPosition.x, (float)worldPosition.y}, heightfields, worldPosition);
 
         geometry.normals.push_back(vm::vec3{
@@ -1099,24 +1126,25 @@ void offsetGeometry(G &geometry, const vm::ivec2 &worldPosition)
 void generateHeightfieldCenterMesh(
     PGInstance *inst,
     int lod,
+    const std::array<int, 2> &lodArray,
     int chunkSize,
     const std::vector<Heightfield> &heightfields,
     TerrainGeometry &geometry,
-    const vm::ivec2 &worldPosition
-    )
+    const vm::ivec2 &worldPosition)
 {
     const int worldSize = chunkSize * lod;
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
     createPlaneGeometry<Heightfield, TerrainGeometry, WindingDirection::CCW>(inst,
+                                                                             lod,
+                                                                             lodArray,
                                                                              worldSizeM1,
                                                                              worldSizeM1,
                                                                              chunkSizeM1,
                                                                              chunkSizeM1,
                                                                              heightfields,
                                                                              geometry,
-                                                                             worldPosition
-                                                                             );
+                                                                             worldPosition);
 }
 void generateHeightfieldSeamsMesh(
     PGInstance *inst,
@@ -1125,8 +1153,7 @@ void generateHeightfieldSeamsMesh(
     int chunkSize,
     const std::vector<Heightfield> &heightfields,
     TerrainGeometry &geometry,
-    const vm::ivec2 &worldPosition
-    )
+    const vm::ivec2 &worldPosition)
 {
     createPlaneSeamsGeometry<Heightfield, TerrainGeometry, WindingDirection::CCW>(inst,
                                                                                   lod,
@@ -1134,8 +1161,7 @@ void generateHeightfieldSeamsMesh(
                                                                                   chunkSize,
                                                                                   heightfields,
                                                                                   geometry,
-                                                                                  worldPosition
-                                                                                  );
+                                                                                  worldPosition);
 }
 
 //
@@ -1143,16 +1169,18 @@ void generateHeightfieldSeamsMesh(
 void generateWaterfieldCenterMesh(
     PGInstance *inst,
     int lod,
+    const std::array<int, 2> &lodArray,
     int chunkSize,
     const std::vector<Waterfield> &waterfields,
     WaterGeometry &geometry,
-    const vm::ivec2 &worldPosition
-    )
+    const vm::ivec2 &worldPosition)
 {
     const int worldSize = chunkSize * lod;
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
     createPlaneGeometry<Waterfield, WaterGeometry, WindingDirection::CCW>(inst,
+                                                                          lod,
+                                                                          lodArray,
                                                                           worldSizeM1,
                                                                           worldSizeM1,
                                                                           chunkSizeM1,
@@ -1441,8 +1469,8 @@ void generateTerrainGeometry(
     const std::vector<Heightfield> &heightfields,
     TerrainGeometry &geometry)
 {
-    generateHeightfieldCenterMesh(inst, lod, chunkSize, heightfields, geometry, worldPosition );
-    generateHeightfieldSeamsMesh(inst, lod, lodArray, chunkSize, heightfields, geometry, worldPosition );
+    generateHeightfieldCenterMesh(inst, lod, lodArray, chunkSize, heightfields, geometry, worldPosition);
+    generateHeightfieldSeamsMesh(inst, lod, lodArray, chunkSize, heightfields, geometry, worldPosition);
     offsetGeometry(geometry, worldPosition);
     // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
@@ -1458,7 +1486,7 @@ void generateWaterGeometry(
     const std::vector<Waterfield> &waterfields,
     WaterGeometry &geometry)
 {
-    generateWaterfieldCenterMesh(inst, lod, chunkSize, waterfields, geometry, worldPosition);
+    generateWaterfieldCenterMesh(inst, lod, lodArray, chunkSize, waterfields, geometry, worldPosition);
     generateWaterfieldSeamsMesh(inst, lod, lodArray, chunkSize, waterfields, geometry, worldPosition);
     offsetGeometry(geometry, worldPosition);
     // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
