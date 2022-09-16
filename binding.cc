@@ -47,9 +47,11 @@ EMSCRIPTEN_KEEPALIVE void createMobSplatAsync(DCInstance *inst, uint32_t taskId,
 //
 
 EMSCRIPTEN_KEEPALIVE void createChunkMeshAsync(PGInstance *inst, uint32_t taskId, int x, int z, int lod, int *lodArray) {
-    std::array<int, 2> lodArray2{
+    std::array<int, NUM_LOD_ARR> lodArray2{
         lodArray[0],
-        lodArray[1]
+        lodArray[1],
+        lodArray[2],
+        lodArray[3]
     };
     /* if (lodArray2[0] == 0 || lodArray2[1] == 0) {
         std::cerr << "lodArray is zero" << std::endl;

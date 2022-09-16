@@ -15,6 +15,8 @@
 #include "noises.h"
 #include "tracker.h"
 
+constexpr int NUM_LOD_ARR = 4;
+
 //
 
 class Tracker;
@@ -87,12 +89,12 @@ public:
     SeedNoise getSeedNoise(int bx, int bz);
 
     void getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfield);
-    void getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Heightfield> &heightfieldSeams);
+    void getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, NUM_LOD_ARR> &lodArray, std::vector<Heightfield> &heightfieldSeams, std::vector<Heightfield> &outerHeightfields);
     Heightfield getHeightField(int bx, int bz);
     float getHeight(int bx, int bz);
     
     void getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfield);
-    void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfieldSeams);
+    void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, NUM_LOD_ARR> &lodArray, std::vector<Waterfield> &waterfieldSeams);
     Waterfield getWaterField(int bx, int bz, int lod);
 
     // void getCaveFieldCenter(int bx, int bz, int lod, std::vector<Cavefield> &cavefields);
@@ -146,7 +148,7 @@ public:
     
     //
     
-    ChunkResult *createChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
+    ChunkResult *createChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, NUM_LOD_ARR> &lodArray);
     // uint8_t *createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
     OctreeContext getChunkSeedOctree(const vm::ivec2 &worldPosition, int lod, int chunkSize);
 
@@ -175,7 +177,7 @@ public:
 
     //
 
-    void createChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
+    void createChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, NUM_LOD_ARR> &lodArray);
     // void createLiquidChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
 
     //

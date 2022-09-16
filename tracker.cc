@@ -104,8 +104,8 @@ void serializeOctreeNodes(const std::vector<OctreeNodePtr> &datas, uint8_t *ptr,
     *((int *)(ptr + index)) = data->lod;
     index += sizeof(int);
 
-    std::memcpy(ptr + index, data->lodArray, sizeof(int[2]));
-    index += sizeof(int[2]);
+    std::memcpy(ptr + index, data->lodArray, sizeof(int[NUM_LOD_ARR]));
+    index += sizeof(int[NUM_LOD_ARR]);
   }
 }
 void serializeDataRequests(const std::vector<DataRequestPtr> &datas, uint8_t *ptr, int &index) {
@@ -121,8 +121,8 @@ void serializeDataRequests(const std::vector<DataRequestPtr> &datas, uint8_t *pt
     *((int *)(ptr + index)) = data->node->lod;
     index += sizeof(int);
     
-    std::memcpy(ptr + index, data->node->lodArray, sizeof(int[2]));
-    index += sizeof(int[2]);
+    std::memcpy(ptr + index, data->node->lodArray, sizeof(int[NUM_LOD_ARR]));
+    index += sizeof(int[NUM_LOD_ARR]);
   }
 }
 void serializeChunkPosition(const vm::ivec2 &chunkPosition, uint8_t *ptr, int &index) {
@@ -134,7 +134,7 @@ uint8_t *TrackerUpdate::getBuffer() const {
   // compute size
   size_t size = 0;
 
-  constexpr size_t octreeNodeSize = sizeof(vm::ivec2) + sizeof(int) + sizeof(int[2]);
+  constexpr size_t octreeNodeSize = sizeof(vm::ivec2) + sizeof(int) + sizeof(int[NUM_LOD_ARR]);
 
   size += sizeof(int32_t); // numLeafNodes
   size += octreeNodeSize * leafNodes.size();
@@ -269,7 +269,7 @@ bool equalsNodeLodArray(const OctreeNode &node, const OctreeNode &other) {
   if (equalsNode(node, other)) {
     if (
       (node.lod != other.lod) ||
-      (node.lodArray[0] != other.lodArray[0] || node.lodArray[1] != other.lodArray[1])
+      (node.lodArray[0] != other.lodArray[0] || node.lodArray[1] != other.lodArray[1] || node.lodArray[2] != other.lodArray[2] || node.lodArray[3] != other.lodArray[3])
     ) {
       return false;
     }
@@ -559,8 +559,22 @@ void initializeLodArrays(OctreeContext &octreeContext) {
     };
     auto rightNodeIter = findNodeIterAtPoint(octreeContext, rightNodePosition);
 
+    vm::ivec2 topNodePosition{
+      min.x,
+      min.y - lod
+    };
+    auto topNodeIter = findNodeIterAtPoint(octreeContext, topNodePosition);
+
+    vm::ivec2 leftNodePosition{
+      min.x - lod,
+      min.y
+    };
+    auto leftNodeIter = findNodeIterAtPoint(octreeContext, leftNodePosition);
+
     node->lodArray[0] = bottomNodeIter != nodeMap.end() ? bottomNodeIter->second->lod : (lod * 2);
     node->lodArray[1] = rightNodeIter != nodeMap.end() ? rightNodeIter->second->lod : (lod * 2);
+    node->lodArray[2] = topNodeIter != nodeMap.end() ? topNodeIter->second->lod : (lod * 2);
+    node->lodArray[3] = leftNodeIter != nodeMap.end() ? leftNodeIter->second->lod : (lod * 2);
   }
 }
 void constructLodTree(OctreeContext &octreeContext, const vm::ivec2 &currentCoord, int lod1Range, int minLod, int maxLod) {
