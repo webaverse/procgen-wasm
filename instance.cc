@@ -589,7 +589,7 @@ void createPlaneGeometry(PGInstance *inst, int width, int height, int widthSegme
 
     //
 
-    auto pushPoint = [&](int x, int y, int ix, int iy, const T &fieldValue, int index) -> void
+    auto pushPoint = [&](int x, int y, const T &fieldValue, int index) -> void
     {
         const float height = fieldValue.getHeight();
         geometry.positions.push_back(vm::vec3{
@@ -619,7 +619,7 @@ void createPlaneGeometry(PGInstance *inst, int width, int height, int widthSegme
 
             const T &fieldValue = heightfields[index];
 
-            pushPoint(x, y, ix, iy, fieldValue, index);
+            pushPoint(x, y, fieldValue, index);
 
             index++;
 
@@ -676,7 +676,7 @@ void createPlaneSeamsGeometry(PGInstance *inst, int lod, const std::array<int, 2
 
     //
 
-    auto pushPoint = [&](int x, int y, int ix, int iy, const T &fieldValue, int index) -> void
+    auto pushPoint = [&](int x, int y, const T &fieldValue, int index) -> void
     {
         const float height = fieldValue.getHeight();
         geometry.positions.push_back(vm::vec3{
@@ -707,7 +707,7 @@ void createPlaneSeamsGeometry(PGInstance *inst, int lod, const std::array<int, 2
                 const int x = ix * bottomLod;
                 const int y = iy * lod;
 
-                pushPoint(x, y, ix, iy, fieldValue, index);
+                pushPoint(x, y, fieldValue, index);
                 index++;
             }
         }
@@ -721,7 +721,7 @@ void createPlaneSeamsGeometry(PGInstance *inst, int lod, const std::array<int, 2
                 const int x = ix * lod;
                 const int y = iy * rightLod;
 
-                pushPoint(x, y, ix, iy, fieldValue, index);
+                pushPoint(x, y, fieldValue, index);
                 index++;
             }
         }
