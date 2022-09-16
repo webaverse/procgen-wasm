@@ -545,6 +545,11 @@ enum class WindingDirection
     CW
 };
 
+int getCenterOffset(const int &chunkSize)
+{
+    return chunkSize * chunkSize + (chunkSize + 3) * 4;
+}
+
 bool isLocationInRange(const vm::ivec2 &location, const int &min, const int &max)
 {
     return (location.x >= min && location.y >= min && location.x < max && location.y < max);
@@ -564,6 +569,36 @@ int getSeamIndex(const vm::ivec2 &location, const int &chunkSize, const int &lod
     const int gridHeightP1 = gridHeight + 1;
     const int gridHeightP2 = gridHeightP1 + 1;
 
+    if (location.y == -1)
+    {
+        return seamIndex + location.x + 1;
+    }
+
+    seamIndex += chunkSize + 3;
+
+    if (location.x == -1)
+    {
+        return seamIndex + location.y + 1;
+    }
+
+    seamIndex += chunkSize + 3;
+
+    if (location.y == chunkSize + 1)
+    {
+        return seamIndex + location.x + 1;
+    }
+
+    // seamIndex += gridWidthP2 + 1;
+    seamIndex += chunkSize + 3;
+
+    if (location.x == chunkSize + 1)
+    {
+        return seamIndex + location.y + 1;
+    }
+
+    // seamIndex += gridHeightP2 + 1;
+    seamIndex += chunkSize + 3;
+
     if (location.y == chunkSize)
     {
         return seamIndex + location.x;
@@ -578,40 +613,13 @@ int getSeamIndex(const vm::ivec2 &location, const int &chunkSize, const int &lod
 
     seamIndex += gridHeightP1;
 
-    if (location.y == -1)
-    {
-        return seamIndex + location.x + 1;
-    }
-
-    seamIndex += gridWidthP2 + 1;
-
-    if (location.x == -1)
-    {
-        return seamIndex + location.y + 1;
-    }
-
-    seamIndex += gridHeightP2 + 1;
-
-    if (location.y == chunkSize + 1)
-    {
-        return seamIndex + location.x + 1;
-    }
-
-    seamIndex += gridWidthP2 + 1;
-
-    if (location.x == chunkSize + 1)
-    {
-        return seamIndex + location.y + 1;
-    }
-
-    seamIndex += gridHeightP2 + 1;
-
     return -1;
 }
 
 template <typename T, bool isSeam>
 float getHeightByPosition(PGInstance *inst,
                           const std::vector<T> &heightfields,
+                          const std::vector<Heightfield> &outerHeightfields,
                           const vm::ivec2 &location,
                           const vm::ivec2 &worldPosition,
                           int lod,
@@ -626,81 +634,90 @@ float getHeightByPosition(PGInstance *inst,
     const int &topLod = lodArray[2];
     const int &leftLod = lodArray[3];
 
-    if (!isSeam)
-    { // center
-        if (isLocationInRange(location, 0, inst->chunkSize))
-        {
-            const int index2D = location.x + location.y * inst->chunkSize;
-            height = heightfields[index2D].getHeight();
-            return height;
-        }
-        else if (isLocationInRange(location, -1, inst->chunkSize + 2))
-        {
-            const int index2D = getSeamIndex(location, inst->chunkSize, lod, lodArray);
-            height = heightfields[index2D].getHeight();
-            return height;
-        }
-        // else if (location.y == -1)
-        // {
-        //     worldLocation = worldPosition + location * vm::ivec2{leftLod, lod};
-        //     height = inst->getHeight(worldLocation.x, worldLocation.y);
-        //     return height;
-        // }
-        // else if (location.x == -1)
-        // {
-        //     worldLocation = worldPosition + location * vm::ivec2{lod, topLod};
-        //     height = inst->getHeight(worldLocation.x, worldLocation.y);
-        //     return height;
-        // }
-        // worldLocation = worldPosition + location;
-        // height = inst->getHeight(worldLocation.x, worldLocation.y);
-        // return height;
+    // if (!isSeam)
+    // { // center
+    if (isLocationInRange(location, 0, inst->chunkSize))
+    {
+        const int index2D = location.x + location.y * inst->chunkSize;
+        height = heightfields[index2D].getHeight();
+        return height;
     }
-    else
-    { // seam
-        if (isLocationInRange(location, 0, inst->chunkSize))
-        {
-            const int index2D = location.x + location.y * inst->chunkSize;
-            height = heightfields[index2D].getHeight();
-            return height;
-        }
-        else if (isLocationInRange(location, -1, inst->chunkSize + 2))
-        {
-            const int seamPointIndex = getSeamIndex(location, inst->chunkSize, lod, lodArray);
-            height = heightfields[seamPointIndex].getHeight();
-            return height;
-        }
-        else
-        {
-            // if (location.y == inst->chunkSize + 1)
-            // {
-            //     worldLocation = worldPosition + location * vm::ivec2{bottomLod, lod};
-            //     height = inst->getHeight(worldLocation.x, worldLocation.y);
-            //     return height;
-            // }
-            // else if (location.x == inst->chunkSize + 1)
-            // {
-            //     worldLocation = worldPosition + location * vm::ivec2{lod, rightLod};
-            //     height = inst->getHeight(worldLocation.x, worldLocation.y);
-            //     return height;
-            // }
-            // else if (location.y == -1)
-            // {
-            //     worldLocation = worldPosition + location * vm::ivec2{leftLod, lod};
-            //     height = inst->getHeight(worldLocation.x, worldLocation.y);
-            //     return height;
-            // }
-            // else if (location.x == -1)
-            // {
-            //     worldLocation = worldPosition + location * vm::ivec2{lod, topLod};
-            //     height = inst->getHeight(worldLocation.x, worldLocation.y);
-            //     return height;
-            // }
-            // worldLocation = worldPosition + location;
-            // height = inst->getHeight(worldLocation.x, worldLocation.y);
-            // return height;
-        }
+    else if (isLocationInRange(location, 0, inst->chunkSize + 1))
+    {
+        const int index2D = getSeamIndex(location, inst->chunkSize, lod, lodArray);
+        height = heightfields[index2D].getHeight();
+        return height;
+    } else if (isLocationInRange(location, -1, inst->chunkSize + 2)) {
+
     }
+    // else if (isLocationInRange(location, -1, inst->chunkSize + 2))
+    // {
+    //     const int index2D = getSeamIndex(location, inst->chunkSize, lod, lodArray);
+    //     height = heightfields[index2D].getHeight();
+    //     return height;
+    // }
+    // else if (location.y == -1)
+    // {
+    //     worldLocation = worldPosition + location * vm::ivec2{leftLod, lod};
+    //     height = inst->getHeight(worldLocation.x, worldLocation.y);
+    //     return height;
+    // }
+    // else if (location.x == -1)
+    // {
+    //     worldLocation = worldPosition + location * vm::ivec2{lod, topLod};
+    //     height = inst->getHeight(worldLocation.x, worldLocation.y);
+    //     return height;
+    // }
+    // worldLocation = worldPosition + location;
+    // height = inst->getHeight(worldLocation.x, worldLocation.y);
+    // return height;
+    // }
+    // else
+    // { // seam
+    //     if (isLocationInRange(location, 0, inst->chunkSize))
+    //     {
+    //         const int index2D = location.x + location.y * inst->chunkSize;
+    //         height = heightfields[index2D].getHeight();
+    //         return height;
+    //     }
+    // else if (isLocationInRange(location, -1, inst->chunkSize + 2))
+    // {
+    //     const int seamPointIndex = getSeamIndex(location, inst->chunkSize, lod, lodArray);
+    //     height = heightfields[seamPointIndex].getHeight();
+    //     return height;
+    // }
+    // else
+    // {
+    // if (location.y == inst->chunkSize + 1)
+    // {
+    //     worldLocation = worldPosition + location * vm::ivec2{bottomLod, lod};
+    //     height = inst->getHeight(worldLocation.x, worldLocation.y);
+    //     return height;
+    // }
+    // else if (location.x == inst->chunkSize + 1)
+    // {
+    //     worldLocation = worldPosition + location * vm::ivec2{lod, rightLod};
+    //     height = inst->getHeight(worldLocation.x, worldLocation.y);
+    //     return height;
+    // }
+    // else if (location.y == -1)
+    // {
+    //     worldLocation = worldPosition + location * vm::ivec2{leftLod, lod};
+    //     height = inst->getHeight(worldLocation.x, worldLocation.y);
+    //     return height;
+    // }
+    // else if (location.x == -1)
+    // {
+    //     worldLocation = worldPosition + location * vm::ivec2{lod, topLod};
+    //     height = inst->getHeight(worldLocation.x, worldLocation.y);
+    //     return height;
+    // }
+    // worldLocation = worldPosition + location;
+    // height = inst->getHeight(worldLocation.x, worldLocation.y);
+    // return height;
+    // }
+
+    // }
 
     return height;
 }
@@ -708,6 +725,7 @@ float getHeightByPosition(PGInstance *inst,
 template <typename T, bool isSeam>
 float getBilinearHeight(PGInstance *inst,
                         const std::vector<T> &heightfields,
+                        const std::vector<Heightfield> &outerHeightfields,
                         const vm::vec2 position,
                         const vm::ivec2 &worldPosition,
                         int lod,
@@ -724,10 +742,10 @@ float getBilinearHeight(PGInstance *inst,
     vm::ivec2 p01{ix, iz + 1};
     vm::ivec2 p11{ix + 1, iz + 1};
 
-    float v00 = getHeightByPosition<T, isSeam>(inst, heightfields, p00, worldPosition, lod, lodArray);
-    float v10 = getHeightByPosition<T, isSeam>(inst, heightfields, p10, worldPosition, lod, lodArray);
-    float v01 = getHeightByPosition<T, isSeam>(inst, heightfields, p01, worldPosition, lod, lodArray);
-    float v11 = getHeightByPosition<T, isSeam>(inst, heightfields, p11, worldPosition, lod, lodArray);
+    float v00 = getHeightByPosition<T, isSeam>(inst, heightfields, outerHeightfields, p00, worldPosition, lod, lodArray);
+    float v10 = getHeightByPosition<T, isSeam>(inst, heightfields, outerHeightfields, p10, worldPosition, lod, lodArray);
+    float v01 = getHeightByPosition<T, isSeam>(inst, heightfields, outerHeightfields, p01, worldPosition, lod, lodArray);
+    float v11 = getHeightByPosition<T, isSeam>(inst, heightfields, outerHeightfields, p11, worldPosition, lod, lodArray);
 
     float tx = position.x - p00.x;
     float tz = position.y - p00.y;
@@ -740,6 +758,7 @@ template <typename T, bool isSeam>
 vm::vec3 calculateSurfaceNormal(PGInstance *inst,
                                 const vm::vec2 &p,
                                 const std::vector<T> &heightfields,
+                                const std::vector<Heightfield> &outerHeightfields,
                                 const vm::ivec2 &worldPosition,
                                 int lod,
                                 const std::array<int, NUM_LOD_ARR> &lodArray)
@@ -753,11 +772,11 @@ vm::vec3 calculateSurfaceNormal(PGInstance *inst,
     const vm::vec2 z1 = p + vm::vec2{0.f, H};
     const vm::vec2 z2 = p - vm::vec2{0.f, H};
 
-    const float dx = getBilinearHeight<T, isSeam>(inst, heightfields, x1, worldPosition, lod, lodArray) -
-                     getBilinearHeight<T, isSeam>(inst, heightfields, x2, worldPosition, lod, lodArray);
+    const float dx = getBilinearHeight<T, isSeam>(inst, heightfields, outerHeightfields, x1, worldPosition, lod, lodArray) -
+                     getBilinearHeight<T, isSeam>(inst, heightfields, outerHeightfields, x2, worldPosition, lod, lodArray);
 
-    const float dz = getBilinearHeight<T, isSeam>(inst, heightfields, z1, worldPosition, lod, lodArray) -
-                     getBilinearHeight<T, isSeam>(inst, heightfields, z2, worldPosition, lod, lodArray);
+    const float dz = getBilinearHeight<T, isSeam>(inst, heightfields, outerHeightfields, z1, worldPosition, lod, lodArray) -
+                     getBilinearHeight<T, isSeam>(inst, heightfields, outerHeightfields, z2, worldPosition, lod, lodArray);
 
     return vm::normalize(vm::vec3{dx, 2.f * H, dz});
 }
@@ -867,6 +886,7 @@ void createPlaneSeamsGeometry(PGInstance *inst,
                               const std::array<int, NUM_LOD_ARR> &lodArray,
                               int chunkSize,
                               const std::vector<T> &heightfields,
+                              const std::vector<Heightfield> &outerHeightfields,
                               G &geometry,
                               const vm::ivec2 &worldPosition)
 {
@@ -880,6 +900,7 @@ void createPlaneSeamsGeometry(PGInstance *inst,
     const int gridHeightP1 = gridHeight + 1;
 
     const int heightfieldsCenterDataOffset = chunkSize * chunkSize;
+    const int centerOffset = getCenterOffset(chunkSize);
 
     const int chunkGridX1 = chunkSize + 1; // equals chunkSize + 1
     const int chunkGridY1 = chunkSize + 1; // equals chunkSize + 1
@@ -894,7 +915,7 @@ void createPlaneSeamsGeometry(PGInstance *inst,
             height,
             (float)y});
 
-        vm::vec3 surfaceNormal = calculateSurfaceNormal<T, true>(inst, vm::vec2{(float)x, (float)y}, heightfields, worldPosition, lod, lodArray);
+        vm::vec3 surfaceNormal = calculateSurfaceNormal<T, true>(inst, vm::vec2{(float)x, (float)y}, heightfields, outerHeightfields, worldPosition, lod, lodArray);
 
         geometry.normals.push_back(vm::vec3{
             surfaceNormal.x,
@@ -905,9 +926,9 @@ void createPlaneSeamsGeometry(PGInstance *inst,
 
     // positions
     // bottom
-    int heightfieldsBottomDataOffset;
+    int heightfieldsBottomDataOffset = heightfieldsCenterDataOffset + gridWidthP1;
     {
-        int index = heightfieldsCenterDataOffset;
+        int index = centerOffset;
         {
             const int iy = chunkSize;
             for (int ix = 0; ix < gridWidthP1; ix++)
@@ -921,7 +942,6 @@ void createPlaneSeamsGeometry(PGInstance *inst,
                 index++;
             }
         }
-        heightfieldsBottomDataOffset = index;
         // right
         {
             const int ix = chunkSize;
@@ -1220,6 +1240,7 @@ void generateHeightfieldCenterMesh(
     const std::array<int, NUM_LOD_ARR> &lodArray,
     int chunkSize,
     const std::vector<Heightfield> &heightfields,
+    const std::vector<Heightfield> &outerHeightfields,
     TerrainGeometry &geometry,
     const vm::ivec2 &worldPosition)
 {
@@ -1234,6 +1255,7 @@ void generateHeightfieldCenterMesh(
                                                                              chunkSizeM1,
                                                                              chunkSizeM1,
                                                                              heightfields,
+                                                                             outerHeightfields,
                                                                              geometry,
                                                                              worldPosition);
 }
@@ -1243,6 +1265,7 @@ void generateHeightfieldSeamsMesh(
     const std::array<int, NUM_LOD_ARR> &lodArray,
     int chunkSize,
     const std::vector<Heightfield> &heightfields,
+    const std::vector<Heightfield> &outerHeightfields,
     TerrainGeometry &geometry,
     const vm::ivec2 &worldPosition)
 {
@@ -1251,6 +1274,7 @@ void generateHeightfieldSeamsMesh(
                                                                                   lodArray,
                                                                                   chunkSize,
                                                                                   heightfields,
+                                                                                  outerHeightfields,
                                                                                   geometry,
                                                                                   worldPosition);
 }
@@ -1599,10 +1623,11 @@ void generateTerrainGeometry(
     const std::array<int, NUM_LOD_ARR> &lodArray,
     int chunkSize,
     const std::vector<Heightfield> &heightfields,
+    const std::vector<Heightfield> &outerHeightfields,
     TerrainGeometry &geometry)
 {
-    generateHeightfieldCenterMesh(inst, lod, lodArray, chunkSize, heightfields, geometry, worldPosition);
-    generateHeightfieldSeamsMesh(inst, lod, lodArray, chunkSize, heightfields, geometry, worldPosition);
+    generateHeightfieldCenterMesh(inst, lod, lodArray, chunkSize, heightfields, outerHeightfields geometry, worldPosition);
+    generateHeightfieldSeamsMesh(inst, lod, lodArray, chunkSize, heightfields, outerHeightfields, geometry, worldPosition);
     offsetGeometry(geometry, worldPosition);
     // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
@@ -1797,14 +1822,17 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
 
     const int numHeightFields =
         (chunkSize * chunkSize) +    // center
-        (gridWidthP1 + gridHeightP1 + (gridWidthP2 + gridHeightP2 + backAndFrontLayers) * 2) // seams
+        (gridWidthP1 + gridHeightP1) // seams
         ;
 
+    const int numOuterHeighFields = (chunkSize + 3) * 4;
+
     std::vector<Heightfield> heightfields(numHeightFields);
+    std::vector<Heightfield> outerHeightfields(numOuterHeighFields);
 
     {
         getHeightFieldCenter(worldPosition.x, worldPosition.y, lod, heightfields);
-        getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfields);
+        getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfields, outerHeightfields);
 
         generateTerrainGeometry(
             this,
@@ -1813,6 +1841,7 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
             lodArray,
             chunkSize,
             heightfields,
+            outerHeightfields,
             terrainGeometry);
     }
 
@@ -2402,12 +2431,13 @@ void PGInstance::getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heigh
         }
     }
 }
-void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, NUM_LOD_ARR> &lodArray, std::vector<Heightfield> &heightfields)
+void PGInstance::getHeightFieldSeams(int bx, int bz, int lod,
+                                     const std::array<int, NUM_LOD_ARR> &lodArray,
+                                     std::vector<Heightfield> &heightfields,
+                                     std::vector<Heightfield> &outerHeightfields)
 {
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
-    const int &topLod = lodArray[2];
-    const int &leftLod = lodArray[3];
 
     const int gridWidth = chunkSize * lod / bottomLod;
     const int gridWidthP1 = gridWidth + 1;
@@ -2419,16 +2449,17 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
 
     const int heightfieldsCenterDataOffset = chunkSize * chunkSize;
 
+    int seamIndex = heightfieldsCenterDataOffset;
+
     // bottom
-    int index = heightfieldsCenterDataOffset;
     {
         const int z = chunkSize;
         for (int x = 0; x < gridWidthP1; x++)
         {
-            Heightfield &localHeightfieldSeam = heightfields[index];
+            Heightfield &localHeightfieldSeam = heightfields[seamIndex];
             localHeightfieldSeam = getHeightField(bx + x * bottomLod, bz + z * lod);
 
-            index++;
+            seamIndex++;
         }
     }
     // right
@@ -2436,54 +2467,56 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
         const int x = chunkSize;
         for (int z = 0; z < gridHeightP1; z++)
         {
-            Heightfield &localHeightfieldSeam = heightfields[index];
+            Heightfield &localHeightfieldSeam = heightfields[seamIndex];
             localHeightfieldSeam = getHeightField(bx + x * lod, bz + z * rightLod);
 
-            index++;
+            seamIndex++;
         }
     }
+
+    int outerLayerIndex = 0;
 
     // 1 layer before the chunk
     {
         const int z = -1;
-        for (int x = -1; x < gridWidthP2; x++)
+        for (int x = -1; x < chunkSize + 2; x++)
         {
-            Heightfield &localHeightfieldSeam = heightfields[index];
-            localHeightfieldSeam = getHeightField(bx + x * topLod, bz + z * lod);
+            Heightfield &localOuterHeightfield = outerHeightfields[outerLayerIndex];
+            localOuterHeightfield = getHeightField(bx + x * lod, bz + z * lod);
 
-            index++;
+            outerLayerIndex++;
         }
     }
     {
         const int x = -1;
-        for (int z = -1; z < gridHeightP2; z++)
+        for (int z = -1; z < chunkSize + 2; z++)
         {
-            Heightfield &localHeightfieldSeam = heightfields[index];
-            localHeightfieldSeam = getHeightField(bx + x * lod, bz + z * leftLod);
+            Heightfield &localOuterHeightfield = outerHeightfields[outerLayerIndex];
+            localOuterHeightfield = getHeightField(bx + x * lod, bz + z * lod);
 
-            index++;
+            outerLayerIndex++;
         }
     }
 
     // 1 layer after the chunk
     {
         const int z = chunkSize + 1;
-        for (int x = -1; x < gridWidthP2; x++)
+        for (int x = -1; x < chunkSize + 2; x++)
         {
-            Heightfield &localHeightfieldSeam = heightfields[index];
-            localHeightfieldSeam = getHeightField(bx + x * bottomLod, bz + z * lod);
+            Heightfield &localOuterHeightfield = outerHeightfields[outerLayerIndex];
+            localOuterHeightfield = getHeightField(bx + x * lod, bz + z * lod);
 
-            index++;
+            outerLayerIndex++;
         }
     }
     {
         const int x = chunkSize + 1;
-        for (int z = -1; z < gridHeightP2; z++)
+        for (int z = -1; z < chunkSize + 2; z++)
         {
-            Heightfield &localHeightfieldSeam = heightfields[index];
-            localHeightfieldSeam = getHeightField(bx + x * lod, bz + z * rightLod);
+            Heightfield &localOuterHeightfield = outerHeightfields[outerLayerIndex];
+            localOuterHeightfield = getHeightField(bx + x * lod, bz + z * lod);
 
-            index++;
+            outerLayerIndex++;
         }
     }
 }
