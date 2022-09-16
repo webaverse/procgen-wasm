@@ -567,10 +567,10 @@ vm::vec3 calculateSurfaceNormal(PGInstance *inst,
 
 
     const float dx = inst->getHeight(x1.x, x1.y) -
-             inst->getHeight(x2.x, x2.y);
+                     inst->getHeight(x2.x, x2.y);
 
     const float dz = inst->getHeight(z1.x, z1.y) -
-             inst->getHeight(z2.x, z2.y);
+                     inst->getHeight(z2.x, z2.y);
 
 
     return vm::normalize(vm::vec3{dx, 2.f * H, dz});
