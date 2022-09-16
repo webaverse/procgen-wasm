@@ -89,7 +89,7 @@ public:
     SeedNoise getSeedNoise(int bx, int bz);
 
     void getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfield);
-    void getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, NUM_LOD_ARR> &lodArray, std::vector<Heightfield> &heightfieldSeams);
+    void getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, NUM_LOD_ARR> &lodArray, std::vector<Heightfield> &heightfieldSeams, std::vector<Heightfield> &outerHeightfields);
     Heightfield getHeightField(int bx, int bz);
     float getHeight(int bx, int bz);
     
