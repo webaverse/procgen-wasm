@@ -92,7 +92,7 @@ public:
     Heightfield getHeightField(int bx, int bz);
     float getHeight(int bx, int bz);
     float getHeight(float x, float z);
-    
+
     void getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfield);
     void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfieldSeams);
     void getOuterWaterFields(int bx, int bz, int lod, std::vector<Waterfield> &outerWaterfields);
@@ -107,6 +107,10 @@ public:
     float getSeed(int bx, int bz);
 
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
+
+    //
+
+    vm::vec3 calculateSurfaceNormal(const vm::vec2 &p);
 
     //
 
