@@ -2109,28 +2109,6 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
             index++;
         }
     }
-
-    // // bottom + 1
-    // int index = heightfieldsCenterDataOffset;
-    // {
-    //     const int z = chunkSize + 1;
-    //     for (int x = 0; x < gridWidthP1 + 1; x++) {
-    //         Heightfield &localHeightfieldSeam = heightfields[index];
-    //         localHeightfieldSeam = getHeightField(bx + x * bottomLod, bz + z * lod);
-
-    //         index++;
-    //     }
-    // }
-    // // right + 1
-    // {
-    //     const int x = chunkSize + 1;
-    //     for (int z = 0; z < gridHeightP1 + 1; z++) {
-    //         Heightfield &localHeightfieldSeam = heightfields[index];
-    //         localHeightfieldSeam = getHeightField(bx + x * lod, bz + z * rightLod);
-
-    //         index++;
-    //     }
-    // }
 }
 Heightfield PGInstance::getHeightField(int bx, int bz) {
     Heightfield localHeightfield;
