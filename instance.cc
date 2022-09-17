@@ -2306,7 +2306,7 @@ Waterfield PGInstance::getWaterField(int bx, int bz, int lod) {
     }
     waterFactor /= maxWaterFactor;
 
-    const vm::vec2 fWorldPosition{(float)bx, (float)bz};
+    // const vm::vec2 fWorldPosition{(float)bx, (float)bz};
 
     Waterfield localWaterfield{waterFactor};
     // localWaterfield.normal = calculateSurfaceNormal(fWorldPosition);
