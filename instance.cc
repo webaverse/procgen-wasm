@@ -1290,7 +1290,7 @@ void generateWaterGeometry(
     generateWaterfieldCenterMesh(lod, chunkSize, waterfields, geometry);
     generateWaterfieldSeamsMesh(lod, lodArray, chunkSize, waterfields, geometry);
     offsetGeometry(geometry, worldPosition);
-    // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
+    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
 
 //
@@ -2309,7 +2309,7 @@ Waterfield PGInstance::getWaterField(int bx, int bz, int lod) {
     const vm::vec2 fWorldPosition{(float)bx, (float)bz};
 
     Waterfield localWaterfield{waterFactor};
-    localWaterfield.normal = calculateSurfaceNormal(fWorldPosition);
+    // localWaterfield.normal = calculateSurfaceNormal(fWorldPosition);
 
     return localWaterfield;
 }

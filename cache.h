@@ -44,7 +44,7 @@ class Waterfield {
 public:
     float waterFactor;
 
-    vm::vec3 normal;
+    vm::vec3 normal{0.f, 1.f, 0.f};
 
     float getHeight() const {
       return WORLD_BASE_HEIGHT;
