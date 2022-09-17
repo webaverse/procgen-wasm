@@ -88,14 +88,12 @@ public:
 
     void getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfield);
     void getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Heightfield> &heightfieldSeams);
-    void getOuterHeightFields(int bx, int bz, int lod, std::vector<Heightfield> &outerHeightfields);
     Heightfield getHeightField(int bx, int bz);
     float getHeight(int bx, int bz);
     float getHeight(float x, float z);
 
     void getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfield);
     void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfieldSeams);
-    void getOuterWaterFields(int bx, int bz, int lod, std::vector<Waterfield> &outerWaterfields);
     Waterfield getWaterField(int bx, int bz, int lod);
 
     // void getCaveFieldCenter(int bx, int bz, int lod, std::vector<Cavefield> &cavefields);
