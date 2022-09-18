@@ -313,6 +313,9 @@ namespace vm
     ivec3 operator%(const ivec3 &v1, const int _m);
     ivec4 operator%(const ivec4 &v1, const int _m);
 
+    // lerp
+    float interpolate1D(const float &a, const float &b, const float &f);
+
 } // namespace vm
 
 #endif // VECTOR_MATH_H

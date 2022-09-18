@@ -541,6 +541,347 @@ void computeVertexNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3
     normalizeNormals(normals);
 }
 
+vm::vec3 getFieldNormal(const float &vx1, const float &vx2, const float &vz1, const float &vz2, const float &H){
+    // finding the surface normal with the derivative
+    const float dx = vx1 -
+                     vx2;
+
+    const float dz = vz1 -
+                     vz2;
+
+    return vm::normalize(vm::vec3{dx, 2.f * H, dz});
+}
+
+float getCenterHeightByLocation(const vm::ivec2 &location,
+                              const int &chunkSize,
+                              const int &seamGridWidth,
+                              const int &seamGridHeight,
+                              const std::vector<Heightfield> &heightfields)
+{
+    int heightfieldCenterOffset = chunkSize * chunkSize;
+
+    int index = location.x + location.y * chunkSize;
+
+    // center
+    if (location.x >= 0 && location.x < chunkSize && location.y >= 0 && location.y < chunkSize)
+    {
+        const Heightfield &fieldValue = heightfields[index];
+        return fieldValue.getHeight();
+    }
+
+    index = heightfieldCenterOffset;
+
+    // bottom seam
+    if(location.y == chunkSize){
+        const int seamIndex = index + location.x;
+        const Heightfield &fieldValue = heightfields[seamIndex];
+        return fieldValue.getHeight();
+    }
+
+    index += seamGridWidth + 1;
+
+    // right seam
+    if(location.x == chunkSize){
+        const int seamIndex = index + location.y;
+        const Heightfield &fieldValue = heightfields[seamIndex];
+        return fieldValue.getHeight();
+    }
+
+    index += seamGridHeight + 1;
+
+    // 1 layer after bottom seam
+    if(location.y == chunkSize + 1){
+        const int seamIndex = index + location.x;
+        const Heightfield &fieldValue = heightfields[seamIndex];
+        return fieldValue.getHeight();
+    }
+
+    index += seamGridWidth + 1;
+
+    // 1 layer after right seam
+    if (location.x == chunkSize + 1)
+    {
+        const int seamIndex = index + location.y;
+        const Heightfield &fieldValue = heightfields[seamIndex];
+        return fieldValue.getHeight();
+    }
+
+    index += seamGridHeight + 1;
+
+    // 1 layer before bottom seam
+    if (location.y == -1)
+    {
+        if (location.x != chunkSize)
+        {
+            const int seamIndex = index + location.x;
+            const Heightfield &fieldValue = heightfields[seamIndex];
+            return fieldValue.getHeight();
+        }
+    }
+
+    index += chunkSize;
+
+    // 1 layer before right seam
+    if (location.x == -1)
+    {
+        if (location.y != chunkSize)
+        {
+            const int seamIndex = index + location.y;
+            const Heightfield &fieldValue = heightfields[seamIndex];
+            return fieldValue.getHeight();
+        }
+    }
+
+    index += chunkSize;
+
+    // 1 point
+    if (location.y == -1 && location.x == seamGridWidth)
+    {
+        const Heightfield &fieldValue = heightfields[index];
+        return fieldValue.getHeight();
+    }
+
+    index++;
+
+    // 1 point
+    if (location.x == -1 && location.y == seamGridHeight)
+    {
+        const Heightfield &fieldValue = heightfields[index];
+        return fieldValue.getHeight();
+    }
+
+    index++;
+
+    EM_ASM(
+        console.log('X : ', $0, ', Z : ', $1);
+        , location.x, location.y
+    );
+
+    return 0.f;
+}
+void calculateFieldNormal(
+    PGInstance *inst,
+    Heightfield &fieldValue,
+    const vm::ivec2 &location,
+    const int &lod,
+    const std::array<int, 2> &lodArray,
+    const int &seamGridWidth,
+    const int &seamGridHeight,
+    const int &chunkSize,
+    const std::vector<Heightfield> &heightfields,
+    const vm::ivec2 &worldPosition)
+{
+    // const vm::vec2 p{(float)location.x, (float)location.y};
+
+    const int &bottomLod = lodArray[0];
+    const int &rightLod = lodArray[1];
+
+    // int topStepSize = 1;
+    // int bottomStepSize = 1;
+    // int rightStepSize = 1;
+    // int leftStepSize = 1;
+
+    int topDivider = lod;
+    int bottomDivider = lod;
+    int rightDivider = lod;
+    int leftDivider = lod;
+
+    bool topCached = true;
+    bool bottomCached = true;
+    bool rightCached = true;
+    bool leftCached = true;
+
+    if(location.y >= chunkSize - 1){
+        // bottomStepSize = bottomLod / lod; // one point down is a seam point
+        bottomDivider = bottomLod; // one point down is a seam point
+    }
+
+    if(location.x >= chunkSize - 1){
+        // rightStepSize = rightLod / lod; // one point right is a seam point
+        rightDivider = rightLod; // one point right is a seam point
+    }
+
+    if(location.y == chunkSize){
+        // topDivider = bottomLod;
+        if(bottomLod < lod){
+            bottomCached = false;
+            topDivider = lod;
+        }
+    }
+    if(location.x == chunkSize){
+        // leftDivider = rightLod;
+        if(rightLod < lod){
+            rightCached = false;
+            leftDivider = lod;
+        }
+    }
+
+    const float H = 0.001f;
+
+    const float fieldHeight = fieldValue.getHeight();
+
+    // end points in interpolation
+    const vm::ivec2 locationBottom{location.x, location.y + 1};
+    const vm::ivec2 locationTop{location.x, location.y - 1};
+    const vm::ivec2 locationRight{location.x + 1, location.y};
+    const vm::ivec2 locationLeft{location.x - 1, location.y};
+
+    float fieldBottom;
+    float fieldTop;
+    float fieldRight;
+    float fieldLeft;
+
+    if (bottomCached)
+    {
+        fieldTop = getCenterHeightByLocation(locationTop, chunkSize, seamGridWidth, seamGridHeight, heightfields);
+    }
+    else
+    {
+        const vm::ivec2 locationTop2 = locationTop * vm::ivec2{bottomLod, lod};
+        const vm::ivec2 worldLocation = worldPosition + locationTop2;
+        fieldTop = inst->getHeight(worldLocation.x, worldLocation.y);
+    }
+    if (rightCached)
+    {
+        fieldLeft = getCenterHeightByLocation(locationLeft, chunkSize, seamGridWidth, seamGridHeight, heightfields);
+    }
+    else
+    {
+        const vm::ivec2 locationLeft2 = locationLeft * vm::ivec2{lod, rightLod};
+        const vm::ivec2 worldLocation = worldPosition + locationLeft2;
+        fieldLeft = inst->getHeight(worldLocation.x, worldLocation.y);
+    }
+
+    fieldBottom = getCenterHeightByLocation(locationBottom, chunkSize, seamGridWidth, seamGridHeight, heightfields);
+    fieldRight = getCenterHeightByLocation(locationRight, chunkSize, seamGridWidth, seamGridHeight, heightfields);
+
+    const float vx1 = vm::interpolate1D(fieldHeight, fieldRight, H / rightDivider);
+    const float vx2 = vm::interpolate1D(fieldLeft, fieldHeight, 1.f - H / leftDivider);
+
+    const float vz1 = vm::interpolate1D(fieldHeight, fieldBottom, H / bottomDivider);
+    const float vz2 = vm::interpolate1D(fieldTop, fieldHeight, 1.f - H / topDivider);
+
+    const vm::vec3 normal = getFieldNormal(vx1, vx2, vz1, vz2, H);
+    fieldValue.setNormal(normal);
+}
+
+void computeSurfaceNormals(
+    PGInstance *inst,
+    int lod,
+    const std::array<int, 2> &lodArray,
+    int chunkSize,
+    std::vector<Heightfield> &heightfields,
+    const vm::ivec2 &worldPosition)
+{
+    const int &bottomLod = lodArray[0];
+    const int &rightLod = lodArray[1];
+
+    const int seamGridWidth = chunkSize * lod / bottomLod;
+    const int seamGridHeight = chunkSize * lod / rightLod;
+
+    const int gridWidthP1 = seamGridWidth + 1;
+    const int gridHeightP1 = seamGridHeight + 1;
+
+    int index = 0;
+    for (int z = 0; z < chunkSize; z++)
+    {
+        for (int x = 0; x < chunkSize; x++){
+            const vm::ivec2 location{x,z};
+            Heightfield &fieldValue = heightfields[index];
+            calculateFieldNormal(inst, fieldValue, location, lod, lodArray, seamGridWidth, seamGridHeight, chunkSize, heightfields, worldPosition);
+
+            index++;
+        }
+    }
+
+    index = chunkSize * chunkSize;
+
+    // bottom
+    {
+        const int z = chunkSize;
+        for (int x = 0; x < gridWidthP1; x++) {
+            const vm::ivec2 location{x,z};
+            Heightfield &fieldValue = heightfields[index];
+            calculateFieldNormal(inst, fieldValue, location, lod, lodArray, seamGridWidth, seamGridHeight, chunkSize, heightfields, worldPosition);
+
+            index++;
+        }
+    }
+    // right
+    {
+        const int x = chunkSize;
+        for (int z = 0; z < gridHeightP1; z++) {
+            const vm::ivec2 location{x,z};
+            Heightfield &fieldValue = heightfields[index];
+            calculateFieldNormal(inst, fieldValue, location, lod, lodArray, seamGridWidth, seamGridHeight, chunkSize, heightfields, worldPosition);
+
+            index++;
+        }
+    }
+
+    // // bottom 1 layer after
+    // {
+    //     const int z = chunkSize + 1;
+    //     for (int x = 0; x < gridWidthP1; x++) {
+    //         Heightfield &localHeightfieldSeam = heightfields[index];
+    //         localHeightfieldSeam = getHeightField(bx + x * bottomLod, bz + z * lod);
+
+    //         index++;
+    //     }
+    // }
+    // // right 1 layer after
+    // {
+    //     const int x = chunkSize + 1;
+    //     for (int z = 0; z < gridHeightP1; z++) {
+    //         Heightfield &localHeightfieldSeam = heightfields[index];
+    //         localHeightfieldSeam = getHeightField(bx + x * lod, bz + z * rightLod);
+
+    //         index++;
+    //     }
+    // }
+
+    // // bottom 1 layer before
+    // {
+    //     const int z = -1;
+    //     for (int x = 0; x < chunkSize; x++) {
+    //         Heightfield &localHeightfieldSeam = heightfields[index];
+    //         localHeightfieldSeam = getHeightField(bx + x * lod, bz + z * lod);
+
+    //         index++;
+    //     }
+    // }
+    // // right 1 layer before
+    // {
+    //     const int x = -1;
+    //     for (int z = 0; z < chunkSize; z++) {
+    //         Heightfield &localHeightfieldSeam = heightfields[index];
+    //         localHeightfieldSeam = getHeightField(bx + x * lod, bz + z * lod);
+
+    //         index++;
+    //     }
+    // } 
+
+    // // bottom 1 point below 
+    // {
+    //     const int z = -1;
+    //     const int x = chunkSize;
+    //     Heightfield &localHeightfieldSeam = heightfields[index];
+    //     localHeightfieldSeam = getHeightField(bx + x * bottomLod, bz + z * lod);
+
+    //     index++;
+    // }
+    // // right 1 point above
+    // {
+    //     const int x = -1;
+    //     const int z = chunkSize;
+    //     Heightfield &localHeightfieldSeam = heightfields[index];
+    //     localHeightfieldSeam = getHeightField(bx + x * lod, bz + z * rightLod);
+
+    //     index++;
+    // }
+
+}
+
 //
 
 enum class WindingDirection {
@@ -1274,7 +1615,6 @@ void generateTerrainGeometry(
     generateHeightfieldCenterMesh(lod, chunkSize, heightfields, geometry);
     generateHeightfieldSeamsMesh(lod, lodArray, chunkSize, heightfields, geometry);
     offsetGeometry(geometry, worldPosition);
-    // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
 
 //
@@ -1290,7 +1630,8 @@ void generateWaterGeometry(
     generateWaterfieldCenterMesh(lod, chunkSize, waterfields, geometry);
     generateWaterfieldSeamsMesh(lod, lodArray, chunkSize, waterfields, geometry);
     offsetGeometry(geometry, worldPosition);
-    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
+    // calculating the normals based on face normals
+    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices); 
 }
 
 //
@@ -1455,13 +1796,23 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
 
     // terrain
     TerrainGeometry terrainGeometry;
-    std::vector<Heightfield> heightfields(
-        (chunkSize * chunkSize) + // center
-        (gridWidthP1 + gridHeightP1) // seams
-    );
+
+    const int numHeightfields = (chunkSize * chunkSize) +    // center
+                                (gridWidthP1 + gridHeightP1 + gridWidthP1 + gridHeightP1 + chunkSize + chunkSize + 2) // seams
+        ;
+
+    // EM_ASM(
+    //     console.log($0);
+    //     , numHeightfields
+    // );
+
+    std::vector<Heightfield> heightfields(numHeightfields);
     {
         getHeightFieldCenter(worldPosition.x, worldPosition.y, lod, heightfields);
         getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfields);
+
+        // calculating the normals based on the noise
+        computeSurfaceNormals(this, lod, lodArray, chunkSize, heightfields, worldPosition); 
 
         generateTerrainGeometry(
             worldPosition,
@@ -1475,11 +1826,12 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
 
     // water
     WaterGeometry waterGeometry;
+
+    const int numWaterfields = (chunkSize * chunkSize) +
+                               (gridWidthP1 + gridHeightP1);
+
+    std::vector<Waterfield> waterfields(numWaterfields);
     {
-        std::vector<Waterfield> waterfields(
-            (chunkSize * chunkSize) +
-            (gridWidthP1 + gridHeightP1)
-        );
         getWaterFieldCenter(worldPosition.x, worldPosition.y, lod, waterfields);
         getWaterFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, waterfields);
 
@@ -2088,8 +2440,9 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
 
     const int heightfieldsCenterDataOffset = chunkSize * chunkSize;
 
-    // bottom
     int index = heightfieldsCenterDataOffset;
+
+    // bottom
     {
         const int z = chunkSize;
         for (int x = 0; x < gridWidthP1; x++) {
@@ -2108,6 +2461,67 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
 
             index++;
         }
+    }
+
+    // bottom 1 layer after
+    {
+        const int z = chunkSize + 1;
+        for (int x = 0; x < gridWidthP1; x++) {
+            Heightfield &localHeightfieldSeam = heightfields[index];
+            localHeightfieldSeam = getHeightField(bx + x * bottomLod, bz + z * lod);
+
+            index++;
+        }
+    }
+    // right 1 layer after
+    {
+        const int x = chunkSize + 1;
+        for (int z = 0; z < gridHeightP1; z++) {
+            Heightfield &localHeightfieldSeam = heightfields[index];
+            localHeightfieldSeam = getHeightField(bx + x * lod, bz + z * rightLod);
+
+            index++;
+        }
+    }
+
+    // bottom 1 layer before
+    {
+        const int z = -1;
+        for (int x = 0; x < chunkSize; x++) {
+            Heightfield &localHeightfieldSeam = heightfields[index];
+            localHeightfieldSeam = getHeightField(bx + x * lod, bz + z * lod);
+
+            index++;
+        }
+    }
+    // right 1 layer before
+    {
+        const int x = -1;
+        for (int z = 0; z < chunkSize; z++) {
+            Heightfield &localHeightfieldSeam = heightfields[index];
+            localHeightfieldSeam = getHeightField(bx + x * lod, bz + z * lod);
+
+            index++;
+        }
+    } 
+
+    // bottom 1 point below 
+    {
+        const int z = -1;
+        const int x = gridWidth;
+        Heightfield &localHeightfieldSeam = heightfields[index];
+        localHeightfieldSeam = getHeightField(bx + x * bottomLod, bz + z * lod);
+
+        index++;
+    }
+    // right 1 point above
+    {
+        const int x = -1;
+        const int z = gridHeight;
+        Heightfield &localHeightfieldSeam = heightfields[index];
+        localHeightfieldSeam = getHeightField(bx + x * lod, bz + z * rightLod);
+
+        index++;
     }
 }
 Heightfield PGInstance::getHeightField(int bx, int bz) {
@@ -2168,7 +2582,7 @@ Heightfield PGInstance::getHeightField(int bx, int bz) {
     float elevation = elevationSum / (float)numSamples;
     localHeightfield.heightField = elevation;
 
-    localHeightfield.normal = calculateSurfaceNormal(fWorldPosition);
+    // localHeightfield.normal = calculateSurfaceNormal(fWorldPosition);
 
     return localHeightfield;
 }
