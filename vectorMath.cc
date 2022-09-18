@@ -133,6 +133,9 @@ vm::vec2 vm::normalize(const vm::vec2 &v)
 vm::vec3 vm::normalize(const vm::vec3 &v)
 {
     float length_of_v = std::sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
+    if(length_of_v == 0.f){
+        return vm::vec3{0.f, 0.f, 0.f};
+    }
     return vm::vec3{v.x / length_of_v, v.y / length_of_v, v.z / length_of_v};
 }
 vm::vec4 vm::normalize(const vm::vec4 &v)
@@ -913,4 +916,9 @@ vm::ivec4 vm::operator%(const vm::ivec4 &v1, const int _m)
 {
     return vm::ivec4{v1.x % _m,
                      v1.y % _m, v1.z % _m, v1.w % _m};
+}
+
+float vm::interpolate1D(const float &a, const float &b, const float &f)
+{
+    return a * (1.f - f) + (b * f);
 }

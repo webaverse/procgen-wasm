@@ -31,6 +31,9 @@ public:
     float getHeight() const {
       return heightField;
     }
+    void setNormal(const vm::vec3 &n) {
+      normal = n;
+    }
     static bool acceptIndices(
       const Heightfield &a,
       const Heightfield &b,
