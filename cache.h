@@ -26,6 +26,8 @@ public:
     std::array<unsigned char, 4> biomesVectorField;
     std::array<unsigned char, 4> biomesWeightsVectorField;
 
+    vm::vec3 normal;
+
     float getHeight() const {
       return heightField;
     }
@@ -41,6 +43,8 @@ public:
 class Waterfield {
 public:
     float waterFactor;
+
+    vm::vec3 normal{0.f, 1.f, 0.f};
 
     float getHeight() const {
       return WORLD_BASE_HEIGHT;
