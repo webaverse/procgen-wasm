@@ -221,24 +221,29 @@ uint8_t *PGInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const in
             sizeof(float) * qs.size() +
             sizeof(uint32_t) +
             sizeof(float) * instances.size();
+
         uint8_t *buffer = (uint8_t *)malloc(size);
         int index = 0;
+
         ((uint32_t *)(buffer + index))[0] = ps.size();
         index += sizeof(uint32_t);
         memcpy(buffer + index, ps.data(), sizeof(float) * ps.size());
         index += sizeof(float) * ps.size();
+
         ((uint32_t *)(buffer + index))[0] = qs.size();
         index += sizeof(uint32_t);
         memcpy(buffer + index, qs.data(), sizeof(float) * qs.size());
         index += sizeof(float) * qs.size();
+
         ((uint32_t *)(buffer + index))[0] = instances.size();
         index += sizeof(uint32_t);
         memcpy(buffer + index, instances.data(), sizeof(float) * instances.size());
         index += sizeof(float) * instances.size();
+
         return buffer;
     }
 }
-uint8_t *PGInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, const int lod)
+uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, const int lod)
 {
     std::vector<float> ps;
     std::vector<float> qs;
@@ -283,7 +288,7 @@ uint8_t *PGInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, con
             qs.push_back(q.z);
             qs.push_back(q.w);
 
-            instances.push_back((float)rng() / (float)0xFFFFFFFF);
+            instances.push_back((float)rng() / (float)0xFFFFFFFFu);
 
             count++;
         }
@@ -296,20 +301,25 @@ uint8_t *PGInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, con
             sizeof(float) * qs.size() +
             sizeof(uint32_t) +
             sizeof(float) * instances.size();
+
         uint8_t *buffer = (uint8_t *)malloc(size);
         int index = 0;
+
         ((uint32_t *)(buffer + index))[0] = ps.size();
         index += sizeof(uint32_t);
         memcpy(buffer + index, ps.data(), sizeof(float) * ps.size());
         index += sizeof(float) * ps.size();
+
         ((uint32_t *)(buffer + index))[0] = qs.size();
         index += sizeof(uint32_t);
         memcpy(buffer + index, qs.data(), sizeof(float) * qs.size());
         index += sizeof(float) * qs.size();
+
         ((uint32_t *)(buffer + index))[0] = instances.size();
         index += sizeof(uint32_t);
         memcpy(buffer + index, instances.data(), sizeof(float) * instances.size());
         index += sizeof(float) * instances.size();
+
         return buffer;
     }
 }
@@ -369,20 +379,25 @@ uint8_t *PGInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int 
             sizeof(float) * qs.size() +
             sizeof(uint32_t) +
             sizeof(float) * instances.size();
+
         uint8_t *buffer = (uint8_t *)malloc(size);
         int index = 0;
+
         ((uint32_t *)(buffer + index))[0] = ps.size();
         index += sizeof(uint32_t);
         memcpy(buffer + index, ps.data(), sizeof(float) * ps.size());
         index += sizeof(float) * ps.size();
+
         ((uint32_t *)(buffer + index))[0] = qs.size();
         index += sizeof(uint32_t);
         memcpy(buffer + index, qs.data(), sizeof(float) * qs.size());
         index += sizeof(float) * qs.size();
+
         ((uint32_t *)(buffer + index))[0] = instances.size();
         index += sizeof(uint32_t);
         memcpy(buffer + index, instances.data(), sizeof(float) * instances.size());
         index += sizeof(float) * instances.size();
+        
         return buffer;
     }
 }
@@ -1807,6 +1822,27 @@ void PGInstance::createChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPositio
     });
     ProcGen::taskQueue.pushTask(liquidTask);
 } */
+void PGInstance::createChunkVegetationAsync(uint32_t id, const vm::ivec2 &worldPosition, const int lod) {
+    std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
+
+    vm::vec3 worldPositionF{
+        (float)worldPosition.x,
+        (float)(-WORLD_BASE_HEIGHT) + ((float)MIN_WORLD_HEIGHT + (float)MAX_WORLD_HEIGHT) / 2.f,
+        (float)worldPosition.y
+    };
+    Task *vegetationSplatTask = new Task(id, worldPositionF, lod, [
+        this,
+        promise,
+        worldPosition,
+        lod
+    ]() -> void {
+        void *result = createChunkVegetation(worldPosition, lod);
+        if (!promise->resolve(result)) {
+            free(result);
+        }
+    });
+    ProcGen::taskQueue.pushTask(vegetationSplatTask);
+}
 
 // get ranges
 /* void PGInstance::getHeightfieldRangeAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const vm::ivec2 &sizeXZ, int lod, float *heights, int priority) {
@@ -1952,30 +1988,6 @@ void PGInstance::createGrassSplatAsync(uint32_t id, const vm::ivec2 &worldPositi
         promise->resolve(result);
     });
     ProcGen::taskQueue.pushTask(grassSplatTask);
-}
-void PGInstance::createVegetationSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority) {
-    std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
-
-    vm::vec3 worldPositionF{
-        (float)worldPositionXZ.x,
-        (float)(MIN_WORLD_HEIGHT + MAX_WORLD_HEIGHT) / 2.f,
-        (float)worldPositionXZ.y
-    };
-    // vm::vec3 sizeF{
-    //     (float)lod / 2.f,
-    //     0.f,
-    //     (float)lod / 2.f
-    // };
-    Task *vegetationSplatTask = new Task(id, worldPositionF, lod, priority, [
-        this,
-        promise,
-        worldPositionXZ,
-        lod
-    ]() -> void {
-        void *result = createVegetationSplat(worldPositionXZ, lod);
-        promise->resolve(result);
-    });
-    ProcGen::taskQueue.pushTask(vegetationSplatTask);
 }
 void PGInstance::createMobSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);

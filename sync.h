@@ -10,7 +10,7 @@
 
 //
 
-class DCInstance;
+// class DCInstance;
 
 //
 

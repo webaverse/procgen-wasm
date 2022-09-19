@@ -16,7 +16,7 @@
 
 //
 
-class DCInstance;
+// class DCInstance;
 
 //
 
@@ -101,7 +101,7 @@ public:
     // cx, cy, cz is the center of the sphere. r is the radius. px, py, pz is the point to check
     static float signedDistanceToSphere(float cx, float cy, float cz, float r, float px, float py, float pz);
 
-    void patchFrontier(DCInstance *inst, std::unordered_map<uint64_t, bool> &erased);
+    // void patchFrontier(DCInstance *inst, std::unordered_map<uint64_t, bool> &erased);
 
     // bool addSphereDamage(DCInstance *inst, const float &x, const float &y, const float &z, const float radius);
     // bool removeSphereDamage(DCInstance *inst, const float &x, const float &y, const float &z, const float radius);

@@ -141,7 +141,7 @@ public:
     //
 
     uint8_t *createGrassSplat(const vm::ivec2 &worldPositionXZ, const int lod);
-    uint8_t *createVegetationSplat(const vm::ivec2 &worldPositionXZ, const int lod);
+    uint8_t *createChunkVegetation(const vm::ivec2 &worldPositionXZ, const int lod);
     uint8_t *createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod);
     
     //
@@ -177,6 +177,7 @@ public:
 
     void createChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
     // void createLiquidChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
+    void createChunkVegetationAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod);
 
     //
 
@@ -186,7 +187,6 @@ public:
     //
 
     void createGrassSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority);
-    void createVegetationSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority);
     void createMobSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority);
 
     //
