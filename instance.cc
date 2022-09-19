@@ -561,18 +561,18 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
 
     //
 
-    auto pushPoint = [&](int x, int y, const T &fieldValue) -> void
-    {
+    auto pushPoint = [&](int x, int y, const T &fieldValue) -> void {
         const float height = fieldValue.getHeight();
-        const vm::vec3 &normal = fieldValue.normal;
-
         geometry.positions.push_back(vm::vec3{
             (float)x,
             height,
             (float)y
         });
-
-        geometry.normals.push_back(normal);
+        geometry.normals.push_back(vm::vec3{
+            0,
+            1,
+            0
+        });
         geometry.pushPointMetadata(fieldValue);
     };
 
@@ -645,18 +645,18 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
 
     //
 
-    auto pushPoint = [&](int x, int y, const T &fieldValue) -> void
-    {
+    auto pushPoint = [&](int x, int y, const T &fieldValue) -> void {
         const float height = fieldValue.getHeight();
-        const vm::vec3 &normal = fieldValue.normal;
-
         geometry.positions.push_back(vm::vec3{
             (float)x,
             height,
             (float)y
         });
-                                                                  
-        geometry.normals.push_back(normal);
+        geometry.normals.push_back(vm::vec3{
+            0,
+            1,
+            0
+        });
         geometry.pushPointMetadata(fieldValue);
     };
 
@@ -1274,7 +1274,7 @@ void generateTerrainGeometry(
     generateHeightfieldCenterMesh(lod, chunkSize, heightfields, geometry);
     generateHeightfieldSeamsMesh(lod, lodArray, chunkSize, heightfields, geometry);
     offsetGeometry(geometry, worldPosition);
-    // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
+    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
 
 //
@@ -2168,8 +2168,6 @@ Heightfield PGInstance::getHeightField(int bx, int bz) {
     float elevation = elevationSum / (float)numSamples;
     localHeightfield.heightField = elevation;
 
-    localHeightfield.normal = calculateSurfaceNormal(fWorldPosition);
-
     return localHeightfield;
 }
 float PGInstance::getHeight(int bx, int bz) {
@@ -2190,36 +2188,6 @@ float PGInstance::getHeight(int bx, int bz) {
 
     float elevationSum = 0.f;
     vm::vec2 fWorldPosition{(float)bx, (float)bz};
-    for (auto const &iter : biomeCounts)
-    {
-        elevationSum += iter.second * getComputedBiomeHeight(iter.first, fWorldPosition);
-    }
-
-    float elevation = elevationSum / (float)numSamples;
-    return elevation;
-}
-
-float PGInstance::getHeight(float x, float z) {
-    int bx = std::round(x);
-    int bz = std::round(z);
-
-    std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
-    int numSamples = 0;
-    for (int dz = -chunkSize/2; dz < chunkSize/2; dz++)
-    {
-        for (int dx = -chunkSize/2; dx < chunkSize/2; dx++)
-        {
-            int ax = bx + dx;
-            int az = bz + dz;
-            unsigned char b = getBiome(ax, az);
-
-            biomeCounts[b]++;
-            numSamples++;
-        }
-    }
-
-    float elevationSum = 0.f;
-    vm::vec2 fWorldPosition{x, z};
     for (auto const &iter : biomeCounts)
     {
         elevationSum += iter.second * getComputedBiomeHeight(iter.first, fWorldPosition);
@@ -2306,36 +2274,9 @@ Waterfield PGInstance::getWaterField(int bx, int bz, int lod) {
     }
     waterFactor /= maxWaterFactor;
 
-    // const vm::vec2 fWorldPosition{(float)bx, (float)bz};
-
-    Waterfield localWaterfield{waterFactor};
-    // localWaterfield.normal = calculateSurfaceNormal(fWorldPosition);
-
-    return localWaterfield;
-}
-
-// ? from here : https://www.shadertoy.com/view/MdsSRs
-vm::vec3 PGInstance::calculateSurfaceNormal(const vm::vec2 &p)
-{
-    // finding the surface normal with the derivative
-
-    constexpr float H = 0.001f;
-
-    const vm::vec2 x1 = p + vm::vec2{H, 0.f};
-    const vm::vec2 x2 = p - vm::vec2{H, 0.f};
-
-    const vm::vec2 z1 = p + vm::vec2{0.f, H};
-    const vm::vec2 z2 = p - vm::vec2{0.f, H};
-
-
-    const float dx = getHeight(x1.x, x1.y) -
-                     getHeight(x2.x, x2.y);
-
-    const float dz = getHeight(z1.x, z1.y) -
-                     getHeight(z2.x, z2.y);
-
-
-    return vm::normalize(vm::vec3{dx, 2.f * H, dz});
+    return Waterfield{
+        waterFactor
+    };
 }
 
 //
