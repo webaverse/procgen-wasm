@@ -248,17 +248,23 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
     std::vector<float> ps;
     std::vector<float> qs;
     std::vector<float> instances;
-    unsigned int count = 0;
+
+    constexpr int maxNumVeggiesPerChunk = 8;
+    constexpr float maxVeggieRate = 0.35;
+    // const float veggieRate = maxVeggieRate / (float)(lod * lod);
+    const float veggieRate = maxVeggieRate / (float)lod;
+    // const float veggieRate = maxVeggieRate;
+
+    ps.reserve(maxNumVeggiesPerChunk * lod * lod * 3);
+    qs.reserve(maxNumVeggiesPerChunk * lod * lod * 4);
+    instances.reserve(maxNumVeggiesPerChunk * lod * lod);
 
     // const int chunkLodSize = chunkSize * lod;
     // int baseMinX = (int)std::floor((float)worldPositionXZ.x / (float)chunkLodSize) * chunkLodSize;
     // int baseMinZ = (int)std::floor((float)worldPositionXZ.y / (float)chunkLodSize) * chunkLodSize;
     int baseMinX = worldPositionXZ.x;
     int baseMinZ = worldPositionXZ.y;
-
-    constexpr int maxNumVeggiesPerChunk = 64;
-    constexpr float maxVeggieRate = 0.35;
-    const float veggieRate = maxVeggieRate / (float)(lod * lod);
+    
     for (int dz = 0; dz < lod; dz++) {
         for (int dx = 0; dx < lod; dx++) {
             int chunkMinX = baseMinX + dx * chunkSize;
@@ -292,8 +298,6 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
                     qs.push_back(q.w);
 
                     instances.push_back(instanceFactor);
-
-                    count++;
                 }
             }
         }
