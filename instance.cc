@@ -252,8 +252,8 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
 
     // Chunk2D &chunk = getChunk(worldPositionXZ, lod, GF_HEIGHTFIELD);
 
-    int minX = worldPositionXZ.x / chunkSize * chunkSize;
-    int minZ = worldPositionXZ.y / chunkSize * chunkSize;
+    int minX = (int)std::floor((float)worldPositionXZ.x / (float)chunkSize) * chunkSize;
+    int minZ = (int)std::floor((float)worldPositionXZ.y / (float)chunkSize) * chunkSize;
 
     float seed = noises.vegetationNoise.in2D(minX, minZ);
     unsigned int seedInt;
@@ -276,7 +276,7 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
         {
             int index = 0;
 
-            const float height = getHeight(ax, az);
+            const float height = getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
 
             ps.push_back(ax);
             ps.push_back(height);
@@ -397,7 +397,7 @@ uint8_t *PGInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int 
         index += sizeof(uint32_t);
         memcpy(buffer + index, instances.data(), sizeof(float) * instances.size());
         index += sizeof(float) * instances.size();
-        
+
         return buffer;
     }
 }
