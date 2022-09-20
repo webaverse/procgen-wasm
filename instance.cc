@@ -250,49 +250,51 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
     std::vector<float> instances;
     unsigned int count = 0;
 
-    // Chunk2D &chunk = getChunk(worldPositionXZ, lod, GF_HEIGHTFIELD);
+    const int chunkLodSize = chunkSize * lod;
+    int baseMinX = (int)std::floor((float)worldPositionXZ.x / (float)chunkLodSize) * chunkLodSize;
+    int baseMinZ = (int)std::floor((float)worldPositionXZ.y / (float)chunkLodSize) * chunkLodSize;
 
-    int minX = (int)std::floor((float)worldPositionXZ.x / (float)chunkSize) * chunkSize;
-    int minZ = (int)std::floor((float)worldPositionXZ.y / (float)chunkSize) * chunkSize;
+    constexpr int maxNumVeggiesPerChunk = 64;
+    constexpr float maxVeggieRate = 0.35;
+    const float veggieRate = maxVeggieRate / (float)(lod * lod);
+    for (int dz = 0; dz < lod; dz++) {
+        for (int dx = 0; dx < lod; dx++) {
+            int chunkMinX = baseMinX + dx * chunkSize;
+            int chunkMinZ = baseMinZ + dz * chunkSize;
 
-    float seed = noises.vegetationNoise.in2D(minX, minZ);
-    unsigned int seedInt;
-    memcpy(&seedInt, &seed, sizeof(unsigned int));
-    std::mt19937 rng(seedInt);
+            float chunkSeed = noises.vegetationNoise.in2D(chunkMinX, chunkMinZ);
+            unsigned int seedInt;
+            memcpy(&seedInt, &chunkSeed, sizeof(unsigned int));
+            std::mt19937 rng(seedInt);
 
-    const int maxNumVeggies = 128;
-    const float veggieRate = 0.35;
-    for (int i = 0; i < maxNumVeggies; i++)
-    {
-        float dx = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
-        float dz = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
+            for (int i = 0; i < maxNumVeggiesPerChunk; i++) {
+                float noiseValue = (float)rng() / (float)0xFFFFFFFFu;
+                float chunkOffsetX = (float)rng() / (float)0xFFFFFFFFu * (float)chunkSize;
+                float chunkOffsetZ = (float)rng() / (float)0xFFFFFFFFu * (float)chunkSize;
 
-        float ax = (float)minX + dx * lod;
-        float az = (float)minZ + dz * lod;
+                if (noiseValue < veggieRate) {
+                    float ax = (float)chunkMinX + chunkOffsetX;
+                    float az = (float)chunkMinZ + chunkOffsetZ;
+                    const float height = getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
 
-        float noiseValue = noises.vegetationNoise.in2D(ax, az);
+                    ps.push_back(ax);
+                    ps.push_back(height);
+                    ps.push_back(az);
 
-        if (noiseValue < veggieRate)
-        {
-            int index = 0;
+                    Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rng() * 2.0f * M_PI);
+                    qs.push_back(q.x);
+                    qs.push_back(q.y);
+                    qs.push_back(q.z);
+                    qs.push_back(q.w);
 
-            const float height = getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
+                    instances.push_back((float)rng() / (float)0xFFFFFFFFu);
 
-            ps.push_back(ax);
-            ps.push_back(height);
-            ps.push_back(az);
-
-            Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rng() * 2.0f * M_PI);
-            qs.push_back(q.x);
-            qs.push_back(q.y);
-            qs.push_back(q.z);
-            qs.push_back(q.w);
-
-            instances.push_back((float)rng() / (float)0xFFFFFFFFu);
-
-            count++;
+                    count++;
+                }
+            }
         }
     }
+
     // serialize
     {
         const size_t size = sizeof(uint32_t) +
