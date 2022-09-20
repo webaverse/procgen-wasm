@@ -250,9 +250,11 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
     std::vector<float> instances;
     unsigned int count = 0;
 
-    const int chunkLodSize = chunkSize * lod;
-    int baseMinX = (int)std::floor((float)worldPositionXZ.x / (float)chunkLodSize) * chunkLodSize;
-    int baseMinZ = (int)std::floor((float)worldPositionXZ.y / (float)chunkLodSize) * chunkLodSize;
+    // const int chunkLodSize = chunkSize * lod;
+    // int baseMinX = (int)std::floor((float)worldPositionXZ.x / (float)chunkLodSize) * chunkLodSize;
+    // int baseMinZ = (int)std::floor((float)worldPositionXZ.y / (float)chunkLodSize) * chunkLodSize;
+    int baseMinX = worldPositionXZ.x;
+    int baseMinZ = worldPositionXZ.y;
 
     constexpr int maxNumVeggiesPerChunk = 64;
     constexpr float maxVeggieRate = 0.35;
@@ -263,14 +265,16 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
             int chunkMinZ = baseMinZ + dz * chunkSize;
 
             float chunkSeed = noises.vegetationNoise.in2D(chunkMinX, chunkMinZ);
-            unsigned int seedInt;
-            memcpy(&seedInt, &chunkSeed, sizeof(unsigned int));
+            unsigned int seedInt = *(unsigned int *)&chunkSeed;
+            // memcpy(&seedInt, &chunkSeed, sizeof(unsigned int));
             std::mt19937 rng(seedInt);
 
             for (int i = 0; i < maxNumVeggiesPerChunk; i++) {
                 float noiseValue = (float)rng() / (float)0xFFFFFFFFu;
                 float chunkOffsetX = (float)rng() / (float)0xFFFFFFFFu * (float)chunkSize;
                 float chunkOffsetZ = (float)rng() / (float)0xFFFFFFFFu * (float)chunkSize;
+                float rot = (float)rng() * 2.0f * M_PI;
+                float instanceFactor = (float)rng() / (float)0xFFFFFFFFu;
 
                 if (noiseValue < veggieRate) {
                     float ax = (float)chunkMinX + chunkOffsetX;
@@ -281,13 +285,13 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
                     ps.push_back(height);
                     ps.push_back(az);
 
-                    Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rng() * 2.0f * M_PI);
+                    Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
                     qs.push_back(q.x);
                     qs.push_back(q.y);
                     qs.push_back(q.z);
                     qs.push_back(q.w);
 
-                    instances.push_back((float)rng() / (float)0xFFFFFFFFu);
+                    instances.push_back(instanceFactor);
 
                     count++;
                 }
