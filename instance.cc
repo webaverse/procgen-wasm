@@ -280,7 +280,7 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
                 float chunkOffsetX = (float)rng() / (float)0xFFFFFFFFu * (float)chunkSize;
                 float chunkOffsetZ = (float)rng() / (float)0xFFFFFFFFu * (float)chunkSize;
                 float rot = (float)rng() * 2.0f * M_PI;
-                int instanceId = (int)std::round((float)rng() / (float)0xFFFFFFFFu * (float)numInstances);
+                int instanceId = (int)std::round((float)rng() / (float)0xFFFFFFFFu * (float)(numInstances - 1));
 
                 if (noiseValue < veggieRate) {
                     auto iterPair = vegetationInstances.emplace(std::make_pair(instanceId, VegetationInstance{}));
