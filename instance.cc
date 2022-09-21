@@ -243,11 +243,15 @@ uint8_t *PGInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const in
         return buffer;
     }
 }
-uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, const int lod)
-{
+class VegetationInstance {
+public:
+    int instanceId;
     std::vector<float> ps;
     std::vector<float> qs;
-    std::vector<float> instances;
+};
+uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, const int lod, const int numInstances)
+{
+    std::map<int, VegetationInstance> vegetationInstances;
 
     constexpr int maxNumVeggiesPerChunk = 8;
     constexpr float maxVeggieRate = 0.35;
@@ -255,13 +259,10 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
     const float veggieRate = maxVeggieRate / (float)lod;
     // const float veggieRate = maxVeggieRate;
 
-    ps.reserve(maxNumVeggiesPerChunk * lod * lod * 3);
+    /* ps.reserve(maxNumVeggiesPerChunk * lod * lod * 3);
     qs.reserve(maxNumVeggiesPerChunk * lod * lod * 4);
-    instances.reserve(maxNumVeggiesPerChunk * lod * lod);
+    instances.reserve(maxNumVeggiesPerChunk * lod * lod); */
 
-    // const int chunkLodSize = chunkSize * lod;
-    // int baseMinX = (int)std::floor((float)worldPositionXZ.x / (float)chunkLodSize) * chunkLodSize;
-    // int baseMinZ = (int)std::floor((float)worldPositionXZ.y / (float)chunkLodSize) * chunkLodSize;
     int baseMinX = worldPositionXZ.x;
     int baseMinZ = worldPositionXZ.y;
     
@@ -272,7 +273,6 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
 
             float chunkSeed = noises.vegetationNoise.in2D(chunkMinX, chunkMinZ);
             unsigned int seedInt = *(unsigned int *)&chunkSeed;
-            // memcpy(&seedInt, &chunkSeed, sizeof(unsigned int));
             std::mt19937 rng(seedInt);
 
             for (int i = 0; i < maxNumVeggiesPerChunk; i++) {
@@ -280,58 +280,73 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
                 float chunkOffsetX = (float)rng() / (float)0xFFFFFFFFu * (float)chunkSize;
                 float chunkOffsetZ = (float)rng() / (float)0xFFFFFFFFu * (float)chunkSize;
                 float rot = (float)rng() * 2.0f * M_PI;
-                float instanceFactor = (float)rng() / (float)0xFFFFFFFFu;
+                int instanceId = (int)std::round((float)rng() / (float)0xFFFFFFFFu * (float)numInstances);
 
                 if (noiseValue < veggieRate) {
+                    auto iterPair = vegetationInstances.emplace(std::make_pair(instanceId, VegetationInstance{}));
+                    auto iter = iterPair.first;
+                    const bool &inserted = iterPair.second;
+                    VegetationInstance &instance = iter->second;
+                    if (inserted) {
+                        instance.instanceId = instanceId;
+                    }
+
                     float ax = (float)chunkMinX + chunkOffsetX;
                     float az = (float)chunkMinZ + chunkOffsetZ;
                     const float height = getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
 
-                    ps.push_back(ax);
-                    ps.push_back(height);
-                    ps.push_back(az);
+                    instance.ps.push_back(ax);
+                    instance.ps.push_back(height);
+                    instance.ps.push_back(az);
 
                     Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
-                    qs.push_back(q.x);
-                    qs.push_back(q.y);
-                    qs.push_back(q.z);
-                    qs.push_back(q.w);
-
-                    instances.push_back(instanceFactor);
+                    instance.qs.push_back(q.x);
+                    instance.qs.push_back(q.y);
+                    instance.qs.push_back(q.z);
+                    instance.qs.push_back(q.w);
                 }
             }
         }
     }
 
     // serialize
-    {
-        const size_t size = sizeof(uint32_t) +
-            sizeof(float) * ps.size() +
-            sizeof(uint32_t) +
-            sizeof(float) * qs.size() +
-            sizeof(uint32_t) +
-            sizeof(float) * instances.size();
+    size_t size = sizeof(uint32_t); // numInstances
+    for (auto &iter : vegetationInstances) {
+        VegetationInstance &instance = iter.second;
 
-        uint8_t *buffer = (uint8_t *)malloc(size);
-        int index = 0;
-
-        ((uint32_t *)(buffer + index))[0] = ps.size();
-        index += sizeof(uint32_t);
-        memcpy(buffer + index, ps.data(), sizeof(float) * ps.size());
-        index += sizeof(float) * ps.size();
-
-        ((uint32_t *)(buffer + index))[0] = qs.size();
-        index += sizeof(uint32_t);
-        memcpy(buffer + index, qs.data(), sizeof(float) * qs.size());
-        index += sizeof(float) * qs.size();
-
-        ((uint32_t *)(buffer + index))[0] = instances.size();
-        index += sizeof(uint32_t);
-        memcpy(buffer + index, instances.data(), sizeof(float) * instances.size());
-        index += sizeof(float) * instances.size();
-
-        return buffer;
+        size += sizeof(int); // instanceId
+        
+        size += sizeof(uint32_t); // numPs
+        size += sizeof(float) * instance.ps.size(); // ps
+        
+        size += sizeof(uint32_t); // numQs
+        size += sizeof(float) * instance.qs.size(); // qs
     }
+
+    uint8_t *buffer = (uint8_t *)malloc(size);
+    int index = 0;
+
+    ((uint32_t *)(buffer + index))[0] = vegetationInstances.size();
+    index += sizeof(uint32_t);
+    
+    for (auto &iter : vegetationInstances) {
+        VegetationInstance &instance = iter.second;
+
+        ((int *)(buffer + index))[0] = instance.instanceId;
+        index += sizeof(int);
+
+        ((uint32_t *)(buffer + index))[0] = instance.ps.size();
+        index += sizeof(uint32_t);
+        memcpy(buffer + index, instance.ps.data(), sizeof(float) * instance.ps.size());
+        index += sizeof(float) * instance.ps.size();
+
+        ((uint32_t *)(buffer + index))[0] = instance.qs.size();
+        index += sizeof(uint32_t);
+        memcpy(buffer + index, instance.qs.data(), sizeof(float) * instance.qs.size());
+        index += sizeof(float) * instance.qs.size();
+    }
+    
+    return buffer;
 }
 uint8_t *PGInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod)
 {
@@ -1832,7 +1847,7 @@ void PGInstance::createChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPositio
     });
     ProcGen::taskQueue.pushTask(liquidTask);
 } */
-void PGInstance::createChunkVegetationAsync(uint32_t id, const vm::ivec2 &worldPosition, const int lod) {
+void PGInstance::createChunkVegetationAsync(uint32_t id, const vm::ivec2 &worldPosition, const int lod, const int numInstances) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
     vm::vec3 worldPositionF{
@@ -1844,9 +1859,10 @@ void PGInstance::createChunkVegetationAsync(uint32_t id, const vm::ivec2 &worldP
         this,
         promise,
         worldPosition,
-        lod
+        lod,
+        numInstances
     ]() -> void {
-        void *result = createChunkVegetation(worldPosition, lod);
+        void *result = createChunkVegetation(worldPosition, lod, numInstances);
         if (!promise->resolve(result)) {
             free(result);
         }

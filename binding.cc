@@ -53,8 +53,8 @@ EMSCRIPTEN_KEEPALIVE void createChunkMeshAsync(PGInstance *inst, uint32_t taskId
     };
     inst->createChunkMeshAsync(taskId, vm::ivec2{x, z}, lod, lodArray2);
 }
-EMSCRIPTEN_KEEPALIVE void createChunkVegetationAsync(PGInstance *inst, uint32_t taskId, int x, int z, int lod) {
-    inst->createChunkVegetationAsync(taskId, vm::ivec2{x, z}, lod);
+EMSCRIPTEN_KEEPALIVE void createChunkVegetationAsync(PGInstance *inst, uint32_t taskId, int x, int z, int lod, int numInstances) {
+    inst->createChunkVegetationAsync(taskId, vm::ivec2{x, z}, lod, numInstances);
 }
 
 /* EMSCRIPTEN_KEEPALIVE void createLiquidChunkMeshAsync(DCInstance *inst, uint32_t taskId, int x, int y, int z, int *lodArray) {
