@@ -2001,31 +2001,22 @@ void PGInstance::getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, in
     ProcGen::taskQueue.pushTask(aoTask);
 } */
 
-void PGInstance::createChunkGrassAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int numInstances) {
+void PGInstance::createChunkGrassAsync(uint32_t id, const vm::ivec2 &worldPosition, const int lod, const int numInstances) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
     vm::vec3 worldPositionF{
-        (float)worldPositionXZ.x,
-        0.f,
-        (float)worldPositionXZ.y
+        (float)worldPosition.x,
+        (float)(-WORLD_BASE_HEIGHT) + ((float)MIN_WORLD_HEIGHT + (float)MAX_WORLD_HEIGHT) / 2.f,
+        (float)worldPosition.y
     };
-    // vm::vec3 sizeF{
-    //     (float)lod / 2.f,
-    //     0.f,
-    //     (float)lod / 2.f
-    // };
-    /* std::cout << "grass splat world position" <<
-        worldPositionF.x << " " <<
-        worldPositionF.y << " " <<
-        worldPositionF.z << std::endl; */
     Task *grassSplatTask = new Task(id, worldPositionF, lod, [
         this,
         promise,
-        worldPositionXZ,
+        worldPosition,
         lod,
         numInstances
     ]() -> void {
-        uint8_t *result = createChunkGrass(worldPositionXZ, lod, numInstances);
+        uint8_t *result = createChunkGrass(worldPosition, lod, numInstances);
         promise->resolve(result);
     });
     ProcGen::taskQueue.pushTask(grassSplatTask);
