@@ -165,103 +165,21 @@ unsigned char *PGInstance::getChunkAo(const vm::ivec3 &worldPosition, int lod) {
 } */
 
 // splats
-uint8_t *PGInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const int lod)
-{
-    std::vector<float> ps;
-    std::vector<float> qs;
-    std::vector<float> instances;
-    unsigned int count = 0;
-
-    int size = chunkSize * lod;
-
-    // accumulate
-    // Chunk2D &chunk = getChunk(worldPositionXZ, lod, GF_HEIGHTFIELD);
-    int minX = worldPositionXZ.x / size * size;
-    int minZ = worldPositionXZ.y / size * size;
-
-    float seed = noises.grassNoise.in2D(minX, minZ);
-    unsigned int seedInt;
-    memcpy(&seedInt, &seed, sizeof(unsigned int));
-    std::mt19937 rng(seedInt);
-
-    const int maxNumGrasses = 4 * 1024;
-    // ps.resize(maxNumGrasses * 3);
-    // qs.resize(maxNumGrasses * 4);
-    // instances.resize(maxNumGrasses);
-    for (int i = 0; i < maxNumGrasses; i++)
-    {
-        float dx = (float)rng() / (float)0xFFFFFFFF * (float)size;
-        float dz = (float)rng() / (float)0xFFFFFFFF * (float)size;
-
-        float ax = (float)minX + dx;
-        float az = (float)minZ + dz;
-
-        const float height = getHeight(ax, az);
-
-        ps.push_back(ax);
-        ps.push_back(height);
-        ps.push_back(az);
-
-        Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rng() * 2.0f * M_PI);
-        qs.push_back(q.x);
-        qs.push_back(q.y);
-        qs.push_back(q.z);
-        qs.push_back(q.w);
-
-        instances.push_back((float)rng() / (float)0xFFFFFFFF);
-
-        count++;
-    }
-
-    // serialize
-    {
-        const size_t size = sizeof(uint32_t) +
-            sizeof(float) * ps.size() +
-            sizeof(uint32_t) +
-            sizeof(float) * qs.size() +
-            sizeof(uint32_t) +
-            sizeof(float) * instances.size();
-
-        uint8_t *buffer = (uint8_t *)malloc(size);
-        int index = 0;
-
-        ((uint32_t *)(buffer + index))[0] = ps.size();
-        index += sizeof(uint32_t);
-        memcpy(buffer + index, ps.data(), sizeof(float) * ps.size());
-        index += sizeof(float) * ps.size();
-
-        ((uint32_t *)(buffer + index))[0] = qs.size();
-        index += sizeof(uint32_t);
-        memcpy(buffer + index, qs.data(), sizeof(float) * qs.size());
-        index += sizeof(float) * qs.size();
-
-        ((uint32_t *)(buffer + index))[0] = instances.size();
-        index += sizeof(uint32_t);
-        memcpy(buffer + index, instances.data(), sizeof(float) * instances.size());
-        index += sizeof(float) * instances.size();
-
-        return buffer;
-    }
-}
-class VegetationInstance {
+class SplatInstance {
 public:
     int instanceId;
     std::vector<float> ps;
     std::vector<float> qs;
 };
-uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, const int lod, const int numInstances)
+uint8_t *PGInstance::createChunkGrass(const vm::ivec2 &worldPositionXZ, const int lod, const int numInstances)
 {
-    std::map<int, VegetationInstance> vegetationInstances;
+    std::map<int, SplatInstance> grassInstances;
 
-    constexpr int maxNumVeggiesPerChunk = 8;
-    constexpr float maxVeggieRate = 0.35;
-    // const float veggieRate = maxVeggieRate / (float)(lod * lod);
-    const float veggieRate = maxVeggieRate / (float)lod;
-    // const float veggieRate = maxVeggieRate;
-
-    /* ps.reserve(maxNumVeggiesPerChunk * lod * lod * 3);
-    qs.reserve(maxNumVeggiesPerChunk * lod * lod * 4);
-    instances.reserve(maxNumVeggiesPerChunk * lod * lod); */
+    constexpr int maxNumGrassesPerChunk = 256;
+    constexpr float maxGrassRate = 0.35;
+    // const float grassRate = maxGrassRate / (float)(lod * lod);
+    const float grassRate = maxGrassRate / (float)lod;
+    // const float grassRate = maxGrassRate;
 
     int baseMinX = worldPositionXZ.x;
     int baseMinZ = worldPositionXZ.y;
@@ -271,7 +189,103 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
             int chunkMinX = baseMinX + dx * chunkSize;
             int chunkMinZ = baseMinZ + dz * chunkSize;
 
-            float chunkSeed = noises.vegetationNoise.in2D(chunkMinX, chunkMinZ);
+            float chunkSeed = noises.grassSeedNoise.in2D(chunkMinX, chunkMinZ);
+            unsigned int seedInt = *(unsigned int *)&chunkSeed;
+            std::mt19937 rng(seedInt);
+
+            for (int i = 0; i < maxNumGrassesPerChunk; i++) {
+                float chunkOffsetX = (float)rng() / (float)0xFFFFFFFFu * (float)chunkSize;
+                float chunkOffsetZ = (float)rng() / (float)0xFFFFFFFFu * (float)chunkSize;
+                float rot = (float)rng() * 2.0f * M_PI;
+                int instanceId = (int)std::round((float)rng() / (float)0xFFFFFFFFu * (float)(numInstances - 1));
+                
+                float ax = (float)chunkMinX + chunkOffsetX;
+                float az = (float)chunkMinZ + chunkOffsetZ;
+                float noiseValue = noises.grassNoise.in2D(ax, az);
+
+                if (noiseValue < grassRate) {
+                    auto iterPair = grassInstances.emplace(std::make_pair(instanceId, SplatInstance{}));
+                    auto iter = iterPair.first;
+                    const bool &inserted = iterPair.second;
+                    SplatInstance &instance = iter->second;
+                    if (inserted) {
+                        instance.instanceId = instanceId;
+                    }
+                    
+                    const float height = getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
+
+                    instance.ps.push_back(ax);
+                    instance.ps.push_back(height);
+                    instance.ps.push_back(az);
+
+                    Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
+                    instance.qs.push_back(q.x);
+                    instance.qs.push_back(q.y);
+                    instance.qs.push_back(q.z);
+                    instance.qs.push_back(q.w);
+                }
+            }
+        }
+    }
+
+    // serialize
+    size_t size = sizeof(uint32_t); // numInstances
+    for (auto &iter : grassInstances) {
+        SplatInstance &instance = iter.second;
+
+        size += sizeof(int); // instanceId
+        
+        size += sizeof(uint32_t); // numPs
+        size += sizeof(float) * instance.ps.size(); // ps
+        
+        size += sizeof(uint32_t); // numQs
+        size += sizeof(float) * instance.qs.size(); // qs
+    }
+
+    uint8_t *buffer = (uint8_t *)malloc(size);
+    int index = 0;
+
+    ((uint32_t *)(buffer + index))[0] = grassInstances.size();
+    index += sizeof(uint32_t);
+    
+    for (auto &iter : grassInstances) {
+        SplatInstance &instance = iter.second;
+
+        ((int *)(buffer + index))[0] = instance.instanceId;
+        index += sizeof(int);
+
+        ((uint32_t *)(buffer + index))[0] = instance.ps.size();
+        index += sizeof(uint32_t);
+        memcpy(buffer + index, instance.ps.data(), sizeof(float) * instance.ps.size());
+        index += sizeof(float) * instance.ps.size();
+
+        ((uint32_t *)(buffer + index))[0] = instance.qs.size();
+        index += sizeof(uint32_t);
+        memcpy(buffer + index, instance.qs.data(), sizeof(float) * instance.qs.size());
+        index += sizeof(float) * instance.qs.size();
+    }
+    
+    return buffer;
+}
+uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, const int lod, const int numInstances)
+{
+    std::map<int, SplatInstance> vegetationInstances;
+
+    constexpr int maxNumVeggiesPerChunk = 8;
+    constexpr float maxVeggieRate = 0.35;
+    // const float veggieRate = maxVeggieRate / (float)(lod * lod);
+    const float veggieRate = maxVeggieRate / (float)lod;
+    // const float veggieRate = maxVeggieRate;
+
+    int baseMinX = worldPositionXZ.x;
+    int baseMinZ = worldPositionXZ.y;
+    
+    for (int dz = 0; dz < lod; dz++) {
+        for (int dx = 0; dx < lod; dx++) {
+            int chunkMinX = baseMinX + dx * chunkSize;
+            int chunkMinZ = baseMinZ + dz * chunkSize;
+
+            float chunkSeed = noises.vegetationSeedNoise.in2D(chunkMinX, chunkMinZ);
             unsigned int seedInt = *(unsigned int *)&chunkSeed;
             std::mt19937 rng(seedInt);
 
@@ -283,10 +297,10 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
                 int instanceId = (int)std::round((float)rng() / (float)0xFFFFFFFFu * (float)(numInstances - 1));
 
                 if (noiseValue < veggieRate) {
-                    auto iterPair = vegetationInstances.emplace(std::make_pair(instanceId, VegetationInstance{}));
+                    auto iterPair = vegetationInstances.emplace(std::make_pair(instanceId, SplatInstance{}));
                     auto iter = iterPair.first;
                     const bool &inserted = iterPair.second;
-                    VegetationInstance &instance = iter->second;
+                    SplatInstance &instance = iter->second;
                     if (inserted) {
                         instance.instanceId = instanceId;
                     }
@@ -312,7 +326,7 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
     // serialize
     size_t size = sizeof(uint32_t); // numInstances
     for (auto &iter : vegetationInstances) {
-        VegetationInstance &instance = iter.second;
+        SplatInstance &instance = iter.second;
 
         size += sizeof(int); // instanceId
         
@@ -330,7 +344,7 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
     index += sizeof(uint32_t);
     
     for (auto &iter : vegetationInstances) {
-        VegetationInstance &instance = iter.second;
+        SplatInstance &instance = iter.second;
 
         ((int *)(buffer + index))[0] = instance.instanceId;
         index += sizeof(int);
@@ -1987,7 +2001,7 @@ void PGInstance::getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, in
     ProcGen::taskQueue.pushTask(aoTask);
 } */
 
-void PGInstance::createGrassSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority) {
+void PGInstance::createChunkGrassAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int numInstances) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
     vm::vec3 worldPositionF{
@@ -2004,13 +2018,14 @@ void PGInstance::createGrassSplatAsync(uint32_t id, const vm::ivec2 &worldPositi
         worldPositionF.x << " " <<
         worldPositionF.y << " " <<
         worldPositionF.z << std::endl; */
-    Task *grassSplatTask = new Task(id, worldPositionF, lod, priority, [
+    Task *grassSplatTask = new Task(id, worldPositionF, lod, [
         this,
         promise,
         worldPositionXZ,
-        lod
+        lod,
+        numInstances
     ]() -> void {
-        uint8_t *result = createGrassSplat(worldPositionXZ, lod);
+        uint8_t *result = createChunkGrass(worldPositionXZ, lod, numInstances);
         promise->resolve(result);
     });
     ProcGen::taskQueue.pushTask(grassSplatTask);
