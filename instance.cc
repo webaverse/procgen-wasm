@@ -176,9 +176,9 @@ uint8_t *PGInstance::createChunkGrass(const vm::ivec2 &worldPositionXZ, const in
     std::map<int, SplatInstance> grassInstances;
 
     constexpr int maxNumGrassesPerChunk = 2048;
-    constexpr float maxGrassRate = 0.5;
+    constexpr float grassRate = 0.5;
     // const float grassRate = maxGrassRate / (float)(lod * lod);
-    const float grassRate = maxGrassRate / (float)lod;
+    const float grassThrowRate = 1.f / (float)lod;
     // const float grassRate = maxGrassRate;
 
     int baseMinX = worldPositionXZ.x;
@@ -192,18 +192,20 @@ uint8_t *PGInstance::createChunkGrass(const vm::ivec2 &worldPositionXZ, const in
             float chunkSeed = noises.grassSeedNoise.in2D(chunkMinX, chunkMinZ);
             unsigned int seedInt = *(unsigned int *)&chunkSeed;
             std::mt19937 rng(seedInt);
+            std::uniform_real_distribution<float> dis(0.f, 1.f);
 
             for (int i = 0; i < maxNumGrassesPerChunk; i++) {
-                float chunkOffsetX = (float)rng() / (float)0xFFFFFFFFu * (float)chunkSize;
-                float chunkOffsetZ = (float)rng() / (float)0xFFFFFFFFu * (float)chunkSize;
-                float rot = (float)rng() * 2.0f * M_PI;
-                int instanceId = (int)std::round((float)rng() / (float)0xFFFFFFFFu * (float)(numInstances - 1));
+                float chunkOffsetX = dis(rng) * (float)chunkSize;
+                float chunkOffsetZ = dis(rng) * (float)chunkSize;
+                float rot = dis(rng) * 2.0f * M_PI;
+                int instanceId = (int)std::round(dis(rng) * (float)(numInstances - 1));
+                float throwNoise = dis(rng);
                 
                 float ax = (float)chunkMinX + chunkOffsetX;
                 float az = (float)chunkMinZ + chunkOffsetZ;
                 float noiseValue = noises.grassNoise.in2D(ax, az);
 
-                if (noiseValue < grassRate) {
+                if (noiseValue < grassRate && throwNoise <= grassThrowRate) {
                     auto iterPair = grassInstances.emplace(std::make_pair(instanceId, SplatInstance{}));
                     auto iter = iterPair.first;
                     const bool &inserted = iterPair.second;
@@ -288,13 +290,14 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
             float chunkSeed = noises.vegetationSeedNoise.in2D(chunkMinX, chunkMinZ);
             unsigned int seedInt = *(unsigned int *)&chunkSeed;
             std::mt19937 rng(seedInt);
+            std::uniform_real_distribution<float> dis(0.f, 1.f);
 
             for (int i = 0; i < maxNumVeggiesPerChunk; i++) {
-                float noiseValue = (float)rng() / (float)0xFFFFFFFFu;
-                float chunkOffsetX = (float)rng() / (float)0xFFFFFFFFu * (float)chunkSize;
-                float chunkOffsetZ = (float)rng() / (float)0xFFFFFFFFu * (float)chunkSize;
-                float rot = (float)rng() * 2.0f * M_PI;
-                int instanceId = (int)std::round((float)rng() / (float)0xFFFFFFFFu * (float)(numInstances - 1));
+                float noiseValue = dis(rng);
+                float chunkOffsetX = dis(rng) * (float)chunkSize;
+                float chunkOffsetZ = dis(rng) * (float)chunkSize;
+                float rot = dis(rng) * 2.0f * M_PI;
+                int instanceId = (int)std::round(dis(rng) * (float)(numInstances - 1));
 
                 if (noiseValue < veggieRate) {
                     auto iterPair = vegetationInstances.emplace(std::make_pair(instanceId, SplatInstance{}));
