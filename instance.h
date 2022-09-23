@@ -82,14 +82,14 @@ public:
 
     // 2d caches
 
-    NoiseField getNoise(int bx, int by);
-    uint8_t getBiome(int bx, int bz);
-    SeedNoise getSeedNoise(int bx, int bz);
+    NoiseField getNoise(float bx, float by);
+    uint8_t getBiome(float bx, float bz);
+    // SeedNoise getSeedNoise(int bx, int bz);
 
     void getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfield);
     void getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Heightfield> &heightfieldSeams);
-    Heightfield getHeightField(int bx, int bz);
-    float getHeight(int bx, int bz);
+    Heightfield getHeightField(float bx, float bz);
+    float getHeight(float bx, float bz);
     
     void getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfield);
     void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfieldSeams);
@@ -101,7 +101,7 @@ public:
     // void getCaveFieldChunk(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Cavefield> &cavefields);
     // Cavefield getCavefield(int bx, int bz, const std::vector<Line2> &caveLines);
 
-    float getSeed(int bx, int bz);
+    // float getSeed(int bx, int bz);
 
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
 

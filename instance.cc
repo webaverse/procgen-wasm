@@ -2046,7 +2046,7 @@ void PGInstance::createMobSplatAsync(uint32_t id, const vm::ivec2 &worldPosition
 
 // 2d caches
 
-NoiseField PGInstance::getNoise(int bx, int bz) {
+NoiseField PGInstance::getNoise(float bx, float bz) {
     float tNoise = (float)noises.temperatureNoise.in2D(bx, bz);
     // noiseField.temperature[index] = tNoise;
 
@@ -2066,7 +2066,7 @@ NoiseField PGInstance::getNoise(int bx, int bz) {
         rNoise
     };
 }
-uint8_t PGInstance::getBiome(int bx, int bz) {
+uint8_t PGInstance::getBiome(float bx, float bz) {
     unsigned char biome = 0xFF;
 
     const auto &noise = getNoise(bx, bz);
@@ -2157,21 +2157,32 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
         }
     }
 }
-Heightfield PGInstance::getHeightField(int bx, int bz) {
+Heightfield PGInstance::getHeightField(float bx, float bz) {
+    // int bxi = (int)bx;
+    // int bzi = (int)bz;
+    
     Heightfield localHeightfield;
 
-    std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
-    int numSamples = 0;
-    for (int dz = -chunkSize/2; dz < chunkSize/2; dz++)
-    {
-        for (int dx = -chunkSize/2; dx < chunkSize/2; dx++)
-        {
-            int ax = bx + dx;
-            int az = bz + dz;
-            unsigned char b = getBiome(ax, az);
+    const float halfChunkSizeF = (float)chunkSize / 2.f;
+    const float maxDistance = std::sqrt(halfChunkSizeF);
 
-            biomeCounts[b]++;
-            numSamples++;
+    std::unordered_map<unsigned char, float> biomeCounts(numBiomes);
+    float totalSamples = 0;
+    for (float dz = -halfChunkSizeF; dz <= halfChunkSizeF; dz++)
+    {
+        for (float dx = -halfChunkSizeF; dx <= halfChunkSizeF; dx++)
+        {
+            float distance = std::sqrt(dx*dx + dz*dz);
+            float factor = std::max(1.f - (distance / maxDistance), 0.f);
+
+            if (factor > 0) {
+                float ax = bx + dx;
+                float az = bz + dz;
+                unsigned char b = getBiome(ax, az);
+
+                biomeCounts[b] += factor;
+                totalSamples += factor;
+            }
         }
     }
 
@@ -2196,7 +2207,7 @@ Heightfield PGInstance::getHeightField(int bx, int bz) {
         if (i < seenBiomes.size())
         {
             localHeightfield.biomesVectorField[i] = seenBiomes[i];
-            localHeightfield.biomesWeightsVectorField[i] = (float)biomeCounts[seenBiomes[i]] / (float)numSamples * 255.0f;
+            localHeightfield.biomesWeightsVectorField[i] = biomeCounts[seenBiomes[i]] / totalSamples * 255.f;
         }
         else
         {
@@ -2206,41 +2217,52 @@ Heightfield PGInstance::getHeightField(int bx, int bz) {
     }
 
     float elevationSum = 0.f;
-    vm::vec2 fWorldPosition{(float)bx, (float)bz};
+    vm::vec2 fWorldPosition{bx, bz};
     for (auto const &iter : biomeCounts)
     {
         elevationSum += iter.second * getComputedBiomeHeight(iter.first, fWorldPosition);
     }
 
-    float elevation = elevationSum / (float)numSamples;
+    float elevation = elevationSum / totalSamples;
     localHeightfield.heightField = elevation;
 
     return localHeightfield;
 }
-float PGInstance::getHeight(int bx, int bz) {
-    std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
-    int numSamples = 0;
-    for (int dz = -chunkSize/2; dz < chunkSize/2; dz++)
-    {
-        for (int dx = -chunkSize/2; dx < chunkSize/2; dx++)
-        {
-            int ax = bx + dx;
-            int az = bz + dz;
-            unsigned char b = getBiome(ax, az);
+float PGInstance::getHeight(float bx, float bz) {
+    // int bxi = (int)bx;
+    // int bzi = (int)bz;
 
-            biomeCounts[b]++;
-            numSamples++;
+    const float halfChunkSizeF = (float)chunkSize / 2.f;
+    const float maxDistance = std::sqrt(halfChunkSizeF + 1.f);
+
+    std::unordered_map<unsigned char, float> biomeCounts(numBiomes);
+    float totalSamples = 0;
+    for (float dz = -halfChunkSizeF; dz <= halfChunkSizeF; dz++)
+    {
+        for (float dx = -halfChunkSizeF; dx <= halfChunkSizeF; dx++)
+        {
+            float distance = std::sqrt(dx*dx + dz*dz);
+            float factor = std::max(1.f - (distance / maxDistance), 0.f);
+
+            if (factor > 0) {
+                float ax = bx + dx;
+                float az = bz + dz;
+                unsigned char b = getBiome(ax, az);
+
+                biomeCounts[b] += factor;
+                totalSamples += factor;
+            }
         }
     }
 
     float elevationSum = 0.f;
-    vm::vec2 fWorldPosition{(float)bx, (float)bz};
+    vm::vec2 fWorldPosition{bx, bz};
     for (auto const &iter : biomeCounts)
     {
         elevationSum += iter.second * getComputedBiomeHeight(iter.first, fWorldPosition);
     }
 
-    float elevation = elevationSum / (float)numSamples;
+    float elevation = elevationSum / totalSamples;
     return elevation;
 }
 
@@ -2328,7 +2350,7 @@ Waterfield PGInstance::getWaterField(int bx, int bz, int lod) {
 
 //
 
-float PGInstance::getSeed(int x, int z) {
+/* float PGInstance::getSeed(int x, int z) {
     constexpr int maxLod = 7;
     constexpr int maxLodRange = 1 << (maxLod - 1);
     vm::ivec2 basePosition{
@@ -2345,7 +2367,7 @@ float PGInstance::getSeed(int x, int z) {
     const int seedLod = (int)((float)seedNoiseHash / (float)0xFFFFFFFF * (float)maxLod);
     const int seedLodRange = 1 << seedLod;
     return seedNoiseFloat;
-}
+} */
 
 //
 
@@ -2563,8 +2585,8 @@ float PGInstance::signedDistanceToSphere(float cx, float cy, float cz, float r, 
 // biomes
 float PGInstance::getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition) {
     const Biome &biome = BIOMES[b];
-    float ax = worldPosition.x;
-    float az = worldPosition.y;
+    const float &ax = worldPosition.x;
+    const float &az = worldPosition.y;
 
     float biomeHeight = biome.baseHeight +
         noises.elevationNoise1.in2D(ax * biome.amps[0][0], az * biome.amps[0][0]) * biome.amps[0][1] +
