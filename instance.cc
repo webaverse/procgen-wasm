@@ -175,8 +175,8 @@ uint8_t *PGInstance::createChunkGrass(const vm::ivec2 &worldPositionXZ, const in
 {
     std::map<int, SplatInstance> grassInstances;
 
-    constexpr int maxNumGrassesPerChunk = 256;
-    constexpr float maxGrassRate = 0.35;
+    constexpr int maxNumGrassesPerChunk = 2048;
+    constexpr float maxGrassRate = 0.5;
     // const float grassRate = maxGrassRate / (float)(lod * lod);
     const float grassRate = maxGrassRate / (float)lod;
     // const float grassRate = maxGrassRate;
