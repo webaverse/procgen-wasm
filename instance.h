@@ -28,13 +28,11 @@ public:
     uint8_t *terrainMeshBuffer;
     uint8_t *waterMeshBuffer;
     uint8_t *barrierMeshBuffer;
-    // uint8_t *barrierNodeBuffer;
 
     void free() {
         std::free(terrainMeshBuffer);
         std::free(waterMeshBuffer);
         std::free(barrierMeshBuffer);
-        // std::free(barrierNodeBuffer);
         std::free(this);
     }
 };
@@ -140,13 +138,13 @@ public:
 
     //
 
-    uint8_t *createChunkGrass(const vm::ivec2 &worldPositionXZ, const int lod, const int numInstances);
-    uint8_t *createChunkVegetation(const vm::ivec2 &worldPositionXZ, const int lod, const int numInstances);
+    uint8_t *createChunkGrass(const vm::ivec2 &worldPositionXZ, const int lod, const int numGrassInstances);
+    uint8_t *createChunkVegetation(const vm::ivec2 &worldPositionXZ, const int lod, const int numVegetationInstances);
     uint8_t *createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod);
     
     //
     
-    ChunkResult *createChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
+    ChunkResult *createChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray, int generateFlags);
     // uint8_t *createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
     OctreeContext getChunkSeedOctree(const vm::ivec2 &worldPosition, int lod, int chunkSize);
 
@@ -162,7 +160,7 @@ public:
 
     //
     
-    template<typename PositionType>
+    /* template<typename PositionType>
     bool tryLock(const PositionType &chunkPosition, int lod, GenerateFlags flags) {
         Mutex *chunkLock = getChunkLock(chunkPosition, lod, flags);
         return chunkLock->try_lock();
@@ -171,14 +169,14 @@ public:
     void unlock(const PositionType &chunkPosition, int lod) {
         Mutex *chunkLock = getChunkLock(chunkPosition, lod);
         chunkLock->unlock();
-    }
+    } */
 
     //
 
-    void createChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
+    void createChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray, int generateFlags);
     // void createLiquidChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
-    void createChunkGrassAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int numInstances);
-    void createChunkVegetationAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int numInstances);
+    void createChunkGrassAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int numGrassInstances);
+    void createChunkVegetationAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int numVegetationInstances);
 
     //
 

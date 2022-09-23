@@ -171,7 +171,7 @@ public:
     std::vector<float> ps;
     std::vector<float> qs;
 };
-uint8_t *PGInstance::createChunkGrass(const vm::ivec2 &worldPositionXZ, const int lod, const int numInstances)
+uint8_t *PGInstance::createChunkGrass(const vm::ivec2 &worldPositionXZ, const int lod, const int numGrassInstances)
 {
     std::map<int, SplatInstance> grassInstances;
 
@@ -198,7 +198,7 @@ uint8_t *PGInstance::createChunkGrass(const vm::ivec2 &worldPositionXZ, const in
                 float chunkOffsetX = dis(rng) * (float)chunkSize;
                 float chunkOffsetZ = dis(rng) * (float)chunkSize;
                 float rot = dis(rng) * 2.0f * M_PI;
-                int instanceId = (int)std::round(dis(rng) * (float)(numInstances - 1));
+                int instanceId = (int)std::round(dis(rng) * (float)(numGrassInstances - 1));
                 float throwNoise = dis(rng);
                 
                 float ax = (float)chunkMinX + chunkOffsetX;
@@ -269,7 +269,7 @@ uint8_t *PGInstance::createChunkGrass(const vm::ivec2 &worldPositionXZ, const in
     
     return buffer;
 }
-uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, const int lod, const int numInstances)
+uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, const int lod, const int numVegetationInstances)
 {
     std::map<int, SplatInstance> vegetationInstances;
 
@@ -297,7 +297,7 @@ uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, con
                 float chunkOffsetX = dis(rng) * (float)chunkSize;
                 float chunkOffsetZ = dis(rng) * (float)chunkSize;
                 float rot = dis(rng) * 2.0f * M_PI;
-                int instanceId = (int)std::round(dis(rng) * (float)(numInstances - 1));
+                int instanceId = (int)std::round(dis(rng) * (float)(numVegetationInstances - 1));
 
                 if (noiseValue < veggieRate) {
                     auto iterPair = vegetationInstances.emplace(std::make_pair(instanceId, SplatInstance{}));
@@ -1501,7 +1501,22 @@ OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int
 
     return octreeContext;
 }
-ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray) {
+enum GenerateFlags {
+    GF_NONE = 0,
+    GF_TERRAIN = 1 << 0,
+    GF_WATER = 1 << 1,
+    GF_BARRIER = 1 << 2,
+    GF_VEGETATION = 1 << 3,
+    GF_GRASS = 1 << 4
+};
+ChunkResult *PGInstance::createChunkMesh(
+    const vm::ivec2 &worldPosition,
+    int lod,
+    const std::array<int, 2> &lodArray,
+    int generateFlags
+) {
+    ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
+
     // biomes
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
@@ -1511,12 +1526,12 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
     const int gridHeightP1 = gridHeight + 1;
 
     // terrain
-    TerrainGeometry terrainGeometry;
-    std::vector<Heightfield> heightfields(
-        (chunkSize * chunkSize) + // center
-        (gridWidthP1 + gridHeightP1) // seams
-    );
-    {
+    if (generateFlags & GF_TERRAIN) {
+        TerrainGeometry terrainGeometry;
+        std::vector<Heightfield> heightfields(
+            (chunkSize * chunkSize) + // center
+            (gridWidthP1 + gridHeightP1) // seams
+        );
         getHeightFieldCenter(worldPosition.x, worldPosition.y, lod, heightfields);
         getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfields);
 
@@ -1528,11 +1543,14 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
             heightfields,
             terrainGeometry
         );
+        result->terrainMeshBuffer = terrainGeometry.getBuffer();
+    } else {
+        result->terrainMeshBuffer = nullptr;
     }
 
     // water
-    WaterGeometry waterGeometry;
-    {
+    if (generateFlags & GF_WATER) {
+        WaterGeometry waterGeometry;
         std::vector<Waterfield> waterfields(
             (chunkSize * chunkSize) +
             (gridWidthP1 + gridHeightP1)
@@ -1548,12 +1566,15 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
             waterfields,
             waterGeometry
         );
+        result->waterMeshBuffer = waterGeometry.getBuffer();
+    } else {
+        result->waterMeshBuffer = nullptr;
     }
 
     // barrier
-    BarrierGeometry barrierGeometry;
-    OctreeContext octreeContext = getChunkSeedOctree(worldPosition, lod, chunkSize);
-    {
+    if (generateFlags & GF_BARRIER) {
+        BarrierGeometry barrierGeometry;
+        OctreeContext octreeContext = getChunkSeedOctree(worldPosition, lod, chunkSize);
         generateBarrierGeometry(
             worldPosition,
             lod,
@@ -1562,12 +1583,11 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
             this,
             barrierGeometry
         );
+        result->barrierMeshBuffer = barrierGeometry.getBuffer();
+    } else {
+        result->barrierMeshBuffer = nullptr;
     }
 
-    ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
-    result->terrainMeshBuffer = terrainGeometry.getBuffer();
-    result->waterMeshBuffer = waterGeometry.getBuffer();
-    result->barrierMeshBuffer = barrierGeometry.getBuffer();
     return result;
 }
 /* uint8_t *PGInstance::createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
@@ -1803,8 +1823,13 @@ void PGInstance::setClipRange(const vm::vec2 &min, const vm::vec2 &max)
 
 //
 
-void PGInstance::createChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
-{
+void PGInstance::createChunkMeshAsync(
+    uint32_t id,
+    const vm::ivec2 &worldPosition,
+    int lod,
+    const std::array<int, 2> &lodArray,
+    int generateFlags
+) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
     vm::vec3 worldPositionF{
@@ -1821,9 +1846,10 @@ void PGInstance::createChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPositio
         promise,
         worldPosition,
         lod,
-        lodArray2
+        lodArray2,
+        generateFlags
     ]() -> void {
-        ChunkResult *result = createChunkMesh(worldPosition, lod, lodArray2);
+        ChunkResult *result = createChunkMesh(worldPosition, lod, lodArray2, generateFlags);
         if (!promise->resolve(result)) {
             result->free();
         }
