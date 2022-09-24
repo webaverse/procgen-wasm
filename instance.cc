@@ -175,6 +175,7 @@ class HeightfieldSampler {
 public:
     const vm::vec2 &worldPositionXZ;
     const int &lod;
+    const int chunkSize;
     const int chunkSizeP1;
     const std::vector<Heightfield> &heightfields;
     
@@ -186,6 +187,7 @@ public:
     ) :
         worldPositionXZ(worldPositionXZ),
         lod(lod),
+        chunkSize(chunkSize),
         chunkSizeP1(chunkSize + 1),
         heightfields(heightfields)
         {}
@@ -195,30 +197,32 @@ public:
             z - worldPositionXZ.y
         };
         location /= (float)lod;
-        if (location.x < 0 && location.x >= -0.01) {
+        
+        /* if (location.x < 0 && location.x >= -0.01) {
             location.x = 0;
         }
-        if (location.x > chunkSizeP1 && location.x <= chunkSizeP1 + 0.01) {
-            location.x = chunkSizeP1;
+        if (location.x > chunkSize && location.x <= chunkSize + 0.01) {
+            location.x = chunkSize;
         }
         if (location.y < 0 && location.y >= -0.01) {
             location.y = 0;
         }
-        if (location.y > chunkSizeP1 && location.y <= chunkSizeP1 + 0.01) {
-            location.y = chunkSizeP1;
+        if (location.y > chunkSize && location.y <= chunkSize + 0.01) {
+            location.y = chunkSize;
         }
-        if (location.x < 0 || location.y < 0 || location.x >= chunkSizeP1 || location.y >= chunkSizeP1) {
-            std::cout << "get overflow A " << location.x << " " << location.y << " " << chunkSizeP1 << std::endl;
+        if (location.x < 0 || location.y < 0 || location.x > chunkSize || location.y > chunkSize) {
+            std::cout << "get overflow A " << location.x << " " << location.y << " " << chunkSize << std::endl;
             abort();
-        }
-        float result = bilinear<HeightfieldSampler, float>(location, *this);
+        } */
+
+        float result = bilinear<HeightfieldSampler, float>(location, chunkSize, *this);
         return result;
     }
     float get(int x, int z) {
-        if (x < 0 || z < 0 || x >= chunkSizeP1 || z >= chunkSizeP1) {
-            std::cout << "get overflow B " << x << " " << z << " " << chunkSizeP1 << std::endl;
+        /* if (x < 0 || z < 0 || x > chunkSize || z > chunkSize) {
+            std::cout << "get overflow B " << x << " " << z << " " << chunkSize << std::endl;
             abort();
-        }
+        } */
         int index = x + z * chunkSizeP1;
         return heightfields.at(index).heightField;
     }
@@ -235,6 +239,22 @@ uint8_t *PGInstance::createChunkGrass(const vm::ivec2 &worldPositionXZ, const in
 
     int baseMinX = worldPositionXZ.x;
     int baseMinZ = worldPositionXZ.y;
+
+    const int chunkSizeP1 = chunkSize + 1;
+    std::vector<Heightfield> heightfields(
+        (chunkSizeP1 * chunkSizeP1)
+    );
+    getHeightFieldCenter(worldPositionXZ.x, worldPositionXZ.y, lod, heightfields);
+    vm::vec2 worldPositionXZf{
+        (float)worldPositionXZ.x,
+        (float)worldPositionXZ.y
+    };
+    HeightfieldSampler heightfieldSampler(
+        worldPositionXZf,
+        lod,
+        chunkSize,
+        heightfields
+    );
     
     for (int dz = 0; dz < lod; dz++) {
         for (int dx = 0; dx < lod; dx++) {
@@ -266,7 +286,15 @@ uint8_t *PGInstance::createChunkGrass(const vm::ivec2 &worldPositionXZ, const in
                         instance.instanceId = instanceId;
                     }
                     
-                    const float height = getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
+                    /* if (ax > baseMinX + lod * chunkSize + 0.01) {
+                        std::cout << "overflow X " << ax << " " << chunkOffsetX << " " << baseMinX << " " << lod << " " << chunkSize << std::endl;
+                        abort();
+                    }
+                    if (az > baseMinZ + lod * chunkSize + 0.01) {
+                        std::cout << "overflow Z " << az << " " << chunkOffsetZ << " " << baseMinZ << " " << lod << " " << chunkSize << std::endl;
+                        abort();
+                    } */
+                    const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
 
                     instance.ps.push_back(ax);
                     instance.ps.push_back(height);
