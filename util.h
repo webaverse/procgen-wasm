@@ -95,4 +95,26 @@ R bilinearMap(
   return bilinear<R>(tx, ty, v00m, v10m, v01m, v11m);
 }
 
+template <typename T, typename R>
+R bilinear(
+  const vm::vec2 &location,
+  T &data
+) {
+  float rx = std::round(location.x);
+  float ry = std::round(location.y);
+
+  int ix = int(rx);
+  int iy = int(ry);
+
+  const auto &v00 = data.get(ix, iy);
+  const auto &v10 = data.get(ix + 1, iy);
+  const auto &v01 = data.get(ix, iy + 1);
+  const auto &v11 = data.get(ix + 1, iy + 1);
+
+  float tx = location.x - rx;
+  float ty = location.y - ry;
+
+  return bilinear<R>(tx, ty, v00, v10, v01, v11);
+}
+
 #endif // _UTIL_H_
