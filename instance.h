@@ -85,12 +85,12 @@ public:
     // SeedNoise getSeedNoise(int bx, int bz);
 
     void getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfield);
-    void getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Heightfield> &heightfieldSeams);
+    void getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, int rowSize, std::vector<Heightfield> &heightfieldSeams);
     Heightfield getHeightField(float bx, float bz);
     float getHeight(float bx, float bz);
     
     void getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfield);
-    void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfieldSeams);
+    void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, int rowSize, std::vector<Waterfield> &waterfieldSeams);
     Waterfield getWaterField(int bx, int bz, int lod);
 
     // void getCaveFieldCenter(int bx, int bz, int lod, std::vector<Cavefield> &cavefields);
