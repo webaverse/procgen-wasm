@@ -2179,6 +2179,8 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
     
     Heightfield localHeightfield;
 
+    vm::vec2 fWorldPosition{bx, bz};
+
     const float halfChunkSizeF = (float)chunkSize / 2.f;
     const float maxDistance = std::sqrt(halfChunkSizeF);
 
@@ -2233,7 +2235,6 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
     }
 
     float elevationSum = 0.f;
-    vm::vec2 fWorldPosition{bx, bz};
     for (auto const &iter : biomeCounts)
     {
         elevationSum += iter.second * getComputedBiomeHeight(iter.first, fWorldPosition);
@@ -2242,9 +2243,8 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
     float elevation = elevationSum / totalSamples;
     localHeightfield.heightField = elevation;
 
-    const float materialNoise = vm::clamp((float)noises.materialsNoise.in2D(bx / 7.f, bz / 7.f) * 2.5f, 0.f , 1.f);
-    localHeightfield.materialsWeights[0] = materialNoise;
-    localHeightfield.materialsWeights[1] = 1.f - materialNoise;
+
+    getComputedMaterials(localHeightfield, seenBiomes[0], fWorldPosition);
 
     return localHeightfield;
 }
@@ -2613,6 +2613,26 @@ float PGInstance::getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldP
         noises.elevationNoise2.in2D(ax * biome.amps[1][0], az * biome.amps[1][0]) * biome.amps[1][1] +
         noises.elevationNoise3.in2D(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1];
     return biomeHeight;
+}
+
+
+
+// materials
+void PGInstance::getComputedMaterials(Heightfield &localHeightfield, uint8_t b, const vm::vec2 &worldPosition) {
+    const float &ax = worldPosition.x;
+    const float &az = worldPosition.y;
+
+    switch (b)
+    {
+    // TODO : Define a different set of material rules for each biome, for now we're using these rules as default
+    default:
+        const float materialNoise = vm::clamp(noises.grassMaterialNoise.in2DTwist((double)worldPosition.x, (double)worldPosition.y) * 2.f, 0.f, 4.f);
+        localHeightfield.materialsWeights[0] = 4.f - materialNoise;
+        localHeightfield.materialsWeights[1] = materialNoise;
+        localHeightfield.materials[0] = (float)MATERIAL::matGrass;
+        localHeightfield.materials[1] = (float)MATERIAL::matDirt;
+        break;
+    }
 }
 
 void PGInstance::trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec3 &position, int priority) {

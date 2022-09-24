@@ -104,6 +104,7 @@ public:
     // float getSeed(int bx, int bz);
 
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
+    void getComputedMaterials(Heightfield &localHeightfield, uint8_t b, const vm::vec2 &worldPosition);
 
     //
 

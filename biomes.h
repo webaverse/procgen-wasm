@@ -1493,6 +1493,13 @@ const UV BIOME_UVS[] {
   {0.5714285714285714, 0.7142857142857143}, // liLava
 };
 
+enum class MATERIAL : uint8_t {
+  matGrass = 0,
+  matDirt = 1,
+  matStone = 2,
+  matRock = 3
+};
+
 bool isWaterBiome(unsigned char b);
 
 #endif // _BIOMES_H_
