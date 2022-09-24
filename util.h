@@ -102,8 +102,12 @@ R bilinear(
   int chunkSize,
   T &data
 ) {
-  float rx = std::round(location.x);
-  float ry = std::round(location.y);
+  // const float chunkSizeF = (float)chunkSize;
+  // float rx = std::round(location.x) / chunkSizeF;
+  // float ry = std::round(location.y) / chunkSizeF;
+
+  float rx = std::floor(location.x);
+  float ry = std::floor(location.y);
 
   int ix = (int)rx;
   int iy = (int)ry;
@@ -114,20 +118,36 @@ R bilinear(
   R v11;
   if (ix < chunkSize) {
     if (iy < chunkSize) {
-      v11 = v00;
+      v11 = data.get(ix + 1, iy + 1);
     } else {
       v11 = v01;
     }
   } else {
     if (ix < chunkSize) {
-      v11 = data.get(ix + 1, iy + 1);
-    } else {
       v11 = v10;
+    } else {
+      v11 = v00;
     }
   }
 
   float tx = location.x - rx;
   float ty = location.y - ry;
+  /* if (tx < 0) {
+    std::cout << "outrange x A " << location.x << " " << rx << " " << tx << std::endl;
+    abort();
+  }
+  if (tx > 1.f) {
+    std::cout << "outrange x B " << location.x << " " << rx << " " << tx << std::endl;
+    abort();
+  }
+  if (ty < 0) {
+    std::cout << "outrange y A " << location.y << " " << ry << " " << ty << std::endl;
+    abort();
+  }
+  if (ty > 1.f) {
+    std::cout << "outrange y B " << location.y << " " << ry << " " << ty << std::endl;
+    abort();
+  } */
   return bilinear<R>(tx, ty, v00, v10, v01, v11);
 }
 
