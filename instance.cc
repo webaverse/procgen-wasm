@@ -171,6 +171,52 @@ public:
     std::vector<float> ps;
     std::vector<float> qs;
 };
+class HeightfieldSampler {
+public:
+    const vm::vec2 &worldPositionXZ;
+    const int &lod;
+    const int chunkSizeP1;
+    const std::vector<Heightfield> &heightfields;
+    
+    HeightfieldSampler(
+        const vm::vec2 &worldPositionXZ,
+        const int &lod,
+        const int chunkSize,
+        const std::vector<Heightfield> &heightfields
+    ) :
+        worldPositionXZ(worldPositionXZ),
+        lod(lod),
+        chunkSizeP1(chunkSize + 1),
+        heightfields(heightfields)
+        {}
+    float getHeight(float x, float z) {
+        vm::vec2 location{
+            x - worldPositionXZ.x,
+            z - worldPositionXZ.y
+        };
+        location /= (float)lod;
+        if (location.x < 0 && location.x >= -0.01) {
+            location.x = 0;
+        }
+        if (location.y < 0 && location.y >= -0.01) {
+            location.y = 0;
+        }
+        if (location.x < 0 || location.y < 0 || location.x >= chunkSizeP1 || location.y >= chunkSizeP1) {
+            std::cout << "get overflow A " << location.x << " " << location.y << " " << chunkSizeP1 << std::endl;
+            abort();
+        }
+        float result = bilinear<HeightfieldSampler, float>(location, *this);
+        return result;
+    }
+    float get(int x, int z) {
+        if (x < 0 || z < 0 || x >= chunkSizeP1 || z >= chunkSizeP1) {
+            std::cout << "get overflow B " << x << " " << z << " " << chunkSizeP1 << std::endl;
+            abort();
+        }
+        int index = x + z * chunkSizeP1;
+        return heightfields.at(index).heightField;
+    }
+};
 uint8_t *PGInstance::createChunkGrass(const vm::ivec2 &worldPositionXZ, const int lod, const int numGrassInstances)
 {
     std::map<int, SplatInstance> grassInstances;
