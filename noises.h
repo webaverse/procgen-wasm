@@ -18,6 +18,8 @@ public:
   Noise riverNoise;
   Noise lavaNoise;
   
+  Noise materialsNoise;
+
   Noise grassSeedNoise;
   Noise grassNoise;
   Noise vegetationSeedNoise;
@@ -48,6 +50,7 @@ public:
     oceanNoise(rng(), 0.001, 4),
     riverNoise(rng(), 0.001, 4),
     lavaNoise(rng(), 0.01, 4),
+    materialsNoise(rng(), 0.01, 4),
     grassSeedNoise(rng(), 0.01, 4),
     grassNoise(rng(), 0.01, 4),
     vegetationSeedNoise(rng(), 0.1, 4),

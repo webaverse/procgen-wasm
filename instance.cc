@@ -620,6 +620,8 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
 
     auto pushPoint = [&](int x, int y, const T &fieldValue) -> void {
         const float height = fieldValue.getHeight();
+        const MaterialsArray &materialWeights = fieldValue.materialsWeights;
+
         geometry.positions.push_back(vm::vec3{
             (float)x,
             height,
@@ -629,6 +631,12 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
             0,
             1,
             0
+        });
+        geometry.materialsWeights.push_back(vm::vec4{
+            materialWeights[0],
+            materialWeights[1],
+            materialWeights[2],
+            materialWeights[3]
         });
         geometry.pushPointMetadata(fieldValue);
     };
@@ -1329,7 +1337,7 @@ void generateTerrainGeometry(
     TerrainGeometry &geometry
 ) {
     generateHeightfieldCenterMesh(lod, chunkSize, heightfields, geometry);
-    generateHeightfieldSeamsMesh(lod, lodArray, chunkSize, heightfields, geometry);
+    // generateHeightfieldSeamsMesh(lod, lodArray, chunkSize, heightfields, geometry);
     offsetGeometry(geometry, worldPosition);
     computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
@@ -2225,6 +2233,10 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
 
     float elevation = elevationSum / totalSamples;
     localHeightfield.heightField = elevation;
+
+    const float materialNoise = noises.materialsNoise.in2D(bx, bz);
+    localHeightfield.materialsWeights[0] = materialNoise;
+    localHeightfield.materialsWeights[1] = 1.f - materialNoise;
 
     return localHeightfield;
 }
