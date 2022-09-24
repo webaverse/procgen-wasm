@@ -198,8 +198,14 @@ public:
         if (location.x < 0 && location.x >= -0.01) {
             location.x = 0;
         }
+        if (location.x > chunkSizeP1 && location.x <= chunkSizeP1 + 0.01) {
+            location.x = chunkSizeP1;
+        }
         if (location.y < 0 && location.y >= -0.01) {
             location.y = 0;
+        }
+        if (location.y > chunkSizeP1 && location.y <= chunkSizeP1 + 0.01) {
+            location.y = chunkSizeP1;
         }
         if (location.x < 0 || location.y < 0 || location.x >= chunkSizeP1 || location.y >= chunkSizeP1) {
             std::cout << "get overflow A " << location.x << " " << location.y << " " << chunkSizeP1 << std::endl;
