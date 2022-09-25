@@ -757,9 +757,11 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
 
     const int gridWidth = chunkSize * lod / bottomLod;
     const int gridWidthP1 = gridWidth + 1;
+    const int gridWidthPOffset = gridWidthP1 + rowOffsetSeam * 2;
 
     const int gridHeight = chunkSize * lod / rightLod;
     const int gridHeightP1 = gridHeight + 1;
+    const int gridHeightPOffset = gridHeightP1 + rowOffsetSeam * 2;
 
     const int heightfieldsCenterDataWriteOffset = chunkSize * chunkSize;
     const int heightfieldsCenterDataReadOffset = rowSize * rowSize;
@@ -789,6 +791,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         int readIndex = heightfieldsCenterDataReadOffset;
         
         // bottom
+        readIndex += gridWidthPOffset * rowOffsetSeam;
         readIndex += rowOffsetSeam;
         {
             const int y = chunkSize;
@@ -804,11 +807,13 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
             }
         }
         readIndex += rowOffsetSeam;
+        readIndex += gridWidthPOffset * rowOffsetSeam;
 
         heightfieldsBottomDataWriteOffset = writeIndex;
         heightfieldsBottomDataReadOffset = readIndex;
 
         // right
+        readIndex += gridHeightPOffset * rowOffsetSeam;
         readIndex += rowOffsetSeam;
         {
             const int x = chunkSize;
@@ -824,6 +829,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
             }
         }
         readIndex += rowOffsetSeam;
+        readIndex += gridHeightPOffset * rowOffsetSeam;
     }
 
     //
@@ -1685,10 +1691,12 @@ ChunkResult *PGInstance::createChunkMesh(
     const int gridWidth = chunkSize * lod / bottomLod;
     const int gridWidthP1 = gridWidth + 1;
     const int gridWidthP3 = gridWidth + 3;
+    const int gridWidthP3T3 = gridWidthP3 * 3;
     
     const int gridHeight = chunkSize * lod / rightLod;
     const int gridHeightP1 = gridHeight + 1;
     const int gridHeightP3 = gridHeight + 3;
+    const int gridHeightP3T3 = gridHeightP3 * 3;
     
     const int chunkSizeP2 = chunkSize + 2;
 
@@ -1697,7 +1705,7 @@ ChunkResult *PGInstance::createChunkMesh(
         TerrainGeometry terrainGeometry;
         std::vector<Heightfield> heightfields(
             (chunkSizeP2 * chunkSizeP2) + // center
-            (gridWidthP3 + gridHeightP3) // seams
+            (gridWidthP3T3 + gridHeightP3T3) // seams
         );
         getHeightFieldCenter(worldPosition.x, worldPosition.y, lod, heightfields);
         getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, chunkSizeP2, heightfields);
@@ -2326,32 +2334,36 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
     // bottom
     int index = heightfieldsCenterDataOffset;
     {
-        const int z = chunkSize;
-        for (int dx = 0; dx < gridWidthP3; dx++) {
-            const int x = dx - 1;
+        for (int dz = 0; dz < 3; dz++) {
+            for (int dx = 0; dx < gridWidthP3; dx++) {
+                const int x = dx - 1;
+                const int z = dz - 1;
 
-            Heightfield &localHeightfieldSeam = heightfields.at(index);
-            
-            const int ax = bx + x * bottomLod;
-            const int az = bz + z * lod;
-            localHeightfieldSeam = getHeightField(ax, az);
+                Heightfield &localHeightfieldSeam = heightfields.at(index);
+                
+                const int ax = bx + x * bottomLod;
+                const int az = bz + chunkSize * lod + z * bottomLod;
+                localHeightfieldSeam = getHeightField(ax, az);
 
-            index++;
+                index++;
+            }
         }
     }
     // right
     {
-        const int x = chunkSize;
-        for (int dz = 0; dz < gridHeightP3; dz++) {
-            const int z = dz - 1;
-            
-            Heightfield &localHeightfieldSeam = heightfields.at(index);
+        for (int dx = 0; dx < 3; dx++) {
+            for (int dz = 0; dz < gridHeightP3; dz++) {
+                const int x = dx - 1;
+                const int z = dz - 1;
+                
+                Heightfield &localHeightfieldSeam = heightfields.at(index);
 
-            const int ax = bx + x * lod;
-            const int az = bz + z * rightLod;
-            localHeightfieldSeam = getHeightField(ax, az);
+                const int ax = bx + chunkSize * lod + x * rightLod;
+                const int az = bz + z * rightLod;
+                localHeightfieldSeam = getHeightField(ax, az);
 
-            index++;
+                index++;
+            }
         }
     }
 }
@@ -2486,22 +2498,36 @@ void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<in
     // bottom
     int index = waterfieldsCenterDataOffset;
     {
-        const int z = chunkSize;
-        for (int x = 0; x < gridWidthP1; x++) {
-            Waterfield &localWaterfieldSeam = waterfields.at(index);
-            localWaterfieldSeam = getWaterField(bx + x * bottomLod, bz + z * lod, lod);
+        for (int dz = 0; dz < 1; dz++) {
+            for (int dx = 0; dx < gridWidthP1; dx++) {
+                const int z = dz;
+                const int x = dx;
 
-            index++;
+                Waterfield &localWaterfieldSeam = waterfields.at(index);
+                
+                const int ax = bx + x * bottomLod;
+                const int az = bz + chunkSize * lod + z * bottomLod;
+                localWaterfieldSeam = getWaterField(ax, az, lod);
+
+                index++;
+            }
         }
     }
     // right
     {
-        const int x = chunkSize;
-        for (int z = 0; z < gridHeightP1; z++) {
-            Waterfield &localWaterfieldSeam = waterfields.at(index);
-            localWaterfieldSeam = getWaterField(bx + x * lod, bz + z * rightLod, lod);
+        for (int dx = 0; dx < 1; dx++) {
+            for (int dz = 0; dz < gridHeightP1; dz++) {
+                const int z = dz;
+                const int x = dx;
+                
+                Waterfield &localWaterfieldSeam = waterfields.at(index);
 
-            index++;
+                const int ax = bx + chunkSize * lod + x * rightLod;
+                const int az = bz + z * rightLod;
+                localWaterfieldSeam = getWaterField(ax, az, lod);
+
+                index++;
+            }
         }
     }
 }
