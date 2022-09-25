@@ -2894,7 +2894,7 @@ void PGInstance::trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec
         uint8_t *buffer = trackerUpdate.getBuffer();
         // std::cout << "trakcer update buffer address" << (void *)buffer << std::endl;
         if (!promise->resolve(buffer)) {
-          // XXX clean up
+          free(buffer);
         }
     });
     ProcGen::taskQueue.pushTask(trackerUpdateTask);
