@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <array>
+#include <map>
 #include <stdint.h>
 #include <cstring>
 
@@ -51,6 +52,8 @@ public:
     uint8_t *getBuffer() const;
 };
 
+//
+
 class WaterGeometry {
 public:
     PositionBuffer positions;
@@ -66,6 +69,8 @@ public:
     uint8_t *getBuffer() const;
 };
 
+//
+
 class BarrierGeometry {
 public:
     PositionBuffer positions;
@@ -76,6 +81,24 @@ public:
     PositionInt2DBuffer positions2D;
 
     uint8_t *getBuffer() const;
+};
+
+//
+
+class SplatInstance {
+public:
+    int instanceId;
+    std::vector<float> ps;
+    std::vector<float> qs;
+};
+class SplatInstanceGeometry {
+public:
+    std::map<int, SplatInstance> instances;
+
+    uint8_t *getBuffer() const;
+};
+class GrassGeometry : public SplatInstanceGeometry {
+    // nothing
 };
 
 #endif // MESH_H

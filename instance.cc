@@ -164,13 +164,6 @@ unsigned char *PGInstance::getChunkAo(const vm::ivec3 &worldPosition, int lod) {
     return aos;
 } */
 
-// splats
-class SplatInstance {
-public:
-    int instanceId;
-    std::vector<float> ps;
-    std::vector<float> qs;
-};
 class HeightfieldSampler {
 public:
     const vm::vec2 &worldPositionXZ;
@@ -216,7 +209,7 @@ uint8_t *PGInstance::createChunkGrass(
     const std::vector<Heightfield> &heightfields,
     const int numGrassInstances
 ) {
-    std::map<int, SplatInstance> grassInstances;
+    GrassGeometry grassGeometry;
 
     constexpr int maxNumGrassesPerChunk = 2048;
     constexpr float grassRate = 0.5;
@@ -260,7 +253,9 @@ uint8_t *PGInstance::createChunkGrass(
                 float noiseValue = noises.grassNoise.in2D(ax, az);
 
                 if (noiseValue < grassRate && throwNoise <= grassThrowRate) {
-                    auto iterPair = grassInstances.emplace(std::make_pair(instanceId, SplatInstance{}));
+                    auto iterPair = grassGeometry.instances.emplace(
+                        std::make_pair(instanceId, SplatInstance{})
+                    );
                     auto iter = iterPair.first;
                     const bool &inserted = iterPair.second;
                     SplatInstance &instance = iter->second;
@@ -292,43 +287,7 @@ uint8_t *PGInstance::createChunkGrass(
         }
     }
 
-    // serialize
-    size_t size = sizeof(uint32_t); // numInstances
-    for (auto &iter : grassInstances) {
-        SplatInstance &instance = iter.second;
-
-        size += sizeof(int); // instanceId
-        
-        size += sizeof(uint32_t); // numPs
-        size += sizeof(float) * instance.ps.size(); // ps
-        
-        size += sizeof(uint32_t); // numQs
-        size += sizeof(float) * instance.qs.size(); // qs
-    }
-
-    uint8_t *buffer = (uint8_t *)malloc(size);
-    int index = 0;
-
-    ((uint32_t *)(buffer + index))[0] = grassInstances.size();
-    index += sizeof(uint32_t);
-    
-    for (auto &iter : grassInstances) {
-        SplatInstance &instance = iter.second;
-
-        ((int *)(buffer + index))[0] = instance.instanceId;
-        index += sizeof(int);
-
-        ((uint32_t *)(buffer + index))[0] = instance.ps.size();
-        index += sizeof(uint32_t);
-        memcpy(buffer + index, instance.ps.data(), sizeof(float) * instance.ps.size());
-        index += sizeof(float) * instance.ps.size();
-
-        ((uint32_t *)(buffer + index))[0] = instance.qs.size();
-        index += sizeof(uint32_t);
-        memcpy(buffer + index, instance.qs.data(), sizeof(float) * instance.qs.size());
-        index += sizeof(float) * instance.qs.size();
-    }
-    
+    uint8_t *buffer = grassGeometry.getBuffer();
     return buffer;
 }
 uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, const int lod, const int numVegetationInstances)
