@@ -660,11 +660,11 @@ void computeVertexNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3
 
     normalizeNormals(normals);
 }
-void fillVec3(std::vector<vm::vec3> &array, const vm::vec3 &v) {
+/* void fillVec3(std::vector<vm::vec3> &array, const vm::vec3 &v) {
     for (size_t i = 0, il = array.size(); i < il; i++) {
         array[i] = v;
     }
-}
+} */
 
 //
 
