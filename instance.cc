@@ -2309,18 +2309,20 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
     // right
     {
         const int x = chunkSize;
-        for (int z = 0; z < gridHeightP1; z++) {
+        for (int dz = 0; dz < gridHeightP3; dz++) {
+            const int z = dz - 1;
+            
             Heightfield &localHeightfieldSeam = heightfields.at(index);
-            localHeightfieldSeam = getHeightField(bx + x * lod, bz + z * rightLod);
+
+            const int ax = bx + x * lod;
+            const int az = bz + z * rightLod;
+            localHeightfieldSeam = getHeightField(ax, az);
 
             index++;
         }
     }
 }
 Heightfield PGInstance::getHeightField(float bx, float bz) {
-    // int bxi = (int)bx;
-    // int bzi = (int)bz;
-    
     Heightfield localHeightfield;
 
     const float halfChunkSizeF = (float)chunkSize / 2.f;
@@ -2389,9 +2391,6 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
     return localHeightfield;
 }
 float PGInstance::getHeight(float bx, float bz) {
-    // int bxi = (int)bx;
-    // int bzi = (int)bz;
-
     const float halfChunkSizeF = (float)chunkSize / 2.f;
     const float maxDistance = std::sqrt(halfChunkSizeF + 1.f);
 
