@@ -2212,7 +2212,9 @@ void PGInstance::createChunkGrassAsync(uint32_t id, const vm::ivec2 &worldPositi
         numInstances
     ]() -> void {
         uint8_t *result = createChunkGrass(worldPosition, lod, numInstances);
-        promise->resolve(result);
+        if (!promise->resolve(result)) {
+          free(result);
+        }
     });
     ProcGen::taskQueue.pushTask(grassSplatTask);
 }
