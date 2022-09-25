@@ -1412,7 +1412,6 @@ void generateBarrierMesh(
     int lod,
     int chunkSize,
     OctreeContext &octreeContext,
-    PGInstance *inst,
     BarrierGeometry &geometry
 ) {
     const int lodRange = lod * chunkSize;
@@ -1446,7 +1445,7 @@ void generateBarrierMesh(
         const vm::ivec2 &nodePosition = node->min;
         const int &nodeLod = node->lod;
 
-        float barrierMinHeight = std::numeric_limits<float>::infinity();
+        /* float barrierMinHeight = std::numeric_limits<float>::infinity();
         float barrierMaxHeight = -std::numeric_limits<float>::infinity();
         for (int dz = 0; dz < chunkSize; dz++) {
             for (int dx = 0; dx < chunkSize; dx++) {
@@ -1463,10 +1462,12 @@ void generateBarrierMesh(
             }
         }
         barrierMinHeight = std::floor(barrierMinHeight);
-        barrierMaxHeight = std::ceil(barrierMaxHeight);
+        barrierMaxHeight = std::ceil(barrierMaxHeight); */
+        constexpr int barrierMinHeight = -WORLD_BASE_HEIGHT + MIN_WORLD_HEIGHT;
+        constexpr int barrierMaxHeight = -WORLD_BASE_HEIGHT + MAX_WORLD_HEIGHT;
 
         int width = nodeLod;
-        int height = barrierMaxHeight - barrierMinHeight;
+        constexpr int height = barrierMaxHeight - barrierMinHeight;
         int depth = nodeLod;
         createBoxGeometry(
             width,
@@ -1560,12 +1561,11 @@ void generateBarrierGeometry(
     int lod,
     int chunkSize,
     OctreeContext &octreeContext,
-    PGInstance *inst,
     BarrierGeometry &geometry
 ) {
-    generateBarrierMesh(worldPosition, lod, chunkSize, octreeContext, inst, geometry);
+    generateBarrierMesh(worldPosition, lod, chunkSize, octreeContext, geometry);
     // offsetGeometry(geometry, worldPosition);
-    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
+    // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
 
 //
@@ -1773,7 +1773,6 @@ ChunkResult *PGInstance::createChunkMesh(
             lod,
             chunkSize,
             octreeContext,
-            this,
             barrierGeometry
         );
         result->barrierMeshBuffer = barrierGeometry.getBuffer();
