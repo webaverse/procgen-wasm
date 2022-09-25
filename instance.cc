@@ -1181,8 +1181,8 @@ void generateWaterfieldCenterMesh(
     const int worldSize = chunkSize * lod;
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
-    const int rowSize = chunkSize;
-    const int rowOffset = 0;
+    const int rowSize = chunkSize + 2;
+    const int rowOffset = 1;
     createPlaneGeometry<Waterfield, WaterGeometry, WindingDirection::CCW>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, rowSize, rowOffset, waterfields, geometry);
 }
 void generateWaterfieldSeamsMesh(
@@ -1192,9 +1192,9 @@ void generateWaterfieldSeamsMesh(
     const std::vector<Waterfield> &waterfields,
     WaterGeometry &geometry
 ) {
-    const int rowSize = chunkSize;
-    const int rowOffset = 0;
-    const int rowOffsetSeam = 0;
+    const int rowSize = chunkSize + 2;
+    const int rowOffset = 1;
+    const int rowOffsetSeam = 1;
     createPlaneSeamsGeometry<Waterfield, WaterGeometry, WindingDirection::CCW>(lod, lodArray, chunkSize, rowSize, rowOffset, rowOffsetSeam, waterfields, geometry);
 }
 
@@ -1700,15 +1700,23 @@ ChunkResult *PGInstance::createChunkMesh(
     
     const int chunkSizeP2 = chunkSize + 2;
 
-    // terrain
-    if (generateFlags & GF_TERRAIN) {
-        TerrainGeometry terrainGeometry;
-        std::vector<Heightfield> heightfields(
+    // heightfield
+    std::vector<Heightfield> heightfields;
+    if (
+        (generateFlags & GF_TERRAIN) |
+        (generateFlags & GF_WATER)
+    ) {
+        heightfields.resize(
             (chunkSizeP2 * chunkSizeP2) + // center
             (gridWidthP3T3 + gridHeightP3T3) // seams
         );
         getHeightFieldCenter(worldPosition.x, worldPosition.y, lod, heightfields);
         getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, chunkSizeP2, heightfields);
+    }
+
+    // terrain
+    if (generateFlags & GF_TERRAIN) {
+        TerrainGeometry terrainGeometry;
 
         generateTerrainGeometry(
             worldPosition,
@@ -1726,12 +1734,8 @@ ChunkResult *PGInstance::createChunkMesh(
     // water
     if (generateFlags & GF_WATER) {
         WaterGeometry waterGeometry;
-        std::vector<Waterfield> waterfields(
-            (chunkSize * chunkSize) +
-            (gridWidthP1 + gridHeightP1)
-        );
-        getWaterFieldCenter(worldPosition.x, worldPosition.y, lod, waterfields);
-        getWaterFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, chunkSize, waterfields);
+
+        const std::vector<Waterfield> &waterfields = *((std::vector<Waterfield> *)&heightfields);
 
         generateWaterGeometry(
             worldPosition,
@@ -2516,7 +2520,7 @@ float PGInstance::getHeight(float bx, float bz) {
 
 //
 
-void PGInstance::getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfields) {
+/* void PGInstance::getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfields) {
     for (int z = 0; z < chunkSize; z++)
     {
         for (int x = 0; x < chunkSize; x++)
@@ -2578,7 +2582,7 @@ void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<in
 
 //
 
-Waterfield PGInstance::getWaterField(int bx, int bz, int lod) {
+/* Waterfield PGInstance::getWaterField(int bx, int bz, int lod) {
     constexpr int waterRange = 4;
     const float maxWaterDistance = (float)std::sqrt((float)waterRange * (float)waterRange);
     constexpr float baseWaterFactor = 0.25;
@@ -2608,7 +2612,7 @@ Waterfield PGInstance::getWaterField(int bx, int bz, int lod) {
     return Waterfield{
         waterFactor
     };
-}
+} */
 
 //
 
