@@ -202,9 +202,9 @@ public:
         return result;
     }
     float get(int x, int z) {
-        int dx = x + 1;
-        int dz = z + 1;
-        int index = dx + dz * chunkSizeP2;
+        const int dx = x + 1;
+        const int dz = z + 1;
+        const int index = dx + dz * chunkSizeP2;
         const Heightfield &heightfield = heightfields.at(index);
         const float &height = heightfield.heightField;
         return height;
@@ -751,7 +751,7 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
     }
 }
 template<typename T, typename G, WindingDirection windingDirection>
-void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int chunkSize, int rowSize, int rowOffset, const std::vector<T> &heightfields, G &geometry) {
+void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int chunkSize, int rowSize, int rowOffset, int rowOffsetSeam, const std::vector<T> &heightfields, G &geometry) {
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
 
@@ -782,41 +782,48 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
     };
 
     // positions
-    // bottom
     int heightfieldsBottomDataWriteOffset;
     int heightfieldsBottomDataReadOffset;
     {
         int writeIndex = heightfieldsCenterDataWriteOffset;
         int readIndex = heightfieldsCenterDataReadOffset;
+        
+        // bottom
+        readIndex += rowOffsetSeam;
         {
-            const int iy = chunkSize;
-            for (int ix = 0; ix < gridWidthP1; ix++) {
+            const int y = chunkSize;
+            for (int x = 0; x < gridWidthP1; x++) {
                 const T &fieldValue = heightfields.at(readIndex);
 
-                const int ax = ix * bottomLod;
-                const int ay = iy * lod;
+                const int ax = x * bottomLod;
+                const int ay = y * lod;
                 pushPoint(ax, ay, fieldValue);
                 
                 writeIndex++;
                 readIndex++;
             }
         }
+        readIndex += rowOffsetSeam;
+
         heightfieldsBottomDataWriteOffset = writeIndex;
         heightfieldsBottomDataReadOffset = readIndex;
+
         // right
+        readIndex += rowOffsetSeam;
         {
-            const int ix = chunkSize;
-            for (int iy = 0; iy < gridHeightP1; iy++) {
+            const int x = chunkSize;
+            for (int y = 0; y < gridHeightP1; y++) {
                 const T &fieldValue = heightfields.at(readIndex);
 
-                const int ax = ix * lod;
-                const int ay = iy * rightLod;
+                const int ax = x * lod;
+                const int ay = y * rightLod;
                 pushPoint(ax, ay, fieldValue);
                 
                 writeIndex++;
                 readIndex++;
             }
         }
+        readIndex += rowOffsetSeam;
     }
 
     //
@@ -855,12 +862,14 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
             const int innerPointDx = innerPointX + rowOffset;
             const int innerPointDy = innerPointY + rowOffset;
 
+            const int outerPointDx = outerPointX + rowOffsetSeam;
+
             // inner
             const int ra = innerPointDx + rowSize * innerPointDy;
             const int rd = (innerPointDx + 1) + rowSize * innerPointDy;
             // outer
-            const int rb = heightfieldsCenterDataReadOffset + outerPointX;
-            const int rc = heightfieldsCenterDataReadOffset + (outerPointX + 1);
+            const int rb = heightfieldsCenterDataReadOffset + outerPointDx;
+            const int rc = heightfieldsCenterDataReadOffset + (outerPointDx + 1);
 
             const int wa = innerPointX + chunkSize * innerPointY;
             const int wd = (innerPointX + 1) + chunkSize * innerPointY;
@@ -880,13 +889,15 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
             const int innerPointDx = innerPointX + rowOffset;
             const int innerPointDy = innerPointY + rowOffset;
 
+            const int outerPointDx = outerPointX + rowOffsetSeam;
+
             if (innerPointX % 2 == 0) {
                 // inner
                 const int ra = innerPointDx + rowSize * innerPointDy;
                 const int rd = (innerPointDx + 1) + rowSize * innerPointDy;
                 // outer
-                const int rb = heightfieldsCenterDataReadOffset + outerPointX;
-                const int rc = heightfieldsCenterDataReadOffset + (outerPointX + 1);
+                const int rb = heightfieldsCenterDataReadOffset + outerPointDx;
+                const int rc = heightfieldsCenterDataReadOffset + (outerPointDx + 1);
 
                 const int wa = innerPointX + chunkSize * innerPointY;
                 const int wd = (innerPointX + 1) + chunkSize * innerPointY;
@@ -901,8 +912,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     const int ra = innerPointDx + rowSize * innerPointDy;
                     const int rd = (innerPointDx + 1) + rowSize * innerPointDy;
                     // outer
-                    const int rb = heightfieldsCenterDataReadOffset + outerPointX;
-                    const int rc = heightfieldsCenterDataReadOffset + (outerPointX + 1);
+                    const int rb = heightfieldsCenterDataReadOffset + outerPointDx;
+                    const int rc = heightfieldsCenterDataReadOffset + (outerPointDx + 1);
 
                     const int wa = innerPointX + chunkSize * innerPointY;
                     const int wd = (innerPointX + 1) + chunkSize * innerPointY;
@@ -921,14 +932,16 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
             const int innerPointDx = innerPointX + rowOffset;
             const int innerPointDy = innerPointY + rowOffset;
 
+            int outerPointDx = outerPointX + rowOffsetSeam;
+
             if (innerPointX != (chunkSize - 1)) {
                 {
                     // inner
                     const int ra = innerPointDx + rowSize * innerPointDy;
                     const int rd = (innerPointDx + 1) + rowSize * innerPointDy;
                     // outer
-                    const int rb = heightfieldsCenterDataReadOffset + outerPointX;
-                    const int rc = heightfieldsCenterDataReadOffset + (outerPointX + 1);
+                    const int rb = heightfieldsCenterDataReadOffset + outerPointDx;
+                    const int rc = heightfieldsCenterDataReadOffset + (outerPointDx + 1);
 
                     const int wa = innerPointX + chunkSize * innerPointY;
                     const int wd = (innerPointX + 1) + chunkSize * innerPointY;
@@ -939,13 +952,14 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     pushTriangle(ra, rc, rd, wa, wc, wd);
                 }
                 outerPointX++;
+                outerPointDx++;
                 {
                     // inner
                     const int ra = innerPointDx + rowSize * innerPointDy;
                     const int rd = (innerPointDx + 1) + rowSize * innerPointDy;
                     // outer
-                    const int rb = heightfieldsCenterDataReadOffset + outerPointX;
-                    const int rc = heightfieldsCenterDataReadOffset + (outerPointX + 1);
+                    const int rb = heightfieldsCenterDataReadOffset + outerPointDx;
+                    const int rc = heightfieldsCenterDataReadOffset + (outerPointDx + 1);
 
                     const int wa = innerPointX + chunkSize * innerPointY;
                     const int wd = (innerPointX + 1) + chunkSize * innerPointY;
@@ -958,9 +972,9 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 // inner
                 const int ra = innerPointDx + rowSize * innerPointDy;
                 // outer
-                const int rb = heightfieldsCenterDataReadOffset + outerPointX;
-                const int rc = heightfieldsCenterDataReadOffset + (outerPointX + 1);
-                const int rd = heightfieldsCenterDataReadOffset + (outerPointX + 2);
+                const int rb = heightfieldsCenterDataReadOffset + outerPointDx;
+                const int rc = heightfieldsCenterDataReadOffset + (outerPointDx + 1);
+                const int rd = heightfieldsCenterDataReadOffset + (outerPointDx + 2);
 
                 const int wa = innerPointX + chunkSize * innerPointY;
                 const int wb = heightfieldsCenterDataWriteOffset + outerPointX;
@@ -982,12 +996,14 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
             const int innerPointDx = innerPointX + rowOffset;
             const int innerPointDy = innerPointY + rowOffset;
 
+            const int outerPointDy = outerPointY + rowOffsetSeam;
+
             // inner
             const int ra = innerPointDx + rowSize * innerPointDy;
             const int rb = innerPointDx + rowSize * (innerPointDy + 1);
             // outer
-            const int rd = heightfieldsBottomDataReadOffset + outerPointY;
-            const int rc = heightfieldsBottomDataReadOffset + (outerPointY + 1);
+            const int rd = heightfieldsBottomDataReadOffset + outerPointDy;
+            const int rc = heightfieldsBottomDataReadOffset + (outerPointDy + 1);
 
             const int wa = innerPointX + chunkSize * innerPointY;
             const int wb = innerPointX + chunkSize * (innerPointY + 1);
@@ -1008,13 +1024,15 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
             const int innerPointDx = innerPointX + rowOffset;
             const int innerPointDy = innerPointY + rowOffset;
 
+            const int outerPointDy = outerPointY + rowOffsetSeam;
+
             if (innerPointY % 2 == 0) {
                 // inner
                 const int ra = innerPointDx + rowSize * innerPointDy;
                 const int rb = innerPointDx + rowSize * (innerPointDy + 1);
                 // outer
-                const int rd = heightfieldsBottomDataReadOffset + outerPointY;
-                const int rc = heightfieldsBottomDataReadOffset + (outerPointY + 1);
+                const int rd = heightfieldsBottomDataReadOffset + outerPointDy;
+                const int rc = heightfieldsBottomDataReadOffset + (outerPointDy + 1);
 
                 const int wa = innerPointX + chunkSize * innerPointY;
                 const int wb = innerPointX + chunkSize * (innerPointY + 1);
@@ -1029,8 +1047,8 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     const int ra = innerPointDx + rowSize * innerPointDy;
                     const int rb = innerPointDx + rowSize * (innerPointDy + 1);
                     // outer
-                    const int rd = heightfieldsBottomDataReadOffset + outerPointY;
-                    const int rc = heightfieldsBottomDataReadOffset + (outerPointY + 1);
+                    const int rd = heightfieldsBottomDataReadOffset + outerPointDy;
+                    const int rc = heightfieldsBottomDataReadOffset + (outerPointDy + 1);
 
                     const int wa = innerPointX + chunkSize * innerPointY;
                     const int wb = innerPointX + chunkSize * (innerPointY + 1);
@@ -1050,14 +1068,16 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
             const int innerPointDx = innerPointX + rowOffset;
             const int innerPointDy = innerPointY + rowOffset;
 
+            int outerPointDy = outerPointY + rowOffsetSeam;
+
             if (innerPointY != (chunkSize - 1)) {
                 {
                     // inner
                     const int ra = innerPointDx + rowSize * innerPointDy;
                     const int rb = innerPointDx + rowSize * (innerPointDy + 1);
                     // outer
-                    const int rd = heightfieldsBottomDataReadOffset + outerPointY;
-                    const int rc = heightfieldsBottomDataReadOffset + (outerPointY + 1);
+                    const int rd = heightfieldsBottomDataReadOffset + outerPointDy;
+                    const int rc = heightfieldsBottomDataReadOffset + (outerPointDy + 1);
 
                     const int wa = innerPointX + chunkSize * innerPointY;
                     const int wb = innerPointX + chunkSize * (innerPointY + 1);
@@ -1068,13 +1088,14 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                     pushTriangle(ra, rb, rc, wa, wb, wc);
                 }
                 outerPointY++;
+                outerPointDy++;
                 {
                     // inner
                     const int ra = innerPointDx + rowSize * innerPointDy;
                     const int rb = innerPointDx + rowSize * (innerPointDy + 1);
                     // outer
-                    const int rd = heightfieldsBottomDataReadOffset + outerPointY;
-                    const int rc = heightfieldsBottomDataReadOffset + (outerPointY + 1);
+                    const int rd = heightfieldsBottomDataReadOffset + outerPointDy;
+                    const int rc = heightfieldsBottomDataReadOffset + (outerPointDy + 1);
 
                     const int wa = innerPointX + chunkSize * innerPointY;
                     const int wb = innerPointX + chunkSize * (innerPointY + 1);
@@ -1087,9 +1108,9 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
                 // inner
                 const int ra = innerPointDx + rowSize * innerPointDy;
                 // outer
-                const int rd = heightfieldsBottomDataReadOffset + outerPointY;
-                const int rc = heightfieldsBottomDataReadOffset + (outerPointY + 1);
-                const int rb = heightfieldsBottomDataReadOffset + (outerPointY + 2);
+                const int rd = heightfieldsBottomDataReadOffset + outerPointDy;
+                const int rc = heightfieldsBottomDataReadOffset + (outerPointDy + 1);
+                const int rb = heightfieldsBottomDataReadOffset + (outerPointDy + 2);
 
                 const int wa = innerPointX + chunkSize * innerPointY;
                 const int wd = heightfieldsBottomDataWriteOffset + outerPointY;
@@ -1139,7 +1160,8 @@ void generateHeightfieldSeamsMesh(
 ) {
     const int rowSize = chunkSize + 2;
     const int rowOffset = 1;
-    createPlaneSeamsGeometry<Heightfield, TerrainGeometry, WindingDirection::CCW>(lod, lodArray, chunkSize, rowSize, rowOffset, heightfields, geometry);
+    const int rowOffsetSeam = 1;
+    createPlaneSeamsGeometry<Heightfield, TerrainGeometry, WindingDirection::CCW>(lod, lodArray, chunkSize, rowSize, rowOffset, rowOffsetSeam, heightfields, geometry);
 }
 
 //
@@ -1166,7 +1188,8 @@ void generateWaterfieldSeamsMesh(
 ) {
     const int rowSize = chunkSize;
     const int rowOffset = 0;
-    createPlaneSeamsGeometry<Waterfield, WaterGeometry, WindingDirection::CCW>(lod, lodArray, chunkSize, rowSize, rowOffset, waterfields, geometry);
+    const int rowOffsetSeam = 0;
+    createPlaneSeamsGeometry<Waterfield, WaterGeometry, WindingDirection::CCW>(lod, lodArray, chunkSize, rowSize, rowOffset, rowOffsetSeam, waterfields, geometry);
 }
 
 //
@@ -1658,10 +1681,15 @@ ChunkResult *PGInstance::createChunkMesh(
     // biomes
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
+
     const int gridWidth = chunkSize * lod / bottomLod;
     const int gridWidthP1 = gridWidth + 1;
+    const int gridWidthP3 = gridWidth + 3;
+    
     const int gridHeight = chunkSize * lod / rightLod;
     const int gridHeightP1 = gridHeight + 1;
+    const int gridHeightP3 = gridHeight + 3;
+    
     const int chunkSizeP2 = chunkSize + 2;
 
     // terrain
@@ -1669,7 +1697,7 @@ ChunkResult *PGInstance::createChunkMesh(
         TerrainGeometry terrainGeometry;
         std::vector<Heightfield> heightfields(
             (chunkSizeP2 * chunkSizeP2) + // center
-            (gridWidthP1 + gridHeightP1) // seams
+            (gridWidthP3 + gridHeightP3) // seams
         );
         getHeightFieldCenter(worldPosition.x, worldPosition.y, lod, heightfields);
         getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, chunkSizeP2, heightfields);
@@ -2288,10 +2316,10 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
     const int &rightLod = lodArray[1];
 
     const int gridWidth = chunkSize * lod / bottomLod;
-    const int gridWidthP1 = gridWidth + 1;
+    const int gridWidthP3 = gridWidth + 3;
 
     const int gridHeight = chunkSize * lod / rightLod;
-    const int gridHeightP1 = gridHeight + 1;
+    const int gridHeightP3 = gridHeight + 3;
 
     const int heightfieldsCenterDataOffset = rowSize * rowSize;
 
@@ -2299,9 +2327,14 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
     int index = heightfieldsCenterDataOffset;
     {
         const int z = chunkSize;
-        for (int x = 0; x < gridWidthP1; x++) {
+        for (int dx = 0; dx < gridWidthP3; dx++) {
+            const int x = dx - 1;
+
             Heightfield &localHeightfieldSeam = heightfields.at(index);
-            localHeightfieldSeam = getHeightField(bx + x * bottomLod, bz + z * lod);
+            
+            const int ax = bx + x * bottomLod;
+            const int az = bz + z * lod;
+            localHeightfieldSeam = getHeightField(ax, az);
 
             index++;
         }
