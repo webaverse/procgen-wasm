@@ -25,6 +25,7 @@ public:
     float heightField;
     std::array<unsigned char, 4> biomesVectorField;
     std::array<unsigned char, 4> biomesWeightsVectorField;
+    float waterFactor;
 
     float getHeight() const {
       return heightField;
@@ -38,9 +39,9 @@ public:
     }
 };
 
-class Waterfield {
+class Waterfield : public Heightfield {
 public:
-    float waterFactor;
+    // float waterFactor;
 
     float getHeight() const {
       return WORLD_BASE_HEIGHT;
