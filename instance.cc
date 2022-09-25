@@ -1088,23 +1088,6 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
     }
 }
 
-/* template<typename T, typename TTop, typename TBottom, typename G>
-void createDualPlaneGeometry(int width, int height, int widthSegments, int heightSegments, const std::vector<T> &heightfields, G &geometry) {
-    const std::vector<TTop> &topHeightfields = *((const std::vector<TTop> *)&heightfields);
-    const std::vector<TBottom> &bottomHeightfields = *((const std::vector<TBottom> *)&heightfields);
-    
-    createPlaneGeometry<TTop, G, WindingDirection::CCW>(width, height, widthSegments, heightSegments, topHeightfields, geometry);
-    createPlaneGeometry<TBottom, G, WindingDirection::CW>(width, height, widthSegments, heightSegments, bottomHeightfields, geometry);
-}
-template<typename T, typename TTop, typename TBottom, typename G>
-void createDualPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int chunkSize, const std::vector<T> &heightfields, G &geometry) {
-    const std::vector<TTop> &topHeightfields = *((const std::vector<TTop> *)&heightfields);
-    const std::vector<TBottom> &bottomHeightfields = *((const std::vector<TBottom> *)&heightfields);
-
-    createPlaneSeamsGeometry<TTop, G, WindingDirection::CCW>(lod, lodArray, chunkSize, topHeightfields, geometry);
-    createPlaneSeamsGeometry<TBottom, G, WindingDirection::CW>(lod, lodArray, chunkSize, bottomHeightfields, geometry);
-} */
-
 //
 
 template<typename G>
