@@ -197,23 +197,6 @@ public:
             z - worldPositionXZ.y
         };
         location /= (float)lod;
-        
-        /* if (location.x < 0 && location.x >= -0.01) {
-            location.x = 0;
-        }
-        if (location.x > chunkSize && location.x <= chunkSize + 0.01) {
-            location.x = chunkSize;
-        }
-        if (location.y < 0 && location.y >= -0.01) {
-            location.y = 0;
-        }
-        if (location.y > chunkSize && location.y <= chunkSize + 0.01) {
-            location.y = chunkSize;
-        }
-        if (location.x < 0 || location.y < 0 || location.x > chunkSize || location.y > chunkSize) {
-            std::cout << "get overflow A " << location.x << " " << location.y << " " << chunkSize << std::endl;
-            abort();
-        } */
 
         float result = bilinear<HeightfieldSampler, float>(location, chunkSize, *this);
         return result;
