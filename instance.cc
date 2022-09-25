@@ -1456,14 +1456,6 @@ void generateGrassGeometry(
                         instance.instanceId = instanceId;
                     }
                     
-                    /* if (ax > baseMinX + lod * chunkSize + 0.01) {
-                        std::cout << "overflow X " << ax << " " << chunkOffsetX << " " << baseMinX << " " << lod << " " << chunkSize << std::endl;
-                        abort();
-                    }
-                    if (az > baseMinZ + lod * chunkSize + 0.01) {
-                        std::cout << "overflow Z " << az << " " << chunkOffsetZ << " " << baseMinZ << " " << lod << " " << chunkSize << std::endl;
-                        abort();
-                    } */
                     const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
 
                     instance.ps.push_back(ax);
