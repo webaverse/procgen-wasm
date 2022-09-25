@@ -2227,7 +2227,11 @@ void PGInstance::createChunkGrassAsync(uint32_t id, const vm::ivec2 &worldPositi
         lod,
         numInstances
     ]() -> void {
-        uint8_t *result = createChunkGrass(worldPosition, lod, numInstances);
+        std::array<int, 2> lodArray;
+        lodArray[0] = lod;
+        lodArray[1] = lod;
+        std::vector<Heightfield> heightfields = getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
+        uint8_t *result = createChunkGrass(worldPosition, lod, heightfields, numInstances);
         if (!promise->resolve(result)) {
           free(result);
         }
