@@ -1672,6 +1672,39 @@ OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int
 
     return octreeContext;
 }
+std::shared_ptr<std::vector<Heightfield>> PGInstance::getHeightfields(
+    int x,
+    int z,
+    int lod,
+    const std::array<int, 2> &lodArray
+) {
+    const int &bottomLod = lodArray[0];
+    const int &rightLod = lodArray[1];
+
+    const int gridWidth = chunkSize * lod / bottomLod;
+    const int gridWidthP1 = gridWidth + 1;
+    const int gridWidthP3 = gridWidth + 3;
+    const int gridWidthP3T3 = gridWidthP3 * 3;
+    
+    const int gridHeight = chunkSize * lod / rightLod;
+    const int gridHeightP1 = gridHeight + 1;
+    const int gridHeightP3 = gridHeight + 3;
+    const int gridHeightP3T3 = gridHeightP3 * 3;
+
+    const int chunkSizeP2 = chunkSize + 2;
+
+    std::shared_ptr<std::vector<Heightfield>> heightfieldsPtr =
+      std::make_shared<std::vector<Heightfield>>(
+        (chunkSizeP2 * chunkSizeP2) + // center
+        (gridWidthP3T3 + gridHeightP3T3) // seams
+      );
+    std::vector<Heightfield> &heightfields = *heightfieldsPtr;
+
+    getHeightFieldCenter(x, z, lod, heightfields);
+    getHeightFieldSeams(x, z, lod, lodArray, chunkSizeP2, heightfields);
+
+    return heightfieldsPtr;
+}
 enum GenerateFlags {
     GF_NONE = 0,
     GF_TERRAIN = 1 << 0,
@@ -1689,39 +1722,33 @@ ChunkResult *PGInstance::createChunkMesh(
     ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
 
     // biomes
-    const int &bottomLod = lodArray[0];
-    const int &rightLod = lodArray[1];
+    // const int &bottomLod = lodArray[0];
+    // const int &rightLod = lodArray[1];
 
-    const int gridWidth = chunkSize * lod / bottomLod;
-    const int gridWidthP1 = gridWidth + 1;
-    const int gridWidthP3 = gridWidth + 3;
-    const int gridWidthP3T3 = gridWidthP3 * 3;
+    // const int gridWidth = chunkSize * lod / bottomLod;
+    // const int gridWidthP1 = gridWidth + 1;
+    // const int gridWidthP3 = gridWidth + 3;
+    // const int gridWidthP3T3 = gridWidthP3 * 3;
     
-    const int gridHeight = chunkSize * lod / rightLod;
-    const int gridHeightP1 = gridHeight + 1;
-    const int gridHeightP3 = gridHeight + 3;
-    const int gridHeightP3T3 = gridHeightP3 * 3;
+    // const int gridHeight = chunkSize * lod / rightLod;
+    // const int gridHeightP1 = gridHeight + 1;
+    // const int gridHeightP3 = gridHeight + 3;
+    // const int gridHeightP3T3 = gridHeightP3 * 3;
     
-    const int chunkSizeP2 = chunkSize + 2;
-
     // heightfield
-    std::vector<Heightfield> heightfields;
+    std::shared_ptr<std::vector<Heightfield>> heightfieldsPtr;
     if (
         (generateFlags & GF_TERRAIN) |
         (generateFlags & GF_WATER)
     ) {
-        heightfields.resize(
-            (chunkSizeP2 * chunkSizeP2) + // center
-            (gridWidthP3T3 + gridHeightP3T3) // seams
-        );
-        getHeightFieldCenter(worldPosition.x, worldPosition.y, lod, heightfields);
-        getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, chunkSizeP2, heightfields);
+        heightfieldsPtr = getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
     }
 
     // terrain
     if (generateFlags & GF_TERRAIN) {
         TerrainGeometry terrainGeometry;
 
+        std::vector<Heightfield> &heightfields = *heightfieldsPtr;
         generateTerrainGeometry(
             worldPosition,
             lod,
@@ -1739,6 +1766,7 @@ ChunkResult *PGInstance::createChunkMesh(
     if (generateFlags & GF_WATER) {
         WaterGeometry waterGeometry;
 
+        std::vector<Heightfield> &heightfields = *heightfieldsPtr;
         const std::vector<Waterfield> &waterfields = *((std::vector<Waterfield> *)&heightfields);
 
         generateWaterGeometry(

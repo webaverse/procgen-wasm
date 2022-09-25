@@ -80,6 +80,13 @@ public:
 
     // 2d caches
 
+    std::shared_ptr<std::vector<Heightfield>> getHeightfields(
+        int x,
+        int z,
+        int lod,
+        const std::array<int, 2> &lodArray
+    );
+
     NoiseField getNoise(float bx, float by);
     uint8_t getBiome(float bx, float bz);
     // SeedNoise getSeedNoise(int bx, int bz);
