@@ -80,7 +80,7 @@ public:
 
     // 2d caches
 
-    std::shared_ptr<std::vector<Heightfield>> getHeightfields(
+    std::vector<Heightfield> getHeightfields(
         int x,
         int z,
         int lod,

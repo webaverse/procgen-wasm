@@ -1672,7 +1672,7 @@ OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int
 
     return octreeContext;
 }
-std::shared_ptr<std::vector<Heightfield>> PGInstance::getHeightfields(
+std::vector<Heightfield> PGInstance::getHeightfields(
     int x,
     int z,
     int lod,
@@ -1693,17 +1693,15 @@ std::shared_ptr<std::vector<Heightfield>> PGInstance::getHeightfields(
 
     const int chunkSizeP2 = chunkSize + 2;
 
-    std::shared_ptr<std::vector<Heightfield>> heightfieldsPtr =
-      std::make_shared<std::vector<Heightfield>>(
+    std::vector<Heightfield> heightfields(
         (chunkSizeP2 * chunkSizeP2) + // center
         (gridWidthP3T3 + gridHeightP3T3) // seams
-      );
-    std::vector<Heightfield> &heightfields = *heightfieldsPtr;
+    );
 
     getHeightFieldCenter(x, z, lod, heightfields);
     getHeightFieldSeams(x, z, lod, lodArray, chunkSizeP2, heightfields);
 
-    return heightfieldsPtr;
+    return heightfields;
 }
 enum GenerateFlags {
     GF_NONE = 0,
@@ -1722,19 +1720,18 @@ ChunkResult *PGInstance::createChunkMesh(
     ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
 
     // heightfield
-    std::shared_ptr<std::vector<Heightfield>> heightfieldsPtr;
+    std::vector<Heightfield> heightfields;
     if (
         (generateFlags & GF_TERRAIN) |
         (generateFlags & GF_WATER)
     ) {
-        heightfieldsPtr = getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
+        heightfields = getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
     }
 
     // terrain
     if (generateFlags & GF_TERRAIN) {
         TerrainGeometry terrainGeometry;
 
-        std::vector<Heightfield> &heightfields = *heightfieldsPtr;
         generateTerrainGeometry(
             worldPosition,
             lod,
@@ -1752,7 +1749,6 @@ ChunkResult *PGInstance::createChunkMesh(
     if (generateFlags & GF_WATER) {
         WaterGeometry waterGeometry;
 
-        std::vector<Heightfield> &heightfields = *heightfieldsPtr;
         const std::vector<Waterfield> &waterfields = *((std::vector<Waterfield> *)&heightfields);
 
         generateWaterGeometry(
