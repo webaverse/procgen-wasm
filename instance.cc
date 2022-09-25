@@ -1721,20 +1721,6 @@ ChunkResult *PGInstance::createChunkMesh(
 ) {
     ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
 
-    // biomes
-    // const int &bottomLod = lodArray[0];
-    // const int &rightLod = lodArray[1];
-
-    // const int gridWidth = chunkSize * lod / bottomLod;
-    // const int gridWidthP1 = gridWidth + 1;
-    // const int gridWidthP3 = gridWidth + 3;
-    // const int gridWidthP3T3 = gridWidthP3 * 3;
-    
-    // const int gridHeight = chunkSize * lod / rightLod;
-    // const int gridHeightP1 = gridHeight + 1;
-    // const int gridHeightP3 = gridHeight + 3;
-    // const int gridHeightP3T3 = gridHeightP3 * 3;
-    
     // heightfield
     std::shared_ptr<std::vector<Heightfield>> heightfieldsPtr;
     if (
