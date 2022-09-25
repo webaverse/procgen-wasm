@@ -2372,68 +2372,110 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
 Heightfield PGInstance::getHeightField(float bx, float bz) {
     Heightfield localHeightfield;
 
+    // height
     const float halfChunkSizeF = (float)chunkSize / 2.f;
     const float maxDistance = std::sqrt(halfChunkSizeF);
 
+    // water
+    constexpr int waterRange = 4;
+    const float maxWaterDistance = (float)std::sqrt((float)waterRange * (float)waterRange);
+    constexpr float baseWaterFactor = 0.25;
+
+    // acc height
     std::unordered_map<unsigned char, float> biomeCounts(numBiomes);
-    float totalSamples = 0;
-    for (float dz = -halfChunkSizeF; dz <= halfChunkSizeF; dz++)
-    {
-        for (float dx = -halfChunkSizeF; dx <= halfChunkSizeF; dx++)
-        {
+    float totalHeightFactors = 0;
+    // acc water
+    float sumWaterFactor = 0;
+    float totalWaterFactors = 0;
+    // loop
+    for (float dz = -halfChunkSizeF; dz <= halfChunkSizeF; dz++) {
+        for (float dx = -halfChunkSizeF; dx <= halfChunkSizeF; dx++) {
             float distance = std::sqrt(dx*dx + dz*dz);
-            float factor = std::max(1.f - (distance / maxDistance), 0.f);
 
-            if (factor > 0) {
-                float ax = bx + dx;
-                float az = bz + dz;
-                unsigned char b = getBiome(ax, az);
+            float ax = bx + dx;
+            float az = bz + dz;
+            unsigned char b = 0x0;
+            bool hasBiome = false;
 
-                biomeCounts[b] += factor;
-                totalSamples += factor;
+            if (distance < maxDistance) {
+                if (!hasBiome) {
+                    b = getBiome(ax, az);
+                    hasBiome = true;
+                }
+
+                float heightFactor = 1.f - (distance / maxDistance);
+
+                biomeCounts[b] += heightFactor;
+                totalHeightFactors += heightFactor;
+            }
+
+            if (distance < maxWaterDistance) {
+                if (!hasBiome) {
+                    b = getBiome(ax, az);
+                    hasBiome = true;
+                }
+
+                float waterFactor = 1.f - (distance / maxWaterDistance);
+                waterFactor =
+                    baseWaterFactor +
+                    (1.f - baseWaterFactor) * waterFactor;
+
+                if (isWaterBiome(b)) {
+                    sumWaterFactor += waterFactor;
+                }
+                totalWaterFactors += waterFactor;
             }
         }
     }
+    sumWaterFactor /= totalWaterFactors;
 
-    std::vector<unsigned char> seenBiomes;
-    for (auto kv : biomeCounts)
+    // postprocess height
     {
-        unsigned char b = kv.first;
-        seenBiomes.push_back(b);
-    }
-    
-    // sort by increasing occurence count of the biome
-    std::sort(
-        seenBiomes.begin(),
-        seenBiomes.end(),
-        [&](unsigned char b1, unsigned char b2) -> bool {
-            return biomeCounts[b1] > biomeCounts[b2];
-        }
-    );
-
-    for (size_t i = 0; i < 4; i++)
-    {
-        if (i < seenBiomes.size())
+        std::vector<unsigned char> seenBiomes;
+        for (auto kv : biomeCounts)
         {
-            localHeightfield.biomesVectorField[i] = seenBiomes[i];
-            localHeightfield.biomesWeightsVectorField[i] = biomeCounts[seenBiomes[i]] / totalSamples * 255.f;
+            unsigned char b = kv.first;
+            seenBiomes.push_back(b);
         }
-        else
+        
+        // sort by increasing occurence count of the biome
+        std::sort(
+            seenBiomes.begin(),
+            seenBiomes.end(),
+            [&](unsigned char b1, unsigned char b2) -> bool {
+                return biomeCounts[b1] > biomeCounts[b2];
+            }
+        );
+
+        for (size_t i = 0; i < 4; i++)
         {
-            localHeightfield.biomesVectorField[i] = 0;
-            localHeightfield.biomesWeightsVectorField[i] = 0;
+            if (i < seenBiomes.size())
+            {
+                localHeightfield.biomesVectorField[i] = seenBiomes[i];
+                localHeightfield.biomesWeightsVectorField[i] = biomeCounts[seenBiomes[i]] / totalHeightFactors * 255.f;
+            }
+            else
+            {
+                localHeightfield.biomesVectorField[i] = 0;
+                localHeightfield.biomesWeightsVectorField[i] = 0;
+            }
         }
+
+        float elevationSum = 0.f;
+        vm::vec2 fWorldPosition{bx, bz};
+        for (auto const &iter : biomeCounts)
+        {
+            elevationSum += iter.second * getComputedBiomeHeight(iter.first, fWorldPosition);
+        }
+
+        float elevation = elevationSum / totalHeightFactors;
+        localHeightfield.heightField = elevation;
     }
 
-    float elevationSum = 0.f;
-    vm::vec2 fWorldPosition{bx, bz};
-    for (auto const &iter : biomeCounts)
+    // postprocess water
     {
-        elevationSum += iter.second * getComputedBiomeHeight(iter.first, fWorldPosition);
+        localHeightfield.waterFactor = sumWaterFactor;
     }
-
-    float elevation = elevationSum / totalSamples;
-    localHeightfield.heightField = elevation;
 
     return localHeightfield;
 }
@@ -2442,7 +2484,7 @@ float PGInstance::getHeight(float bx, float bz) {
     const float maxDistance = std::sqrt(halfChunkSizeF + 1.f);
 
     std::unordered_map<unsigned char, float> biomeCounts(numBiomes);
-    float totalSamples = 0;
+    float totalHeightFactors = 0;
     for (float dz = -halfChunkSizeF; dz <= halfChunkSizeF; dz++)
     {
         for (float dx = -halfChunkSizeF; dx <= halfChunkSizeF; dx++)
@@ -2456,7 +2498,7 @@ float PGInstance::getHeight(float bx, float bz) {
                 unsigned char b = getBiome(ax, az);
 
                 biomeCounts[b] += factor;
-                totalSamples += factor;
+                totalHeightFactors += factor;
             }
         }
     }
@@ -2468,7 +2510,7 @@ float PGInstance::getHeight(float bx, float bz) {
         elevationSum += iter.second * getComputedBiomeHeight(iter.first, fWorldPosition);
     }
 
-    float elevation = elevationSum / totalSamples;
+    float elevation = elevationSum / totalHeightFactors;
     return elevation;
 }
 
