@@ -210,8 +210,12 @@ public:
         return height;
     }
 };
-uint8_t *PGInstance::createChunkGrass(const vm::ivec2 &worldPositionXZ, const int lod, const int numGrassInstances)
-{
+uint8_t *PGInstance::createChunkGrass(
+    const vm::ivec2 &worldPositionXZ,
+    const int lod,
+    const std::vector<Heightfield> &heightfields,
+    const int numGrassInstances
+) {
     std::map<int, SplatInstance> grassInstances;
 
     constexpr int maxNumGrassesPerChunk = 2048;
@@ -223,11 +227,6 @@ uint8_t *PGInstance::createChunkGrass(const vm::ivec2 &worldPositionXZ, const in
     int baseMinX = worldPositionXZ.x;
     int baseMinZ = worldPositionXZ.y;
 
-    const int chunkSizeP2 = chunkSize + 2;
-    std::vector<Heightfield> heightfields(
-        (chunkSizeP2 * chunkSizeP2)
-    );
-    getHeightFieldCenter(worldPositionXZ.x, worldPositionXZ.y, lod, heightfields);
     vm::vec2 worldPositionXZf{
         (float)worldPositionXZ.x,
         (float)worldPositionXZ.y

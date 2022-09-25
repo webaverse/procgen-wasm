@@ -145,7 +145,7 @@ public:
 
     //
 
-    uint8_t *createChunkGrass(const vm::ivec2 &worldPositionXZ, const int lod, const int numGrassInstances);
+    uint8_t *createChunkGrass(const vm::ivec2 &worldPositionXZ, const int lod, const std::vector<Heightfield> &heightfields, const int numGrassInstances);
     uint8_t *createChunkVegetation(const vm::ivec2 &worldPositionXZ, const int lod, const int numVegetationInstances);
     uint8_t *createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod);
     
