@@ -205,7 +205,7 @@ public:
         const int dx = x + 1;
         const int dz = z + 1;
         const int index = dx + dz * chunkSizeP2;
-        const Heightfield &heightfield = heightfields.at(index);
+        const Heightfield &heightfield = heightfields[index];
         const float &height = heightfield.heightField;
         return height;
     }
@@ -702,7 +702,7 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
             const int dx = x + rowOffset;
             const int dy = y + rowOffset;
             const int index = dx + dy * rowSize;
-            const T &fieldValue = heightfields.at(index);
+            const T &fieldValue = heightfields[index];
 
             const int ax = x * segment_width;
             const int ay = y * segment_height;
@@ -711,9 +711,9 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
     }
 
     auto pushTriangle = [&](int ra, int rb, int rc, int wa, int wb, int wc) -> void {
-        const T &hfA = heightfields.at(ra);
-        const T &hfB = heightfields.at(rb);
-        const T &hfC = heightfields.at(rc);
+        const T &hfA = heightfields[ra];
+        const T &hfB = heightfields[rb];
+        const T &hfC = heightfields[rc];
         if (T::acceptIndices(hfA, hfB, hfC)) {
             if (windingDirection == WindingDirection::CCW) {
                 geometry.indices.push_back(wa);
@@ -796,7 +796,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         {
             const int y = chunkSize;
             for (int x = 0; x < gridWidthP1; x++) {
-                const T &fieldValue = heightfields.at(readIndex);
+                const T &fieldValue = heightfields[readIndex];
 
                 const int ax = x * bottomLod;
                 const int ay = y * lod;
@@ -818,7 +818,7 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         {
             const int x = chunkSize;
             for (int y = 0; y < gridHeightP1; y++) {
-                const T &fieldValue = heightfields.at(readIndex);
+                const T &fieldValue = heightfields[readIndex];
 
                 const int ax = x * lod;
                 const int ay = y * rightLod;
@@ -842,9 +842,9 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
     const int gridY1 = gridY + 1; // equals chunkSize
 
     auto pushTriangle = [&](int ra, int rb, int rc, int wa, int wb, int wc) {
-        const T &hfA = heightfields.at(ra);
-        const T &hfB = heightfields.at(rb);
-        const T &hfC = heightfields.at(rc);
+        const T &hfA = heightfields[ra];
+        const T &hfB = heightfields[rb];
+        const T &hfC = heightfields[rc];
         if (T::acceptIndices(hfA, hfB, hfC)) {
             if (windingDirection == WindingDirection::CCW) {
                 geometry.indices.push_back(wa);
@@ -2308,8 +2308,8 @@ void PGInstance::getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heigh
     const int chunkSizeP2 = chunkSize + 2;
     for (int dz = 0; dz < chunkSizeP2; dz++) {
         for (int dx = 0; dx < chunkSizeP2; dx++) {
-            int index2D = dx + dz * chunkSizeP2;
-            Heightfield &localHeightfield = heightfields.at(index2D);
+            const int index = dx + dz * chunkSizeP2;
+            Heightfield &localHeightfield = heightfields[index];
             
             const int x = dx - 1;
             const int z = dz - 1;
@@ -2339,7 +2339,7 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
                 const int x = dx - 1;
                 const int z = dz - 1;
 
-                Heightfield &localHeightfieldSeam = heightfields.at(index);
+                Heightfield &localHeightfieldSeam = heightfields[index];
                 
                 const int ax = bx + x * bottomLod;
                 const int az = bz + chunkSize * lod + z * bottomLod;
@@ -2356,7 +2356,7 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
                 const int x = dx - 1;
                 const int z = dz - 1;
                 
-                Heightfield &localHeightfieldSeam = heightfields.at(index);
+                Heightfield &localHeightfieldSeam = heightfields[index];
 
                 const int ax = bx + chunkSize * lod + x * rightLod;
                 const int az = bz + z * rightLod;
@@ -2477,8 +2477,8 @@ void PGInstance::getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterf
     {
         for (int x = 0; x < chunkSize; x++)
         {
-            int index2D = x + z * chunkSize;
-            Waterfield &localWaterfield = waterfields.at(index2D);
+            const int index = x + z * chunkSize;
+            Waterfield &localWaterfield = waterfields[index];
             localWaterfield = getWaterField(bx + x * lod, bz + z * lod, lod);
         }
     }
@@ -2503,7 +2503,7 @@ void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<in
                 const int z = dz;
                 const int x = dx;
 
-                Waterfield &localWaterfieldSeam = waterfields.at(index);
+                Waterfield &localWaterfieldSeam = waterfields[index];
                 
                 const int ax = bx + x * bottomLod;
                 const int az = bz + chunkSize * lod + z * bottomLod;
@@ -2520,7 +2520,7 @@ void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<in
                 const int z = dz;
                 const int x = dx;
                 
-                Waterfield &localWaterfieldSeam = waterfields.at(index);
+                Waterfield &localWaterfieldSeam = waterfields[index];
 
                 const int ax = bx + chunkSize * lod + x * rightLod;
                 const int az = bz + z * rightLod;
