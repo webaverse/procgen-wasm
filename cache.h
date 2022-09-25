@@ -41,8 +41,6 @@ public:
 
 class Waterfield : public Heightfield {
 public:
-    // float waterFactor;
-
     float getHeight() const {
       return WORLD_BASE_HEIGHT;
     }
