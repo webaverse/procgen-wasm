@@ -164,132 +164,6 @@ unsigned char *PGInstance::getChunkAo(const vm::ivec3 &worldPosition, int lod) {
     return aos;
 } */
 
-class HeightfieldSampler {
-public:
-    const vm::vec2 &worldPositionXZ;
-    const int &lod;
-    const int chunkSize;
-    const int chunkSizeP2;
-    const std::vector<Heightfield> &heightfields;
-    
-    HeightfieldSampler(
-        const vm::vec2 &worldPositionXZ,
-        const int &lod,
-        const int chunkSize,
-        const std::vector<Heightfield> &heightfields
-    ) :
-        worldPositionXZ(worldPositionXZ),
-        lod(lod),
-        chunkSize(chunkSize),
-        chunkSizeP2(chunkSize + 2),
-        heightfields(heightfields)
-        {}
-    float getHeight(float x, float z) {
-        vm::vec2 location{
-            x - worldPositionXZ.x,
-            z - worldPositionXZ.y
-        };
-        location /= (float)lod;
-
-        float result = bilinear<HeightfieldSampler, float>(location, chunkSize, *this);
-        return result;
-    }
-    float get(int x, int z) {
-        const int dx = x + 1;
-        const int dz = z + 1;
-        const int index = dx + dz * chunkSizeP2;
-        const Heightfield &heightfield = heightfields[index];
-        const float &height = heightfield.heightField;
-        return height;
-    }
-};
-uint8_t *PGInstance::createChunkGrass(
-    const vm::ivec2 &worldPositionXZ,
-    const int lod,
-    const std::vector<Heightfield> &heightfields,
-    const int numGrassInstances
-) {
-    GrassGeometry grassGeometry;
-
-    constexpr int maxNumGrassesPerChunk = 2048;
-    constexpr float grassRate = 0.5;
-    // const float grassRate = maxGrassRate / (float)(lod * lod);
-    const float grassThrowRate = 1.f / (float)lod;
-    // const float grassRate = maxGrassRate;
-
-    int baseMinX = worldPositionXZ.x;
-    int baseMinZ = worldPositionXZ.y;
-
-    vm::vec2 worldPositionXZf{
-        (float)worldPositionXZ.x,
-        (float)worldPositionXZ.y
-    };
-    HeightfieldSampler heightfieldSampler(
-        worldPositionXZf,
-        lod,
-        chunkSize,
-        heightfields
-    );
-    
-    for (int dz = 0; dz < lod; dz++) {
-        for (int dx = 0; dx < lod; dx++) {
-            int chunkMinX = baseMinX + dx * chunkSize;
-            int chunkMinZ = baseMinZ + dz * chunkSize;
-
-            float chunkSeed = noises.grassSeedNoise.in2D(chunkMinX, chunkMinZ);
-            unsigned int seedInt = *(unsigned int *)&chunkSeed;
-            std::mt19937 rng(seedInt);
-            std::uniform_real_distribution<float> dis(0.f, 1.f);
-
-            for (int i = 0; i < maxNumGrassesPerChunk; i++) {
-                float chunkOffsetX = dis(rng) * (float)chunkSize;
-                float chunkOffsetZ = dis(rng) * (float)chunkSize;
-                float rot = dis(rng) * 2.0f * M_PI;
-                int instanceId = (int)std::round(dis(rng) * (float)(numGrassInstances - 1));
-                float throwNoise = dis(rng);
-                
-                float ax = (float)chunkMinX + chunkOffsetX;
-                float az = (float)chunkMinZ + chunkOffsetZ;
-                float noiseValue = noises.grassNoise.in2D(ax, az);
-
-                if (noiseValue < grassRate && throwNoise <= grassThrowRate) {
-                    auto iterPair = grassGeometry.instances.emplace(
-                        std::make_pair(instanceId, SplatInstance{})
-                    );
-                    auto iter = iterPair.first;
-                    const bool &inserted = iterPair.second;
-                    SplatInstance &instance = iter->second;
-                    if (inserted) {
-                        instance.instanceId = instanceId;
-                    }
-                    
-                    /* if (ax > baseMinX + lod * chunkSize + 0.01) {
-                        std::cout << "overflow X " << ax << " " << chunkOffsetX << " " << baseMinX << " " << lod << " " << chunkSize << std::endl;
-                        abort();
-                    }
-                    if (az > baseMinZ + lod * chunkSize + 0.01) {
-                        std::cout << "overflow Z " << az << " " << chunkOffsetZ << " " << baseMinZ << " " << lod << " " << chunkSize << std::endl;
-                        abort();
-                    } */
-                    const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
-
-                    instance.ps.push_back(ax);
-                    instance.ps.push_back(height);
-                    instance.ps.push_back(az);
-
-                    Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
-                    instance.qs.push_back(q.x);
-                    instance.qs.push_back(q.y);
-                    instance.qs.push_back(q.z);
-                    instance.qs.push_back(q.w);
-                }
-            }
-        }
-    }
-
-    uint8_t *buffer = grassGeometry.getBuffer();
-    return buffer;
-}
 uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, const int lod, const int numVegetationInstances)
 {
     std::map<int, SplatInstance> vegetationInstances;
@@ -1482,6 +1356,133 @@ void generateWaterGeometry(
 
 //
 
+class HeightfieldSampler {
+public:
+    const vm::vec2 &worldPositionXZ;
+    const int &lod;
+    const int chunkSize;
+    const int chunkSizeP2;
+    const std::vector<Heightfield> &heightfields;
+    
+    HeightfieldSampler(
+        const vm::vec2 &worldPositionXZ,
+        const int &lod,
+        const int chunkSize,
+        const std::vector<Heightfield> &heightfields
+    ) :
+        worldPositionXZ(worldPositionXZ),
+        lod(lod),
+        chunkSize(chunkSize),
+        chunkSizeP2(chunkSize + 2),
+        heightfields(heightfields)
+        {}
+    float getHeight(float x, float z) {
+        vm::vec2 location{
+            x - worldPositionXZ.x,
+            z - worldPositionXZ.y
+        };
+        location /= (float)lod;
+
+        float result = bilinear<HeightfieldSampler, float>(location, chunkSize, *this);
+        return result;
+    }
+    float get(int x, int z) {
+        const int dx = x + 1;
+        const int dz = z + 1;
+        const int index = dx + dz * chunkSizeP2;
+        const Heightfield &heightfield = heightfields[index];
+        const float &height = heightfield.heightField;
+        return height;
+    }
+};
+void generateGrassGeometry(
+    const vm::ivec2 &worldPositionXZ,
+    const int lod,
+    const int chunkSize,
+    const int numGrassInstances,
+    const std::vector<Heightfield> &heightfields,
+    Noises &noises,
+    GrassGeometry &grassGeometry
+) {
+    constexpr int maxNumGrassesPerChunk = 2048;
+    constexpr float grassRate = 0.5;
+    // const float grassRate = maxGrassRate / (float)(lod * lod);
+    const float grassThrowRate = 1.f / (float)lod;
+    // const float grassRate = maxGrassRate;
+
+    int baseMinX = worldPositionXZ.x;
+    int baseMinZ = worldPositionXZ.y;
+
+    vm::vec2 worldPositionXZf{
+        (float)worldPositionXZ.x,
+        (float)worldPositionXZ.y
+    };
+    HeightfieldSampler heightfieldSampler(
+        worldPositionXZf,
+        lod,
+        chunkSize,
+        heightfields
+    );
+    
+    for (int dz = 0; dz < lod; dz++) {
+        for (int dx = 0; dx < lod; dx++) {
+            int chunkMinX = baseMinX + dx * chunkSize;
+            int chunkMinZ = baseMinZ + dz * chunkSize;
+
+            float chunkSeed = noises.grassSeedNoise.in2D(chunkMinX, chunkMinZ);
+            unsigned int seedInt = *(unsigned int *)&chunkSeed;
+            std::mt19937 rng(seedInt);
+            std::uniform_real_distribution<float> dis(0.f, 1.f);
+
+            for (int i = 0; i < maxNumGrassesPerChunk; i++) {
+                float chunkOffsetX = dis(rng) * (float)chunkSize;
+                float chunkOffsetZ = dis(rng) * (float)chunkSize;
+                float rot = dis(rng) * 2.0f * M_PI;
+                int instanceId = (int)std::round(dis(rng) * (float)(numGrassInstances - 1));
+                float throwNoise = dis(rng);
+                
+                float ax = (float)chunkMinX + chunkOffsetX;
+                float az = (float)chunkMinZ + chunkOffsetZ;
+                float noiseValue = noises.grassNoise.in2D(ax, az);
+
+                if (noiseValue < grassRate && throwNoise <= grassThrowRate) {
+                    auto iterPair = grassGeometry.instances.emplace(
+                        std::make_pair(instanceId, SplatInstance{})
+                    );
+                    auto iter = iterPair.first;
+                    const bool &inserted = iterPair.second;
+                    SplatInstance &instance = iter->second;
+                    if (inserted) {
+                        instance.instanceId = instanceId;
+                    }
+                    
+                    /* if (ax > baseMinX + lod * chunkSize + 0.01) {
+                        std::cout << "overflow X " << ax << " " << chunkOffsetX << " " << baseMinX << " " << lod << " " << chunkSize << std::endl;
+                        abort();
+                    }
+                    if (az > baseMinZ + lod * chunkSize + 0.01) {
+                        std::cout << "overflow Z " << az << " " << chunkOffsetZ << " " << baseMinZ << " " << lod << " " << chunkSize << std::endl;
+                        abort();
+                    } */
+                    const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
+
+                    instance.ps.push_back(ax);
+                    instance.ps.push_back(height);
+                    instance.ps.push_back(az);
+
+                    Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
+                    instance.qs.push_back(q.x);
+                    instance.qs.push_back(q.y);
+                    instance.qs.push_back(q.z);
+                    instance.qs.push_back(q.w);
+                }
+            }
+        }
+    }
+}
+
+//
+
 template<typename G>
 G &mergeGeometry(G &dst, G &a, G &b) {
     dst.positions.reserve(a.positions.size() + b.positions.size());
@@ -1673,7 +1674,8 @@ ChunkResult *PGInstance::createChunkMesh(
     const vm::ivec2 &worldPosition,
     int lod,
     const std::array<int, 2> &lodArray,
-    int generateFlags
+    int generateFlags,
+    int numGrassInstances
 ) {
     ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
 
@@ -1681,7 +1683,9 @@ ChunkResult *PGInstance::createChunkMesh(
     std::vector<Heightfield> heightfields;
     if (
         (generateFlags & GF_TERRAIN) |
-        (generateFlags & GF_WATER)
+        (generateFlags & GF_WATER) |
+        (generateFlags & GF_VEGETATION) |
+        (generateFlags & GF_GRASS)
     ) {
         heightfields = getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
     }
@@ -1736,6 +1740,24 @@ ChunkResult *PGInstance::createChunkMesh(
         result->barrierMeshBuffer = barrierGeometry.getBuffer();
     } else {
         result->barrierMeshBuffer = nullptr;
+    }
+
+    // grass
+    if (generateFlags & GF_GRASS) {
+        GrassGeometry grassGeometry;
+
+        generateGrassGeometry(
+            worldPosition,
+            lod,
+            chunkSize,
+            numGrassInstances,
+            heightfields,
+            noises,
+            grassGeometry
+        );
+        result->grassInstancesBuffer = grassGeometry.getBuffer();
+    } else {
+        result->grassInstancesBuffer = nullptr;
     }
 
     return result;
@@ -1978,7 +2000,8 @@ void PGInstance::createChunkMeshAsync(
     const vm::ivec2 &worldPosition,
     int lod,
     const std::array<int, 2> &lodArray,
-    int generateFlags
+    int generateFlags,
+    int numGrassInstances
 ) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
@@ -1997,9 +2020,16 @@ void PGInstance::createChunkMeshAsync(
         worldPosition,
         lod,
         lodArray2,
-        generateFlags
+        generateFlags,
+        numGrassInstances
     ]() -> void {
-        ChunkResult *result = createChunkMesh(worldPosition, lod, lodArray2, generateFlags);
+        ChunkResult *result = createChunkMesh(
+            worldPosition,
+            lod,
+            lodArray2,
+            generateFlags,
+            numGrassInstances
+        );
         if (!promise->resolve(result)) {
             result->free();
         }
@@ -2171,7 +2201,7 @@ void PGInstance::getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, in
     ProcGen::taskQueue.pushTask(aoTask);
 } */
 
-void PGInstance::createChunkGrassAsync(uint32_t id, const vm::ivec2 &worldPosition, const int lod, const int numInstances) {
+/* void PGInstance::createChunkGrassAsync(uint32_t id, const vm::ivec2 &worldPosition, const int lod, const int numInstances) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
     vm::vec3 worldPositionF{
@@ -2196,7 +2226,7 @@ void PGInstance::createChunkGrassAsync(uint32_t id, const vm::ivec2 &worldPositi
         }
     });
     ProcGen::taskQueue.pushTask(grassSplatTask);
-}
+} */
 void PGInstance::createMobSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 

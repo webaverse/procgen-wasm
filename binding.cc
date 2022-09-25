@@ -52,7 +52,8 @@ EMSCRIPTEN_KEEPALIVE void createChunkMeshAsync(
     int x, int z,
     int lod,
     int *lodArray,
-    int generateFlags
+    int generateFlags,
+    int numGrassInstances
 ) {
     std::array<int, 2> lodArray2{
         lodArray[0],
@@ -63,12 +64,13 @@ EMSCRIPTEN_KEEPALIVE void createChunkMeshAsync(
         vm::ivec2{x, z},
         lod,
         lodArray2,
-        generateFlags
+        generateFlags,
+        numGrassInstances
     );
 }
-EMSCRIPTEN_KEEPALIVE void createChunkGrassAsync(PGInstance *inst, uint32_t taskId, int x, int z, int lod, int numGrassInstances) {
+/* EMSCRIPTEN_KEEPALIVE void createChunkGrassAsync(PGInstance *inst, uint32_t taskId, int x, int z, int lod, int numGrassInstances) {
     inst->createChunkGrassAsync(taskId, vm::ivec2{x, z}, lod, numGrassInstances);
-}
+} */
 EMSCRIPTEN_KEEPALIVE void createChunkVegetationAsync(PGInstance *inst, uint32_t taskId, int x, int z, int lod, int numVegetationInstances) {
     inst->createChunkVegetationAsync(taskId, vm::ivec2{x, z}, lod, numVegetationInstances);
 }
