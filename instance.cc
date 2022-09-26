@@ -601,10 +601,6 @@ void createPlaneSeamsGeometry(
             heightfieldsCenterDataReadOffset +
             (dy * gridWidthPOffset) +
             dx;
-        if (index < 0 || index >= heightfields.size()) {
-            std::cout << "index outrange center A " << index << " " << dx << " " << dy << std::endl;
-            abort();
-        }
         const T &v0 = heightfields.at(index);
 
         // position
@@ -624,10 +620,6 @@ void createPlaneSeamsGeometry(
                 heightfieldsCenterDataReadOffset +
                 (Ly * gridWidthPOffset) +
                 Lx;
-            if (Lindex < 0 || Lindex >= heightfields.size()) {
-                std::cout << "index outrange center B " << Lindex << " " << Lx << " " << Ly << std::endl;
-                abort();
-            }
             const float Lheight = heightfields.at(Lindex).getHeight();
 
             const int Rx = dx + 1;
@@ -636,10 +628,6 @@ void createPlaneSeamsGeometry(
                 heightfieldsCenterDataReadOffset +
                 (Ry * gridWidthPOffset) +
                 Rx;
-            if (Rindex < 0 || Rindex >= heightfields.size()) {
-                std::cout << "index outrange center C " << Rindex << " " << Rx << " " << Ry << std::endl;
-                abort();
-            }
             const float Rheight = heightfields.at(Rindex).getHeight();
 
             const int Ux = dx;
@@ -648,10 +636,6 @@ void createPlaneSeamsGeometry(
                 heightfieldsCenterDataReadOffset +
                 (Uy * gridWidthPOffset) +
                 Ux;
-            if (Uindex < 0 || Uindex >= heightfields.size()) {
-                std::cout << "index outrange center D " << Uindex << " " << Ux << " " << Uy << std::endl;
-                abort();
-            }
             const float Uheight = heightfields.at(Uindex).getHeight();
 
             const int Dx = dx;
@@ -660,10 +644,6 @@ void createPlaneSeamsGeometry(
                 heightfieldsCenterDataReadOffset +
                 (Dy * gridWidthPOffset) +
                 Dx;
-            if (Dindex < 0 || Dindex >= heightfields.size()) {
-                std::cout << "index outrange center E " << Dindex << " " << Dx << " " << Dy << std::endl;
-                abort();
-            }
             const float Dheight = heightfields.at(Dindex).getHeight();
 
             normal = vm::normalize(
@@ -696,10 +676,6 @@ void createPlaneSeamsGeometry(
             (3 * gridWidthPOffset) +
             (dx * gridHeightPOffset) +
             dy;
-        if (index < 0 || index >= heightfields.size()) {
-            std::cout << "index outrange seams A " << index << " " << x << " " << y << std::endl;
-            abort();
-        }
         const T &v0 = heightfields.at(index);
 
         // position
@@ -720,10 +696,6 @@ void createPlaneSeamsGeometry(
                 (3 * gridWidthPOffset) +
                 (Lx * gridHeightPOffset) +
                 Ly;
-            if (Lindex < 0 || Lindex >= heightfields.size()) {
-                std::cout << "index outrange seams B " << Lindex << " " << Lx << " " << Ly << std::endl;
-                abort();
-            }
             const float Lheight = heightfields.at(Lindex).getHeight();
 
             const int Rx = dx + 1;
@@ -733,10 +705,6 @@ void createPlaneSeamsGeometry(
                 (3 * gridWidthPOffset) +
                 (Rx * gridHeightPOffset) +
                 Ry;
-            if (Rindex < 0 || Rindex >= heightfields.size()) {
-                std::cout << "index outrange seams C " << Rindex << " " << Rx << " " << Ry << std::endl;
-                abort();
-            }
             const float Rheight = heightfields.at(Rindex).getHeight();
 
             const int Ux = dx;
@@ -746,10 +714,6 @@ void createPlaneSeamsGeometry(
                 (3 * gridWidthPOffset) +
                 (Ux * gridHeightPOffset) +
                 Uy;
-            if (Uindex < 0 || Uindex >= heightfields.size()) {
-                std::cout << "index outrange seams D " << Rindex << " " << Ux << " " << Uy << std::endl;
-                abort();
-            }
             const float Uheight = heightfields.at(Uindex).getHeight();
 
             const int Dx = dx;
@@ -759,19 +723,6 @@ void createPlaneSeamsGeometry(
                 (3 * gridWidthPOffset) +
                 (Dx * gridHeightPOffset) +
                 Dy;
-            if (Dindex < 0 || Dindex >= heightfields.size()) {
-                std::cout << "index outrange seams E " <<
-                    "Dindex: " << Dindex << " " <<
-                    "Dx: " << Dx << " " <<
-                    "Dy: " << Dy << " " <<
-                    "rowSize: " << rowSize << " " <<
-                    "heightfieldsCenterDataReadOffset: " << heightfieldsCenterDataReadOffset << " " <<
-                    "gridWidthPOffset: " << gridWidthPOffset << " " <<
-                    "gridHeightPOffset: " << gridHeightPOffset << " " <<
-                    "heightfields.size(): " << heightfields.size() << " " <<
-                    std::endl;
-                abort();
-            }
             const float Dheight = heightfields.at(Dindex).getHeight();
 
             normal = vm::normalize(
