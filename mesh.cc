@@ -205,3 +205,46 @@ uint8_t *BarrierGeometry::getBuffer() const {
 
   return buffer;
 }
+
+//
+
+uint8_t *SplatInstanceGeometry::getBuffer() const {
+  // serialize
+  size_t size = sizeof(uint32_t); // numInstances
+  for (auto &iter : instances) {
+      const SplatInstance &instance = iter.second;
+
+      size += sizeof(int); // instanceId
+      
+      size += sizeof(uint32_t); // numPs
+      size += sizeof(float) * instance.ps.size(); // ps
+      
+      size += sizeof(uint32_t); // numQs
+      size += sizeof(float) * instance.qs.size(); // qs
+  }
+
+  uint8_t *buffer = (uint8_t *)malloc(size);
+  int index = 0;
+
+  *((uint32_t *)(buffer + index)) = instances.size();
+  index += sizeof(uint32_t);
+  
+  for (auto &iter : instances) {
+      const SplatInstance &instance = iter.second;
+
+      *((int *)(buffer + index)) = instance.instanceId;
+      index += sizeof(int);
+
+      *((uint32_t *)(buffer + index)) = instance.ps.size();
+      index += sizeof(uint32_t);
+      memcpy(buffer + index, instance.ps.data(), sizeof(float) * instance.ps.size());
+      index += sizeof(float) * instance.ps.size();
+
+      *((uint32_t *)(buffer + index)) = instance.qs.size();
+      index += sizeof(uint32_t);
+      memcpy(buffer + index, instance.qs.data(), sizeof(float) * instance.qs.size());
+      index += sizeof(float) * instance.qs.size();
+  }
+
+  return buffer;
+}

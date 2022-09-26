@@ -23,7 +23,7 @@
 constexpr float MAX_HEIGHT = 20.f;
 constexpr int numBiomes = (int)BIOME::NUM_BIOMES;
 
-enum GenerateFlags : int {
+/* enum GenerateFlags : int {
     GF_NONE = 0,
     GF_NOISE = 1 << 0,
     GF_BIOMES = 1 << 1,
@@ -32,7 +32,7 @@ enum GenerateFlags : int {
     GF_AOFIELD = 1 << 4,
     GF_SDF = 1 << 5,
     GF_LIQUIDS = 1 << 6,
-};
+}; */
 
 //
 

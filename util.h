@@ -95,4 +95,39 @@ R bilinearMap(
   return bilinear<R>(tx, ty, v00m, v10m, v01m, v11m);
 }
 
+template <typename T, typename R>
+R bilinear(
+  const vm::vec2 &location,
+  int chunkSize,
+  T &data
+) {
+  float rx = std::floor(location.x);
+  float ry = std::floor(location.y);
+
+  int ix = (int)rx;
+  int iy = (int)ry;
+
+  R v00 = data.get(ix, iy);
+  R v10 = (ix < chunkSize) ? data.get(ix + 1, iy) : v00;
+  R v01 = (iy < chunkSize) ? data.get(ix, iy + 1) : v00;
+  R v11;
+  if (ix < chunkSize) {
+    if (iy < chunkSize) {
+      v11 = data.get(ix + 1, iy + 1);
+    } else {
+      v11 = v01;
+    }
+  } else {
+    if (ix < chunkSize) {
+      v11 = v10;
+    } else {
+      v11 = v00;
+    }
+  }
+
+  float tx = location.x - rx;
+  float ty = location.y - ry;
+  return bilinear<R>(tx, ty, v00, v10, v01, v11);
+}
+
 #endif // _UTIL_H_

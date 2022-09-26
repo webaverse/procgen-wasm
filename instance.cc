@@ -164,207 +164,6 @@ unsigned char *PGInstance::getChunkAo(const vm::ivec3 &worldPosition, int lod) {
     return aos;
 } */
 
-// splats
-class SplatInstance {
-public:
-    int instanceId;
-    std::vector<float> ps;
-    std::vector<float> qs;
-};
-uint8_t *PGInstance::createChunkGrass(const vm::ivec2 &worldPositionXZ, const int lod, const int numInstances)
-{
-    std::map<int, SplatInstance> grassInstances;
-
-    constexpr int maxNumGrassesPerChunk = 2048;
-    constexpr float grassRate = 0.5;
-    // const float grassRate = maxGrassRate / (float)(lod * lod);
-    const float grassThrowRate = 1.f / (float)lod;
-    // const float grassRate = maxGrassRate;
-
-    int baseMinX = worldPositionXZ.x;
-    int baseMinZ = worldPositionXZ.y;
-    
-    for (int dz = 0; dz < lod; dz++) {
-        for (int dx = 0; dx < lod; dx++) {
-            int chunkMinX = baseMinX + dx * chunkSize;
-            int chunkMinZ = baseMinZ + dz * chunkSize;
-
-            float chunkSeed = noises.grassSeedNoise.in2D(chunkMinX, chunkMinZ);
-            unsigned int seedInt = *(unsigned int *)&chunkSeed;
-            std::mt19937 rng(seedInt);
-            std::uniform_real_distribution<float> dis(0.f, 1.f);
-
-            for (int i = 0; i < maxNumGrassesPerChunk; i++) {
-                float chunkOffsetX = dis(rng) * (float)chunkSize;
-                float chunkOffsetZ = dis(rng) * (float)chunkSize;
-                float rot = dis(rng) * 2.0f * M_PI;
-                int instanceId = (int)std::round(dis(rng) * (float)(numInstances - 1));
-                float throwNoise = dis(rng);
-                
-                float ax = (float)chunkMinX + chunkOffsetX;
-                float az = (float)chunkMinZ + chunkOffsetZ;
-                float noiseValue = noises.grassNoise.in2D(ax, az);
-
-                if (noiseValue < grassRate && throwNoise <= grassThrowRate) {
-                    auto iterPair = grassInstances.emplace(std::make_pair(instanceId, SplatInstance{}));
-                    auto iter = iterPair.first;
-                    const bool &inserted = iterPair.second;
-                    SplatInstance &instance = iter->second;
-                    if (inserted) {
-                        instance.instanceId = instanceId;
-                    }
-                    
-                    const float height = getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
-
-                    instance.ps.push_back(ax);
-                    instance.ps.push_back(height);
-                    instance.ps.push_back(az);
-
-                    Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
-                    instance.qs.push_back(q.x);
-                    instance.qs.push_back(q.y);
-                    instance.qs.push_back(q.z);
-                    instance.qs.push_back(q.w);
-                }
-            }
-        }
-    }
-
-    // serialize
-    size_t size = sizeof(uint32_t); // numInstances
-    for (auto &iter : grassInstances) {
-        SplatInstance &instance = iter.second;
-
-        size += sizeof(int); // instanceId
-        
-        size += sizeof(uint32_t); // numPs
-        size += sizeof(float) * instance.ps.size(); // ps
-        
-        size += sizeof(uint32_t); // numQs
-        size += sizeof(float) * instance.qs.size(); // qs
-    }
-
-    uint8_t *buffer = (uint8_t *)malloc(size);
-    int index = 0;
-
-    ((uint32_t *)(buffer + index))[0] = grassInstances.size();
-    index += sizeof(uint32_t);
-    
-    for (auto &iter : grassInstances) {
-        SplatInstance &instance = iter.second;
-
-        ((int *)(buffer + index))[0] = instance.instanceId;
-        index += sizeof(int);
-
-        ((uint32_t *)(buffer + index))[0] = instance.ps.size();
-        index += sizeof(uint32_t);
-        memcpy(buffer + index, instance.ps.data(), sizeof(float) * instance.ps.size());
-        index += sizeof(float) * instance.ps.size();
-
-        ((uint32_t *)(buffer + index))[0] = instance.qs.size();
-        index += sizeof(uint32_t);
-        memcpy(buffer + index, instance.qs.data(), sizeof(float) * instance.qs.size());
-        index += sizeof(float) * instance.qs.size();
-    }
-    
-    return buffer;
-}
-uint8_t *PGInstance::createChunkVegetation(const vm::ivec2 &worldPositionXZ, const int lod, const int numInstances)
-{
-    std::map<int, SplatInstance> vegetationInstances;
-
-    constexpr int maxNumVeggiesPerChunk = 8;
-    constexpr float maxVeggieRate = 0.35;
-    // const float veggieRate = maxVeggieRate / (float)(lod * lod);
-    const float veggieRate = maxVeggieRate / (float)lod;
-    // const float veggieRate = maxVeggieRate;
-
-    int baseMinX = worldPositionXZ.x;
-    int baseMinZ = worldPositionXZ.y;
-    
-    for (int dz = 0; dz < lod; dz++) {
-        for (int dx = 0; dx < lod; dx++) {
-            int chunkMinX = baseMinX + dx * chunkSize;
-            int chunkMinZ = baseMinZ + dz * chunkSize;
-
-            float chunkSeed = noises.vegetationSeedNoise.in2D(chunkMinX, chunkMinZ);
-            unsigned int seedInt = *(unsigned int *)&chunkSeed;
-            std::mt19937 rng(seedInt);
-            std::uniform_real_distribution<float> dis(0.f, 1.f);
-
-            for (int i = 0; i < maxNumVeggiesPerChunk; i++) {
-                float noiseValue = dis(rng);
-                float chunkOffsetX = dis(rng) * (float)chunkSize;
-                float chunkOffsetZ = dis(rng) * (float)chunkSize;
-                float rot = dis(rng) * 2.0f * M_PI;
-                int instanceId = (int)std::round(dis(rng) * (float)(numInstances - 1));
-
-                if (noiseValue < veggieRate) {
-                    auto iterPair = vegetationInstances.emplace(std::make_pair(instanceId, SplatInstance{}));
-                    auto iter = iterPair.first;
-                    const bool &inserted = iterPair.second;
-                    SplatInstance &instance = iter->second;
-                    if (inserted) {
-                        instance.instanceId = instanceId;
-                    }
-
-                    float ax = (float)chunkMinX + chunkOffsetX;
-                    float az = (float)chunkMinZ + chunkOffsetZ;
-                    const float height = getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
-
-                    instance.ps.push_back(ax);
-                    instance.ps.push_back(height);
-                    instance.ps.push_back(az);
-
-                    Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
-                    instance.qs.push_back(q.x);
-                    instance.qs.push_back(q.y);
-                    instance.qs.push_back(q.z);
-                    instance.qs.push_back(q.w);
-                }
-            }
-        }
-    }
-
-    // serialize
-    size_t size = sizeof(uint32_t); // numInstances
-    for (auto &iter : vegetationInstances) {
-        SplatInstance &instance = iter.second;
-
-        size += sizeof(int); // instanceId
-        
-        size += sizeof(uint32_t); // numPs
-        size += sizeof(float) * instance.ps.size(); // ps
-        
-        size += sizeof(uint32_t); // numQs
-        size += sizeof(float) * instance.qs.size(); // qs
-    }
-
-    uint8_t *buffer = (uint8_t *)malloc(size);
-    int index = 0;
-
-    ((uint32_t *)(buffer + index))[0] = vegetationInstances.size();
-    index += sizeof(uint32_t);
-    
-    for (auto &iter : vegetationInstances) {
-        SplatInstance &instance = iter.second;
-
-        ((int *)(buffer + index))[0] = instance.instanceId;
-        index += sizeof(int);
-
-        ((uint32_t *)(buffer + index))[0] = instance.ps.size();
-        index += sizeof(uint32_t);
-        memcpy(buffer + index, instance.ps.data(), sizeof(float) * instance.ps.size());
-        index += sizeof(float) * instance.ps.size();
-
-        ((uint32_t *)(buffer + index))[0] = instance.qs.size();
-        index += sizeof(uint32_t);
-        memcpy(buffer + index, instance.qs.data(), sizeof(float) * instance.qs.size());
-        index += sizeof(float) * instance.qs.size();
-    }
-    
-    return buffer;
-}
 uint8_t *PGInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod)
 {
     std::vector<float> ps;
@@ -597,6 +396,11 @@ void computeVertexNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3
 
     normalizeNormals(normals);
 }
+/* void fillVec3(std::vector<vm::vec3> &array, const vm::vec3 &v) {
+    for (size_t i = 0, il = array.size(); i < il; i++) {
+        array[i] = v;
+    }
+} */
 
 //
 
@@ -604,9 +408,26 @@ enum class WindingDirection {
     CCW,
     CW
 };
+enum class ComputeNormals {
+    NO,
+    YES
+};
 
-template<typename T, typename G, WindingDirection windingDirection>
-void createPlaneGeometry(int width, int height, int widthSegments, int heightSegments, const std::vector<T> &heightfields, G &geometry) {
+template<
+    typename T,
+    typename G,
+    WindingDirection windingDirection,
+    ComputeNormals computeNormals
+>
+void createPlaneGeometry(
+    int width,
+    int height,
+    int widthSegments,
+    int heightSegments,
+    int rowSize,
+    const std::vector<T> &heightfields,
+    G &geometry
+) {
     const int &gridX = widthSegments; // equals chunkSize - 1
     const int &gridY = heightSegments; // equals chunkSize - 1
 
@@ -618,19 +439,22 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
 
     //
 
-    auto pushPoint = [&](int x, int y, const T &fieldValue) -> void {
-        const float height = fieldValue.getHeight();
-        const MaterialsArray &materialWeights = fieldValue.materialsWeights;
+    auto pushPoint = [&](int x, int y) -> void {
+        const int dx = x + 1;
+        const int dy = y + 1;
+        const int index = dx + dy * rowSize;
+        const T &v0 = heightfields[index];
 
+        const int ax = x * segment_width;
+        const int ay = y * segment_height;
+
+        // position
+        const float height = v0.getHeight();
+        const MaterialsArray &materialWeights = v0.materialsWeights;
         geometry.positions.push_back(vm::vec3{
-            (float)x,
+            (float)ax,
             height,
-            (float)y
-        });
-        geometry.normals.push_back(vm::vec3{
-            0,
-            1,
-            0
+            (float)ay
         });
         geometry.materialsWeights.push_back(vm::vec4{
             materialWeights[0],
@@ -638,91 +462,221 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
             materialWeights[2],
             materialWeights[3]
         });
-        geometry.pushPointMetadata(fieldValue);
+
+        // normal
+        vm::vec3 normal;
+        if (computeNormals == ComputeNormals::YES) {
+            const int Lx = (x - 1) + 1;
+            const int Ly = y + 1;
+            const int Lindex = Lx + Ly * rowSize;
+            const float Lheight = heightfields[Lindex].getHeight();
+
+            const int Rx = (x + 1) + 1;
+            const int Ry = y + 1;
+            const int Rindex = Rx + Ry * rowSize;
+            const float Rheight = heightfields[Rindex].getHeight();
+
+            const int Ux = x + 1;
+            const int Uy = (y - 1) + 1;
+            const int Uindex = Ux + Uy * rowSize;
+            const float Uheight = heightfields[Uindex].getHeight();
+
+            const int Dx = x + 1;
+            const int Dy = (y + 1) + 1;
+            const int Dindex = Dx + Dy * rowSize;
+            const float Dheight = heightfields[Dindex].getHeight();
+
+            normal = vm::normalize(
+                vm::vec3{
+                    Lheight - Rheight,
+                    2.0f,
+                    Uheight - Dheight
+                }
+            );
+        } else {
+            normal = vm::vec3{
+                0,
+                1,
+                0
+            };
+        }
+        geometry.normals.push_back(normal);
+        
+        // metadata
+        geometry.pushPointMetadata(v0);
     };
 
     // positions
-    int index = 0;
-    for (int iy = 0; iy < gridY1; iy ++) {
-
-        const int y = iy * segment_height;
-
-        for (int ix = 0; ix < gridX1; ix++) {
-
-            const int x = ix * segment_width;
-
-            const T &fieldValue = heightfields[index];
-
-            pushPoint(x, y, fieldValue);
-
-            index++;
-
+    for (int y = 0; y < gridY1; y++) {
+        for (int x = 0; x < gridX1; x++) {
+            pushPoint(x, y);
         }
-
     }
 
-    auto pushTriangle = [&](int a, int b, int c) {
-        const T &hfA = heightfields[a];
-        const T &hfB = heightfields[b];
-        const T &hfC = heightfields[c];
+    auto pushTriangle = [&](int ra, int rb, int rc, int wa, int wb, int wc) -> void {
+        const T &hfA = heightfields[ra];
+        const T &hfB = heightfields[rb];
+        const T &hfC = heightfields[rc];
         if (T::acceptIndices(hfA, hfB, hfC)) {
             if (windingDirection == WindingDirection::CCW) {
-                geometry.indices.push_back(a);
-                geometry.indices.push_back(b);
-                geometry.indices.push_back(c);
+                geometry.indices.push_back(wa);
+                geometry.indices.push_back(wb);
+                geometry.indices.push_back(wc);
             } else {
-                geometry.indices.push_back(a);
-                geometry.indices.push_back(c);
-                geometry.indices.push_back(b);
+                geometry.indices.push_back(wa);
+                geometry.indices.push_back(wc);
+                geometry.indices.push_back(wb);
             }
         }
     };
 
     // indices
-    for (int iy = 0; iy < gridY; iy++) {
+    for (int y = 0; y < gridY; y++) {
+        for (int x = 0; x < gridX; x++) {
+            const int dx = x + 1;
+            const int dy = y + 1;
+            
+            const int ra = dx + rowSize * dy;
+            const int rb = dx + rowSize * (dy + 1);
+            const int rc = (dx + 1) + rowSize * (dy + 1);
+            const int rd = (dx + 1) + rowSize * dy;
 
-        for (int ix = 0; ix < gridX; ix++) {
+            const int wa = x + gridX1 * y;
+            const int wb = x + gridX1 * (y + 1);
+            const int wc = (x + 1) + gridX1 * (y + 1);
+            const int wd = (x + 1) + gridX1 * y;
 
-            const int a = ix + gridX1 * iy;
-            const int b = ix + gridX1 * (iy + 1);
-            const int c = (ix + 1) + gridX1 * (iy + 1);
-            const int d = (ix + 1) + gridX1 * iy;
-
-            pushTriangle(a, b, d);
-            pushTriangle(b, c, d);
+            pushTriangle(ra, rb, rd, wa, wb, wd);
+            pushTriangle(rb, rc, rd, wb, wc, wd);
 
         }
 
     }
 }
-template<typename T, typename G, WindingDirection windingDirection>
-void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int chunkSize, const std::vector<T> &heightfields, G &geometry) {
+template<
+    typename T,
+    typename G,
+    WindingDirection windingDirection,
+    ComputeNormals computeNormals
+>
+void createPlaneSeamsGeometry(
+    int lod,
+    const std::array<int, 2> &lodArray,
+    int chunkSize,
+    int rowSize,
+    const std::vector<T> &heightfields,
+    G &geometry
+) {
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
 
     const int gridWidth = chunkSize * lod / bottomLod;
     const int gridWidthP1 = gridWidth + 1;
+    const int gridWidthP3 = gridWidth + 3;
 
     const int gridHeight = chunkSize * lod / rightLod;
     const int gridHeightP1 = gridHeight + 1;
+    const int gridHeightP3 = gridHeight + 3;
 
-    const int heightfieldsCenterDataOffset = chunkSize * chunkSize;
+    const int heightfieldsCenterDataWriteOffset = chunkSize * chunkSize;
+    const int heightfieldsCenterDataReadOffset = rowSize * rowSize;
 
     //
 
-    auto pushPoint = [&](int x, int y, const T &fieldValue) -> void {
-        const float height = fieldValue.getHeight();
-        const MaterialsArray &materialWeights = fieldValue.materialsWeights;
+    auto pushBottomPoint = [&](int x, int y) -> void {
+        const int ax = x * bottomLod;
+        const int ay = (y + chunkSize) * lod;
 
+        const int dx = x + 1;
+        const int dy = y + 1;
+        const int index =
+            heightfieldsCenterDataReadOffset +
+            (dy * gridWidthP3) +
+            dx;
+        const T &v0 = heightfields[index];
+
+        // position
+        const float height = v0.getHeight();
+        const MaterialsArray &materialWeights = v0.materialsWeights;
         geometry.positions.push_back(vm::vec3{
-            (float)x,
+            (float)ax,
             height,
-            (float)y
+            (float)ay
         });
-        geometry.normals.push_back(vm::vec3{
-            0,
-            1,
-            0
+        
+        // normal
+        vm::vec3 normal;
+        if (computeNormals == ComputeNormals::YES) {
+            const int Lx = dx - 1;
+            const int Ly = dy;
+            const int Lindex =
+                heightfieldsCenterDataReadOffset +
+                (Ly * gridWidthP3) +
+                Lx;
+            const float Lheight = heightfields[Lindex].getHeight();
+
+            const int Rx = dx + 1;
+            const int Ry = dy;
+            const int Rindex =
+                heightfieldsCenterDataReadOffset +
+                (Ry * gridWidthP3) +
+                Rx;
+            const float Rheight = heightfields[Rindex].getHeight();
+
+            const int Ux = dx;
+            const int Uy = dy - 1;
+            const int Uindex =
+                heightfieldsCenterDataReadOffset +
+                (Uy * gridWidthP3) +
+                Ux;
+            const float Uheight = heightfields[Uindex].getHeight();
+
+            const int Dx = dx;
+            const int Dy = dy + 1;
+            const int Dindex =
+                heightfieldsCenterDataReadOffset +
+                (Dy * gridWidthP3) +
+                Dx;
+            const float Dheight = heightfields[Dindex].getHeight();
+
+            normal = vm::normalize(
+                vm::vec3{
+                    Lheight - Rheight,
+                    2.0f,
+                    Uheight - Dheight
+                }
+            );
+        } else {
+            normal = vm::vec3{
+                0,
+                1,
+                0
+            };
+        }
+        geometry.normals.push_back(normal);
+
+        // metadata
+        geometry.pushPointMetadata(v0);
+    };
+    auto pushRightPoint = [&](int x, int y) -> void {
+        const int ax = (x + chunkSize) * lod;
+        const int ay = y * rightLod;
+
+        const int dx = x + 1;
+        const int dy = y + 1;
+        const int index =
+            heightfieldsCenterDataReadOffset +
+            (3 * gridWidthP3) +
+            (dx * gridHeightP3) +
+            dy;
+        const T &v0 = heightfields[index];
+
+        // position
+        const float height = v0.getHeight();
+        geometry.positions.push_back(vm::vec3{
+            (float)ax,
+            height,
+            (float)ay
         });
         geometry.materialsWeights.push_back(vm::vec4{
             materialWeights[0],
@@ -730,39 +684,85 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
             materialWeights[2],
             materialWeights[3]
         });
-        geometry.pushPointMetadata(fieldValue);
+        
+        // normal
+        vm::vec3 normal;
+        if (computeNormals == ComputeNormals::YES) {
+            const int Lx = dx - 1;
+            const int Ly = dy;
+            const int Lindex =
+                heightfieldsCenterDataReadOffset +
+                (3 * gridWidthP3) +
+                (Lx * gridHeightP3) +
+                Ly;
+            const float Lheight = heightfields[Lindex].getHeight();
+
+            const int Rx = dx + 1;
+            const int Ry = dy;
+            const int Rindex =
+                heightfieldsCenterDataReadOffset +
+                (3 * gridWidthP3) +
+                (Rx * gridHeightP3) +
+                Ry;
+            const float Rheight = heightfields[Rindex].getHeight();
+
+            const int Ux = dx;
+            const int Uy = dy - 1;
+            const int Uindex =
+                heightfieldsCenterDataReadOffset +
+                (3 * gridWidthP3) +
+                (Ux * gridHeightP3) +
+                Uy;
+            const float Uheight = heightfields[Uindex].getHeight();
+
+            const int Dx = dx;
+            const int Dy = dy + 1;
+            const int Dindex =
+                heightfieldsCenterDataReadOffset +
+                (3 * gridWidthP3) +
+                (Dx * gridHeightP3) +
+                Dy;
+            const float Dheight = heightfields[Dindex].getHeight();
+
+            normal = vm::normalize(
+                vm::vec3{
+                    Lheight - Rheight,
+                    2.0f,
+                    Uheight - Dheight
+                }
+            );
+        } else {
+            normal = vm::vec3{
+                0,
+                1,
+                0
+            };
+        }
+        geometry.normals.push_back(normal);
+
+        // metadata
+        geometry.pushPointMetadata(v0);
     };
 
     // positions
+    const int heightfieldsBottomDataWriteOffset =
+        heightfieldsCenterDataWriteOffset +
+        gridWidthP1;
+    const int heightfieldsBottomDataReadOffset =
+        heightfieldsCenterDataReadOffset +
+        3 * gridWidthP3;
     // bottom
-    int heightfieldsBottomDataOffset;
     {
-        int index = heightfieldsCenterDataOffset;
-        {
-            const int iy = chunkSize;
-            for (int ix = 0; ix < gridWidthP1; ix++) {
-                const T &fieldValue = heightfields[index];
-
-                const int x = ix * bottomLod;
-                const int y = iy * lod;
-
-                pushPoint(x, y, fieldValue);
-                index++;
-            }
+        const int y = 0;
+        for (int x = 0; x < gridWidthP1; x++) {
+            pushBottomPoint(x, y);
         }
-        heightfieldsBottomDataOffset = index;
-        // right
-        {
-            const int ix = chunkSize;
-            for (int iy = 0; iy < gridHeightP1; iy++) {
-                const T &fieldValue = heightfields[index];
-
-                const int x = ix * lod;
-                const int y = iy * rightLod;
-
-                pushPoint(x, y, fieldValue);
-                index++;
-            }
+    }
+    // right
+    {
+        const int x = 0;
+        for (int y = 0; y < gridHeightP1; y++) {
+            pushRightPoint(x, y);
         }
     }
 
@@ -775,19 +775,19 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
     const int gridX1 = gridX + 1; // equals chunkSize
     const int gridY1 = gridY + 1; // equals chunkSize
 
-    auto pushTriangle = [&](int a, int b, int c) {
-        const T &hfA = heightfields[a];
-        const T &hfB = heightfields[b];
-        const T &hfC = heightfields[c];
+    auto pushTriangle = [&](int ra, int rb, int rc, int wa, int wb, int wc) {
+        const T &hfA = heightfields[ra];
+        const T &hfB = heightfields[rb];
+        const T &hfC = heightfields[rc];
         if (T::acceptIndices(hfA, hfB, hfC)) {
             if (windingDirection == WindingDirection::CCW) {
-                geometry.indices.push_back(a);
-                geometry.indices.push_back(b);
-                geometry.indices.push_back(c);
+                geometry.indices.push_back(wa);
+                geometry.indices.push_back(wb);
+                geometry.indices.push_back(wc);
             } else {
-                geometry.indices.push_back(a);
-                geometry.indices.push_back(c);
-                geometry.indices.push_back(b);
+                geometry.indices.push_back(wa);
+                geometry.indices.push_back(wc);
+                geometry.indices.push_back(wb);
             }
         }
     };
@@ -799,16 +799,26 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         for (int innerPointX = 0; innerPointX < chunkSize; innerPointX++) {
             const int outerPointX = innerPointX;
 
-            // inner
-            const int a = innerPointX + chunkSize * innerPointY;
-            const int d = (innerPointX + 1) + chunkSize * innerPointY;
-            // outer
-            const int b = heightfieldsCenterDataOffset + outerPointX;
-            const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
+            const int innerPointDx = innerPointX + 1;
+            const int innerPointDy = innerPointY + 1;
 
-            pushTriangle(a, b, c);
+            const int outerPointDx = outerPointX + 1;
+
+            // inner
+            const int ra = innerPointDx + rowSize * innerPointDy;
+            const int rd = (innerPointDx + 1) + rowSize * innerPointDy;
+            // outer
+            const int rb = heightfieldsCenterDataReadOffset + outerPointDx;
+            const int rc = heightfieldsCenterDataReadOffset + (outerPointDx + 1);
+
+            const int wa = innerPointX + chunkSize * innerPointY;
+            const int wd = (innerPointX + 1) + chunkSize * innerPointY;
+            const int wb = heightfieldsCenterDataWriteOffset + outerPointX;
+            const int wc = heightfieldsCenterDataWriteOffset + (outerPointX + 1);
+
+            pushTriangle(ra, rb, rc, wa, wb, wc);
             if (innerPointX != (chunkSize - 1)) { // only single triangle in corner
-                pushTriangle(a, c, d);
+                pushTriangle(ra, rc, rd, wa, wc, wd);
             }
         }
     } else if (bottomLod > lod) {
@@ -816,26 +826,41 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         for (int innerPointX = 0; innerPointX < chunkSize; innerPointX++) {
             const int outerPointX = innerPointX / 2;
 
+            const int innerPointDx = innerPointX + 1;
+            const int innerPointDy = innerPointY + 1;
+
+            const int outerPointDx = outerPointX + 1;
+
             if (innerPointX % 2 == 0) {
                 // inner
-                const int a = innerPointX + chunkSize * innerPointY;
-                const int d = (innerPointX + 1) + chunkSize * innerPointY;
+                const int ra = innerPointDx + rowSize * innerPointDy;
+                const int rd = (innerPointDx + 1) + rowSize * innerPointDy;
                 // outer
-                const int b = heightfieldsCenterDataOffset + outerPointX;
-                const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
+                const int rb = heightfieldsCenterDataReadOffset + outerPointDx;
+                const int rc = heightfieldsCenterDataReadOffset + (outerPointDx + 1);
 
-                pushTriangle(a, b, c);
-                pushTriangle(a, c, d);
+                const int wa = innerPointX + chunkSize * innerPointY;
+                const int wd = (innerPointX + 1) + chunkSize * innerPointY;
+                const int wb = heightfieldsCenterDataWriteOffset + outerPointX;
+                const int wc = heightfieldsCenterDataWriteOffset + (outerPointX + 1);
+
+                pushTriangle(ra, rb, rc, wa, wb, wc);
+                pushTriangle(ra, rc, rd, wa, wc, wd);
             } else {
                 if (innerPointX != (chunkSize - 1)) {
                     // inner
-                    const int a = innerPointX + chunkSize * innerPointY;
-                    const int d = (innerPointX + 1) + chunkSize * innerPointY;
+                    const int ra = innerPointDx + rowSize * innerPointDy;
+                    const int rd = (innerPointDx + 1) + rowSize * innerPointDy;
                     // outer
-                    const int b = heightfieldsCenterDataOffset + outerPointX;
-                    const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
+                    const int rb = heightfieldsCenterDataReadOffset + outerPointDx;
+                    const int rc = heightfieldsCenterDataReadOffset + (outerPointDx + 1);
 
-                    pushTriangle(a, c, d);
+                    const int wa = innerPointX + chunkSize * innerPointY;
+                    const int wd = (innerPointX + 1) + chunkSize * innerPointY;
+                    const int wb = heightfieldsCenterDataWriteOffset + outerPointX;
+                    const int wc = heightfieldsCenterDataWriteOffset + (outerPointX + 1);
+
+                    pushTriangle(ra, rc, rd, wa, wc, wd);
                 }
             }
         }
@@ -844,39 +869,60 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         for (int innerPointX = 0; innerPointX < chunkSize; innerPointX++) {
             int outerPointX = innerPointX * 2;
 
+            const int innerPointDx = innerPointX + 1;
+            const int innerPointDy = innerPointY + 1;
+
+            int outerPointDx = outerPointX + 1;
+
             if (innerPointX != (chunkSize - 1)) {
                 {
                     // inner
-                    const int a = innerPointX + chunkSize * innerPointY;
-                    const int d = (innerPointX + 1) + chunkSize * innerPointY;
+                    const int ra = innerPointDx + rowSize * innerPointDy;
+                    const int rd = (innerPointDx + 1) + rowSize * innerPointDy;
                     // outer
-                    const int b = heightfieldsCenterDataOffset + outerPointX;
-                    const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
+                    const int rb = heightfieldsCenterDataReadOffset + outerPointDx;
+                    const int rc = heightfieldsCenterDataReadOffset + (outerPointDx + 1);
 
-                    pushTriangle(a, b, c);
-                    pushTriangle(a, c, d);
+                    const int wa = innerPointX + chunkSize * innerPointY;
+                    const int wd = (innerPointX + 1) + chunkSize * innerPointY;
+                    const int wb = heightfieldsCenterDataWriteOffset + outerPointX;
+                    const int wc = heightfieldsCenterDataWriteOffset + (outerPointX + 1);
+
+                    pushTriangle(ra, rb, rc, wa, wb, wc);
+                    pushTriangle(ra, rc, rd, wa, wc, wd);
                 }
                 outerPointX++;
+                outerPointDx++;
                 {
                     // inner
-                    const int a = innerPointX + chunkSize * innerPointY;
-                    const int d = (innerPointX + 1) + chunkSize * innerPointY;
+                    const int ra = innerPointDx + rowSize * innerPointDy;
+                    const int rd = (innerPointDx + 1) + rowSize * innerPointDy;
                     // outer
-                    const int b = heightfieldsCenterDataOffset + outerPointX;
-                    const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
+                    const int rb = heightfieldsCenterDataReadOffset + outerPointDx;
+                    const int rc = heightfieldsCenterDataReadOffset + (outerPointDx + 1);
 
-                    pushTriangle(b, c, d);
+                    const int wa = innerPointX + chunkSize * innerPointY;
+                    const int wd = (innerPointX + 1) + chunkSize * innerPointY;
+                    const int wb = heightfieldsCenterDataWriteOffset + outerPointX;
+                    const int wc = heightfieldsCenterDataWriteOffset + (outerPointX + 1);
+
+                    pushTriangle(rb, rc, rd, wb, wc, wd);
                 }
             } else {
                 // inner
-                const int a = innerPointX + chunkSize * innerPointY;
+                const int ra = innerPointDx + rowSize * innerPointDy;
                 // outer
-                const int b = heightfieldsCenterDataOffset + outerPointX;
-                const int c = heightfieldsCenterDataOffset + (outerPointX + 1);
-                const int d = heightfieldsCenterDataOffset + (outerPointX + 2);
+                const int rb = heightfieldsCenterDataReadOffset + outerPointDx;
+                const int rc = heightfieldsCenterDataReadOffset + (outerPointDx + 1);
+                const int rd = heightfieldsCenterDataReadOffset + (outerPointDx + 2);
 
-                pushTriangle(a, b, c);
-                pushTriangle(a, c, d);
+                const int wa = innerPointX + chunkSize * innerPointY;
+                const int wb = heightfieldsCenterDataWriteOffset + outerPointX;
+                const int wc = heightfieldsCenterDataWriteOffset + (outerPointX + 1);
+                const int wd = heightfieldsCenterDataWriteOffset + (outerPointX + 2);
+
+                pushTriangle(ra, rb, rc, wa, wb, wc);
+                pushTriangle(ra, rc, rd, wa, wc, wd);
             }
         }
     }
@@ -887,16 +933,26 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         for (int innerPointY = 0; innerPointY < chunkSize; innerPointY++) {
             const int outerPointY = innerPointY;
 
-            // inner
-            const int a = innerPointX + chunkSize * innerPointY;
-            const int b = innerPointX + chunkSize * (innerPointY + 1);
-            // outer
-            const int d = heightfieldsBottomDataOffset + outerPointY;
-            const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
+            const int innerPointDx = innerPointX + 1;
+            const int innerPointDy = innerPointY + 1;
 
-            pushTriangle(a, c, d);
+            const int outerPointDy = outerPointY + 1;
+
+            // inner
+            const int ra = innerPointDx + rowSize * innerPointDy;
+            const int rb = innerPointDx + rowSize * (innerPointDy + 1);
+            // outer
+            const int rd = heightfieldsBottomDataReadOffset + outerPointDy;
+            const int rc = heightfieldsBottomDataReadOffset + (outerPointDy + 1);
+
+            const int wa = innerPointX + chunkSize * innerPointY;
+            const int wb = innerPointX + chunkSize * (innerPointY + 1);
+            const int wd = heightfieldsBottomDataWriteOffset + outerPointY;
+            const int wc = heightfieldsBottomDataWriteOffset + (outerPointY + 1);
+
+            pushTriangle(ra, rc, rd, wa, wc, wd);
             if (innerPointY != (chunkSize - 1)) { // only single triangle in corner
-                pushTriangle(a, b, c);
+                pushTriangle(ra, rb, rc, wa, wb, wc);
             }
         }
     } else if (rightLod > lod) {
@@ -905,26 +961,41 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         for (int innerPointY = 0; innerPointY < chunkSize; innerPointY++) {
             const int outerPointY = innerPointY / 2;
 
+            const int innerPointDx = innerPointX + 1;
+            const int innerPointDy = innerPointY + 1;
+
+            const int outerPointDy = outerPointY + 1;
+
             if (innerPointY % 2 == 0) {
                 // inner
-                const int a = innerPointX + chunkSize * innerPointY;
-                const int b = innerPointX + chunkSize * (innerPointY + 1);
+                const int ra = innerPointDx + rowSize * innerPointDy;
+                const int rb = innerPointDx + rowSize * (innerPointDy + 1);
                 // outer
-                const int d = heightfieldsBottomDataOffset + outerPointY;
-                const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
+                const int rd = heightfieldsBottomDataReadOffset + outerPointDy;
+                const int rc = heightfieldsBottomDataReadOffset + (outerPointDy + 1);
 
-                pushTriangle(a, c, d);
-                pushTriangle(a, b, c);
+                const int wa = innerPointX + chunkSize * innerPointY;
+                const int wb = innerPointX + chunkSize * (innerPointY + 1);
+                const int wd = heightfieldsBottomDataWriteOffset + outerPointY;
+                const int wc = heightfieldsBottomDataWriteOffset + (outerPointY + 1);
+
+                pushTriangle(ra, rc, rd, wa, wc, wd);
+                pushTriangle(ra, rb, rc, wa, wb, wc);
             } else {
                 if (innerPointY != (chunkSize - 1)) {
                     // inner
-                    const int a = innerPointX + chunkSize * innerPointY;
-                    const int b = innerPointX + chunkSize * (innerPointY + 1);
+                    const int ra = innerPointDx + rowSize * innerPointDy;
+                    const int rb = innerPointDx + rowSize * (innerPointDy + 1);
                     // outer
-                    const int d = heightfieldsBottomDataOffset + outerPointY;
-                    const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
+                    const int rd = heightfieldsBottomDataReadOffset + outerPointDy;
+                    const int rc = heightfieldsBottomDataReadOffset + (outerPointDy + 1);
 
-                    pushTriangle(a, b, c);
+                    const int wa = innerPointX + chunkSize * innerPointY;
+                    const int wb = innerPointX + chunkSize * (innerPointY + 1);
+                    const int wd = heightfieldsBottomDataWriteOffset + outerPointY;
+                    const int wc = heightfieldsBottomDataWriteOffset + (outerPointY + 1);
+
+                    pushTriangle(ra, rb, rc, wa, wb, wc);
                 }
             }
         }
@@ -934,60 +1005,64 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         for (int innerPointY = 0; innerPointY < chunkSize; innerPointY++) {
             int outerPointY = innerPointY * 2;
 
+            const int innerPointDx = innerPointX + 1;
+            const int innerPointDy = innerPointY + 1;
+
+            int outerPointDy = outerPointY + 1;
+
             if (innerPointY != (chunkSize - 1)) {
                 {
                     // inner
-                    const int a = innerPointX + chunkSize * innerPointY;
-                    const int b = innerPointX + chunkSize * (innerPointY + 1);
+                    const int ra = innerPointDx + rowSize * innerPointDy;
+                    const int rb = innerPointDx + rowSize * (innerPointDy + 1);
                     // outer
-                    const int d = heightfieldsBottomDataOffset + outerPointY;
-                    const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
+                    const int rd = heightfieldsBottomDataReadOffset + outerPointDy;
+                    const int rc = heightfieldsBottomDataReadOffset + (outerPointDy + 1);
 
-                    pushTriangle(a, c, d);
-                    pushTriangle(a, b, c);
+                    const int wa = innerPointX + chunkSize * innerPointY;
+                    const int wb = innerPointX + chunkSize * (innerPointY + 1);
+                    const int wd = heightfieldsBottomDataWriteOffset + outerPointY;
+                    const int wc = heightfieldsBottomDataWriteOffset + (outerPointY + 1);
+
+                    pushTriangle(ra, rc, rd, wa, wc, wd);
+                    pushTriangle(ra, rb, rc, wa, wb, wc);
                 }
                 outerPointY++;
+                outerPointDy++;
                 {
                     // inner
-                    const int a = innerPointX + chunkSize * innerPointY;
-                    const int b = innerPointX + chunkSize * (innerPointY + 1);
+                    const int ra = innerPointDx + rowSize * innerPointDy;
+                    const int rb = innerPointDx + rowSize * (innerPointDy + 1);
                     // outer
-                    const int d = heightfieldsBottomDataOffset + outerPointY;
-                    const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
+                    const int rd = heightfieldsBottomDataReadOffset + outerPointDy;
+                    const int rc = heightfieldsBottomDataReadOffset + (outerPointDy + 1);
 
-                    pushTriangle(b, c, d);
+                    const int wa = innerPointX + chunkSize * innerPointY;
+                    const int wb = innerPointX + chunkSize * (innerPointY + 1);
+                    const int wd = heightfieldsBottomDataWriteOffset + outerPointY;
+                    const int wc = heightfieldsBottomDataWriteOffset + (outerPointY + 1);
+
+                    pushTriangle(rb, rc, rd, wb, wc, wd);
                 }
             } else {
                 // inner
-                const int a = innerPointX + chunkSize * innerPointY;
+                const int ra = innerPointDx + rowSize * innerPointDy;
                 // outer
-                const int d = heightfieldsBottomDataOffset + outerPointY;
-                const int c = heightfieldsBottomDataOffset + (outerPointY + 1);
-                const int b = heightfieldsBottomDataOffset + (outerPointY + 2);
+                const int rd = heightfieldsBottomDataReadOffset + outerPointDy;
+                const int rc = heightfieldsBottomDataReadOffset + (outerPointDy + 1);
+                const int rb = heightfieldsBottomDataReadOffset + (outerPointDy + 2);
 
-                pushTriangle(a, b, c);
-                pushTriangle(a, c, d);
+                const int wa = innerPointX + chunkSize * innerPointY;
+                const int wd = heightfieldsBottomDataWriteOffset + outerPointY;
+                const int wc = heightfieldsBottomDataWriteOffset + (outerPointY + 1);
+                const int wb = heightfieldsBottomDataWriteOffset + (outerPointY + 2);
+
+                pushTriangle(ra, rb, rc, wa, wb, wc);
+                pushTriangle(ra, rc, rd, wa, wc, wd);
             }
         }
     }
 }
-
-/* template<typename T, typename TTop, typename TBottom, typename G>
-void createDualPlaneGeometry(int width, int height, int widthSegments, int heightSegments, const std::vector<T> &heightfields, G &geometry) {
-    const std::vector<TTop> &topHeightfields = *((const std::vector<TTop> *)&heightfields);
-    const std::vector<TBottom> &bottomHeightfields = *((const std::vector<TBottom> *)&heightfields);
-    
-    createPlaneGeometry<TTop, G, WindingDirection::CCW>(width, height, widthSegments, heightSegments, topHeightfields, geometry);
-    createPlaneGeometry<TBottom, G, WindingDirection::CW>(width, height, widthSegments, heightSegments, bottomHeightfields, geometry);
-}
-template<typename T, typename TTop, typename TBottom, typename G>
-void createDualPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int chunkSize, const std::vector<T> &heightfields, G &geometry) {
-    const std::vector<TTop> &topHeightfields = *((const std::vector<TTop> *)&heightfields);
-    const std::vector<TBottom> &bottomHeightfields = *((const std::vector<TBottom> *)&heightfields);
-
-    createPlaneSeamsGeometry<TTop, G, WindingDirection::CCW>(lod, lodArray, chunkSize, topHeightfields, geometry);
-    createPlaneSeamsGeometry<TBottom, G, WindingDirection::CW>(lod, lodArray, chunkSize, bottomHeightfields, geometry);
-} */
 
 //
 
@@ -1012,7 +1087,21 @@ void generateHeightfieldCenterMesh(
     const int worldSize = chunkSize * lod;
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
-    createPlaneGeometry<Heightfield, TerrainGeometry, WindingDirection::CCW>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, heightfields, geometry);
+    const int rowSize = chunkSize + 2;
+    createPlaneGeometry<
+        Heightfield,
+        TerrainGeometry,
+        WindingDirection::CCW,
+        ComputeNormals::YES
+    >(
+        worldSizeM1,
+        worldSizeM1,
+        chunkSizeM1,
+        chunkSizeM1,
+        rowSize,
+        heightfields,
+        geometry
+    );
 }
 void generateHeightfieldSeamsMesh(
     int lod,
@@ -1021,7 +1110,20 @@ void generateHeightfieldSeamsMesh(
     const std::vector<Heightfield> &heightfields,
     TerrainGeometry &geometry
 ) {
-    createPlaneSeamsGeometry<Heightfield, TerrainGeometry, WindingDirection::CCW>(lod, lodArray, chunkSize, heightfields, geometry);
+    const int rowSize = chunkSize + 2;
+    createPlaneSeamsGeometry<
+        Heightfield,
+        TerrainGeometry,
+        WindingDirection::CCW,
+        ComputeNormals::YES
+    >(
+        lod,
+        lodArray,
+        chunkSize,
+        rowSize,
+        heightfields,
+        geometry
+    );
 }
 
 //
@@ -1035,7 +1137,21 @@ void generateWaterfieldCenterMesh(
     const int worldSize = chunkSize * lod;
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
-    createPlaneGeometry<Waterfield, WaterGeometry, WindingDirection::CCW>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, waterfields, geometry);
+    const int rowSize = chunkSize + 2;
+    createPlaneGeometry<
+        Waterfield,
+        WaterGeometry,
+        WindingDirection::CCW,
+        ComputeNormals::NO
+    >(
+        worldSizeM1,
+        worldSizeM1,
+        chunkSizeM1,
+        chunkSizeM1,
+        rowSize,
+        waterfields,
+        geometry
+    );
 }
 void generateWaterfieldSeamsMesh(
     int lod,
@@ -1044,7 +1160,20 @@ void generateWaterfieldSeamsMesh(
     const std::vector<Waterfield> &waterfields,
     WaterGeometry &geometry
 ) {
-    createPlaneSeamsGeometry<Waterfield, WaterGeometry, WindingDirection::CCW>(lod, lodArray, chunkSize, waterfields, geometry);
+    const int rowSize = chunkSize + 2;
+    createPlaneSeamsGeometry<
+        Waterfield,
+        WaterGeometry,
+        WindingDirection::CCW,
+        ComputeNormals::NO
+    >(
+        lod,
+        lodArray,
+        chunkSize,
+        rowSize,
+        waterfields,
+        geometry
+    );
 }
 
 //
@@ -1256,7 +1385,6 @@ void generateBarrierMesh(
     int lod,
     int chunkSize,
     OctreeContext &octreeContext,
-    PGInstance *inst,
     BarrierGeometry &geometry
 ) {
     const int lodRange = lod * chunkSize;
@@ -1290,7 +1418,7 @@ void generateBarrierMesh(
         const vm::ivec2 &nodePosition = node->min;
         const int &nodeLod = node->lod;
 
-        float barrierMinHeight = std::numeric_limits<float>::infinity();
+        /* float barrierMinHeight = std::numeric_limits<float>::infinity();
         float barrierMaxHeight = -std::numeric_limits<float>::infinity();
         for (int dz = 0; dz < chunkSize; dz++) {
             for (int dx = 0; dx < chunkSize; dx++) {
@@ -1307,10 +1435,12 @@ void generateBarrierMesh(
             }
         }
         barrierMinHeight = std::floor(barrierMinHeight);
-        barrierMaxHeight = std::ceil(barrierMaxHeight);
+        barrierMaxHeight = std::ceil(barrierMaxHeight); */
+        constexpr int barrierMinHeight = -WORLD_BASE_HEIGHT + MIN_WORLD_HEIGHT;
+        constexpr int barrierMaxHeight = -WORLD_BASE_HEIGHT + MAX_WORLD_HEIGHT;
 
         int width = nodeLod;
-        int height = barrierMaxHeight - barrierMinHeight;
+        constexpr int height = barrierMaxHeight - barrierMinHeight;
         int depth = nodeLod;
         createBoxGeometry(
             width,
@@ -1347,7 +1477,7 @@ void generateTerrainGeometry(
     generateHeightfieldCenterMesh(lod, chunkSize, heightfields, geometry);
     generateHeightfieldSeamsMesh(lod, lodArray, chunkSize, heightfields, geometry);
     offsetGeometry(geometry, worldPosition);
-    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
+    // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
 
 //
@@ -1363,7 +1493,203 @@ void generateWaterGeometry(
     generateWaterfieldCenterMesh(lod, chunkSize, waterfields, geometry);
     generateWaterfieldSeamsMesh(lod, lodArray, chunkSize, waterfields, geometry);
     offsetGeometry(geometry, worldPosition);
-    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
+}
+
+//
+
+class HeightfieldSampler {
+public:
+    const vm::vec2 &worldPositionXZ;
+    const int &lod;
+    const int chunkSize;
+    const int chunkSizeP2;
+    const std::vector<Heightfield> &heightfields;
+    
+    HeightfieldSampler(
+        const vm::vec2 &worldPositionXZ,
+        const int &lod,
+        const int chunkSize,
+        const std::vector<Heightfield> &heightfields
+    ) :
+        worldPositionXZ(worldPositionXZ),
+        lod(lod),
+        chunkSize(chunkSize),
+        chunkSizeP2(chunkSize + 2),
+        heightfields(heightfields)
+        {}
+    float getHeight(float x, float z) {
+        vm::vec2 location{
+            x - worldPositionXZ.x,
+            z - worldPositionXZ.y
+        };
+        location /= (float)lod;
+
+        float result = bilinear<HeightfieldSampler, float>(location, chunkSize, *this);
+        return result;
+    }
+    float get(int x, int z) {
+        const int dx = x + 1;
+        const int dz = z + 1;
+        const int index = dx + dz * chunkSizeP2;
+        const Heightfield &heightfield = heightfields[index];
+        const float &height = heightfield.heightField;
+        return height;
+    }
+};
+void generateGrassGeometry(
+    const vm::ivec2 &worldPositionXZ,
+    const int lod,
+    const int chunkSize,
+    const int numGrassInstances,
+    const std::vector<Heightfield> &heightfields,
+    Noises &noises,
+    GrassGeometry &grassGeometry
+) {
+    constexpr int maxNumGrassesPerChunk = 2048;
+    constexpr float grassRate = 0.5;
+    // const float grassRate = maxGrassRate / (float)(lod * lod);
+    const float grassThrowRate = 1.f / (float)lod;
+    // const float grassRate = maxGrassRate;
+
+    int baseMinX = worldPositionXZ.x;
+    int baseMinZ = worldPositionXZ.y;
+
+    vm::vec2 worldPositionXZf{
+        (float)worldPositionXZ.x,
+        (float)worldPositionXZ.y
+    };
+    HeightfieldSampler heightfieldSampler(
+        worldPositionXZf,
+        lod,
+        chunkSize,
+        heightfields
+    );
+    
+    for (int dz = 0; dz < lod; dz++) {
+        for (int dx = 0; dx < lod; dx++) {
+            int chunkMinX = baseMinX + dx * chunkSize;
+            int chunkMinZ = baseMinZ + dz * chunkSize;
+
+            float chunkSeed = noises.grassSeedNoise.in2D(chunkMinX, chunkMinZ);
+            unsigned int seedInt = *(unsigned int *)&chunkSeed;
+            std::mt19937 rng(seedInt);
+            std::uniform_real_distribution<float> dis(0.f, 1.f);
+
+            for (int i = 0; i < maxNumGrassesPerChunk; i++) {
+                float chunkOffsetX = dis(rng) * (float)chunkSize;
+                float chunkOffsetZ = dis(rng) * (float)chunkSize;
+                float rot = dis(rng) * 2.0f * M_PI;
+                int instanceId = (int)std::round(dis(rng) * (float)(numGrassInstances - 1));
+                float throwNoise = dis(rng);
+                
+                float ax = (float)chunkMinX + chunkOffsetX;
+                float az = (float)chunkMinZ + chunkOffsetZ;
+                float noiseValue = noises.grassNoise.in2D(ax, az);
+
+                if (noiseValue < grassRate && throwNoise <= grassThrowRate) {
+                    auto iterPair = grassGeometry.instances.emplace(
+                        std::make_pair(instanceId, SplatInstance{})
+                    );
+                    auto iter = iterPair.first;
+                    const bool &inserted = iterPair.second;
+                    SplatInstance &instance = iter->second;
+                    if (inserted) {
+                        instance.instanceId = instanceId;
+                    }
+                    
+                    const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
+
+                    instance.ps.push_back(ax);
+                    instance.ps.push_back(height);
+                    instance.ps.push_back(az);
+
+                    Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
+                    instance.qs.push_back(q.x);
+                    instance.qs.push_back(q.y);
+                    instance.qs.push_back(q.z);
+                    instance.qs.push_back(q.w);
+                }
+            }
+        }
+    }
+}
+
+//
+
+void generateVegetationGeometry(
+    const vm::ivec2 &worldPositionXZ,
+    const int lod,
+    const int chunkSize,
+    const int numVegetationInstances,
+    const std::vector<Heightfield> &heightfields,
+    Noises &noises,
+    VegetationGeometry &vegetationGeometry
+) {
+    constexpr int maxNumVeggiesPerChunk = 8;
+    constexpr float maxVeggieRate = 0.35;
+    // const float veggieRate = maxVeggieRate / (float)(lod * lod);
+    const float veggieRate = maxVeggieRate / (float)lod;
+    // const float veggieRate = maxVeggieRate;
+
+    int baseMinX = worldPositionXZ.x;
+    int baseMinZ = worldPositionXZ.y;
+
+    vm::vec2 worldPositionXZf{
+        (float)worldPositionXZ.x,
+        (float)worldPositionXZ.y
+    };
+    HeightfieldSampler heightfieldSampler(
+        worldPositionXZf,
+        lod,
+        chunkSize,
+        heightfields
+    );
+    
+    for (int dz = 0; dz < lod; dz++) {
+        for (int dx = 0; dx < lod; dx++) {
+            int chunkMinX = baseMinX + dx * chunkSize;
+            int chunkMinZ = baseMinZ + dz * chunkSize;
+
+            float chunkSeed = noises.vegetationSeedNoise.in2D(chunkMinX, chunkMinZ);
+            unsigned int seedInt = *(unsigned int *)&chunkSeed;
+            std::mt19937 rng(seedInt);
+            std::uniform_real_distribution<float> dis(0.f, 1.f);
+
+            for (int i = 0; i < maxNumVeggiesPerChunk; i++) {
+                float noiseValue = dis(rng);
+                float chunkOffsetX = dis(rng) * (float)chunkSize;
+                float chunkOffsetZ = dis(rng) * (float)chunkSize;
+                float rot = dis(rng) * 2.0f * M_PI;
+                int instanceId = (int)std::round(dis(rng) * (float)(numVegetationInstances - 1));
+
+                if (noiseValue < veggieRate) {
+                    auto iterPair = vegetationGeometry.instances.emplace(
+                        std::make_pair(instanceId, SplatInstance{})
+                    );
+                    auto iter = iterPair.first;
+                    const bool &inserted = iterPair.second;
+                    SplatInstance &instance = iter->second;
+                    if (inserted) {
+                        instance.instanceId = instanceId;
+                    }
+
+                    float ax = (float)chunkMinX + chunkOffsetX;
+                    float az = (float)chunkMinZ + chunkOffsetZ;
+                    const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
+
+                    instance.ps.push_back(ax);
+                    instance.ps.push_back(height);
+                    instance.ps.push_back(az);
+
+                    Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
+                    instance.qs.push_back(q.x);
+                    instance.qs.push_back(q.y);
+                    instance.qs.push_back(q.z);
+                    instance.qs.push_back(q.w);
+                }
+            }
+        }
+    }
 }
 
 //
@@ -1405,12 +1731,11 @@ void generateBarrierGeometry(
     int lod,
     int chunkSize,
     OctreeContext &octreeContext,
-    PGInstance *inst,
     BarrierGeometry &geometry
 ) {
-    generateBarrierMesh(worldPosition, lod, chunkSize, octreeContext, inst, geometry);
+    generateBarrierMesh(worldPosition, lod, chunkSize, octreeContext, geometry);
     // offsetGeometry(geometry, worldPosition);
-    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
+    // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
 
 //
@@ -1517,24 +1842,69 @@ OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int
 
     return octreeContext;
 }
-ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray) {
-    // biomes
+std::vector<Heightfield> PGInstance::getHeightfields(
+    int x,
+    int z,
+    int lod,
+    const std::array<int, 2> &lodArray
+) {
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
+
     const int gridWidth = chunkSize * lod / bottomLod;
     const int gridWidthP1 = gridWidth + 1;
+    const int gridWidthP3 = gridWidth + 3;
+    const int gridWidthP3T3 = gridWidthP3 * 3;
+    
     const int gridHeight = chunkSize * lod / rightLod;
     const int gridHeightP1 = gridHeight + 1;
+    const int gridHeightP3 = gridHeight + 3;
+    const int gridHeightP3T3 = gridHeightP3 * 3;
+
+    const int chunkSizeP2 = chunkSize + 2;
+
+    std::vector<Heightfield> heightfields(
+        (chunkSizeP2 * chunkSizeP2) + // center
+        (gridWidthP3T3 + gridHeightP3T3) // seams
+    );
+
+    getHeightFieldCenter(x, z, lod, heightfields);
+    getHeightFieldSeams(x, z, lod, lodArray, chunkSizeP2, heightfields);
+
+    return heightfields;
+}
+enum GenerateFlags {
+    GF_NONE = 0,
+    GF_TERRAIN = 1 << 0,
+    GF_WATER = 1 << 1,
+    GF_BARRIER = 1 << 2,
+    GF_VEGETATION = 1 << 3,
+    GF_GRASS = 1 << 4
+};
+ChunkResult *PGInstance::createChunkMesh(
+    const vm::ivec2 &worldPosition,
+    int lod,
+    const std::array<int, 2> &lodArray,
+    int generateFlags,
+    int numVegetationInstances,
+    int numGrassInstances
+) {
+    ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
+
+    // heightfield
+    std::vector<Heightfield> heightfields;
+    if (
+        (generateFlags & GF_TERRAIN) |
+        (generateFlags & GF_WATER) |
+        (generateFlags & GF_VEGETATION) |
+        (generateFlags & GF_GRASS)
+    ) {
+        heightfields = getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
+    }
 
     // terrain
-    TerrainGeometry terrainGeometry;
-    std::vector<Heightfield> heightfields(
-        (chunkSize * chunkSize) + // center
-        (gridWidthP1 + gridHeightP1) // seams
-    );
-    {
-        getHeightFieldCenter(worldPosition.x, worldPosition.y, lod, heightfields);
-        getHeightFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, heightfields);
+    if (generateFlags & GF_TERRAIN) {
+        TerrainGeometry terrainGeometry;
 
         generateTerrainGeometry(
             worldPosition,
@@ -1544,17 +1914,16 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
             heightfields,
             terrainGeometry
         );
+        result->terrainMeshBuffer = terrainGeometry.getBuffer();
+    } else {
+        result->terrainMeshBuffer = nullptr;
     }
 
     // water
-    WaterGeometry waterGeometry;
-    {
-        std::vector<Waterfield> waterfields(
-            (chunkSize * chunkSize) +
-            (gridWidthP1 + gridHeightP1)
-        );
-        getWaterFieldCenter(worldPosition.x, worldPosition.y, lod, waterfields);
-        getWaterFieldSeams(worldPosition.x, worldPosition.y, lod, lodArray, waterfields);
+    if (generateFlags & GF_WATER) {
+        WaterGeometry waterGeometry;
+
+        const std::vector<Waterfield> &waterfields = *((std::vector<Waterfield> *)&heightfields);
 
         generateWaterGeometry(
             worldPosition,
@@ -1564,35 +1933,63 @@ ChunkResult *PGInstance::createChunkMesh(const vm::ivec2 &worldPosition, int lod
             waterfields,
             waterGeometry
         );
+        result->waterMeshBuffer = waterGeometry.getBuffer();
+    } else {
+        result->waterMeshBuffer = nullptr;
     }
 
     // barrier
-    BarrierGeometry barrierGeometry;
-    OctreeContext octreeContext = getChunkSeedOctree(worldPosition, lod, chunkSize);
-    // auto nodeIter = findNodeIterAtPoint(octreeContext, worldPosition);
-    /* OctreeNodePtr node;
-    if (nodeIter != octreeContext.nodeMap.end()) {
-        node = nodeIter->second;
-    } else {
-        std::cerr << "could not find node at point " << worldPosition.x << " " << worldPosition.y << std::endl;
-        abort();
-    } */
-    {
+    if (generateFlags & GF_BARRIER) {
+        BarrierGeometry barrierGeometry;
+        OctreeContext octreeContext = getChunkSeedOctree(worldPosition, lod, chunkSize);
         generateBarrierGeometry(
             worldPosition,
             lod,
             chunkSize,
             octreeContext,
-            this,
             barrierGeometry
         );
+        result->barrierMeshBuffer = barrierGeometry.getBuffer();
+    } else {
+        result->barrierMeshBuffer = nullptr;
     }
 
-    ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
-    result->terrainMeshBuffer = terrainGeometry.getBuffer();
-    result->waterMeshBuffer = waterGeometry.getBuffer();
-    result->barrierMeshBuffer = barrierGeometry.getBuffer();
-    // result->barrierNodeBuffer = node->getBuffer();
+    // vegetation
+    if (generateFlags & GF_VEGETATION) {
+        VegetationGeometry vegetationGeometry;
+
+        generateVegetationGeometry(
+            worldPosition,
+            lod,
+            chunkSize,
+            numVegetationInstances,
+            heightfields,
+            noises,
+            vegetationGeometry
+        );
+        result->vegetationInstancesBuffer = vegetationGeometry.getBuffer();
+    } else {
+        result->vegetationInstancesBuffer = nullptr;
+    }
+
+    // grass
+    if (generateFlags & GF_GRASS) {
+        GrassGeometry grassGeometry;
+
+        generateGrassGeometry(
+            worldPosition,
+            lod,
+            chunkSize,
+            numGrassInstances,
+            heightfields,
+            noises,
+            grassGeometry
+        );
+        result->grassInstancesBuffer = grassGeometry.getBuffer();
+    } else {
+        result->grassInstancesBuffer = nullptr;
+    }
+
     return result;
 }
 /* uint8_t *PGInstance::createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
@@ -1828,8 +2225,15 @@ void PGInstance::setClipRange(const vm::vec2 &min, const vm::vec2 &max)
 
 //
 
-void PGInstance::createChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
-{
+void PGInstance::createChunkMeshAsync(
+    uint32_t id,
+    const vm::ivec2 &worldPosition,
+    int lod,
+    const std::array<int, 2> &lodArray,
+    int generateFlags,
+    int numVegetationInstances,
+    int numGrassInstances
+) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
     vm::vec3 worldPositionF{
@@ -1846,9 +2250,19 @@ void PGInstance::createChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPositio
         promise,
         worldPosition,
         lod,
-        lodArray2
+        lodArray2,
+        generateFlags,
+        numVegetationInstances,
+        numGrassInstances
     ]() -> void {
-        ChunkResult *result = createChunkMesh(worldPosition, lod, lodArray2);
+        ChunkResult *result = createChunkMesh(
+            worldPosition,
+            lod,
+            lodArray2,
+            generateFlags,
+            numVegetationInstances,
+            numGrassInstances
+        );
         if (!promise->resolve(result)) {
             result->free();
         }
@@ -1880,7 +2294,7 @@ void PGInstance::createChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPositio
     });
     ProcGen::taskQueue.pushTask(liquidTask);
 } */
-void PGInstance::createChunkVegetationAsync(uint32_t id, const vm::ivec2 &worldPosition, const int lod, const int numInstances) {
+/* void PGInstance::createChunkVegetationAsync(uint32_t id, const vm::ivec2 &worldPosition, const int lod, const int numInstances) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
     vm::vec3 worldPositionF{
@@ -1901,7 +2315,7 @@ void PGInstance::createChunkVegetationAsync(uint32_t id, const vm::ivec2 &worldP
         }
     });
     ProcGen::taskQueue.pushTask(vegetationSplatTask);
-}
+} */
 
 // get ranges
 /* void PGInstance::getHeightfieldRangeAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const vm::ivec2 &sizeXZ, int lod, float *heights, int priority) {
@@ -2020,7 +2434,7 @@ void PGInstance::getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, in
     ProcGen::taskQueue.pushTask(aoTask);
 } */
 
-void PGInstance::createChunkGrassAsync(uint32_t id, const vm::ivec2 &worldPosition, const int lod, const int numInstances) {
+/* void PGInstance::createChunkGrassAsync(uint32_t id, const vm::ivec2 &worldPosition, const int lod, const int numInstances) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
     vm::vec3 worldPositionF{
@@ -2035,11 +2449,17 @@ void PGInstance::createChunkGrassAsync(uint32_t id, const vm::ivec2 &worldPositi
         lod,
         numInstances
     ]() -> void {
-        uint8_t *result = createChunkGrass(worldPosition, lod, numInstances);
-        promise->resolve(result);
+        std::array<int, 2> lodArray;
+        lodArray[0] = lod;
+        lodArray[1] = lod;
+        std::vector<Heightfield> heightfields = getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
+        uint8_t *result = createChunkGrass(worldPosition, lod, heightfields, numInstances);
+        if (!promise->resolve(result)) {
+          free(result);
+        }
     });
     ProcGen::taskQueue.pushTask(grassSplatTask);
-}
+} */
 void PGInstance::createMobSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
@@ -2128,135 +2548,189 @@ uint8_t PGInstance::getBiome(float bx, float bz) {
 
 //
 
-void PGInstance::getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfield) {
-    for (int z = 0; z < chunkSize; z++)
-    {
-        for (int x = 0; x < chunkSize; x++)
-        {
-            int index2D = x + z * chunkSize;
-            Heightfield &localHeightfield = heightfield[index2D];
-            localHeightfield = getHeightField(bx + x * lod, bz + z * lod);
+void PGInstance::getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfields) {
+    const int chunkSizeP2 = chunkSize + 2;
+    for (int dz = 0; dz < chunkSizeP2; dz++) {
+        for (int dx = 0; dx < chunkSizeP2; dx++) {
+            const int index = dx + dz * chunkSizeP2;
+            Heightfield &localHeightfield = heightfields[index];
+            
+            const int x = dx - 1;
+            const int z = dz - 1;
+            const int ax = bx + x * lod;
+            const int az = bz + z * lod;
+            localHeightfield = getHeightField(ax, az);
         }
     }
 }
-void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Heightfield> &heightfields) {
+void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, int rowSize, std::vector<Heightfield> &heightfields) {
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
 
     const int gridWidth = chunkSize * lod / bottomLod;
-    const int gridWidthP1 = gridWidth + 1;
+    const int gridWidthP3 = gridWidth + 3;
 
     const int gridHeight = chunkSize * lod / rightLod;
-    const int gridHeightP1 = gridHeight + 1;
+    const int gridHeightP3 = gridHeight + 3;
 
-    const int heightfieldsCenterDataOffset = chunkSize * chunkSize;
+    const int heightfieldsCenterDataOffset = rowSize * rowSize;
 
     // bottom
     int index = heightfieldsCenterDataOffset;
     {
-        const int z = chunkSize;
-        for (int x = 0; x < gridWidthP1; x++) {
-            Heightfield &localHeightfieldSeam = heightfields[index];
-            localHeightfieldSeam = getHeightField(bx + x * bottomLod, bz + z * lod);
+        for (int dz = 0; dz < 3; dz++) {
+            for (int dx = 0; dx < gridWidthP3; dx++) {
+                const int x = dx - 1;
+                const int z = dz - 1;
 
-            index++;
+                Heightfield &localHeightfieldSeam = heightfields[index];
+                
+                const int ax = bx + x * bottomLod;
+                const int az = bz + chunkSize * lod + z * bottomLod;
+                localHeightfieldSeam = getHeightField(ax, az);
+
+                index++;
+            }
         }
     }
     // right
     {
-        const int x = chunkSize;
-        for (int z = 0; z < gridHeightP1; z++) {
-            Heightfield &localHeightfieldSeam = heightfields[index];
-            localHeightfieldSeam = getHeightField(bx + x * lod, bz + z * rightLod);
+        for (int dx = 0; dx < 3; dx++) {
+            for (int dz = 0; dz < gridHeightP3; dz++) {
+                const int x = dx - 1;
+                const int z = dz - 1;
+                
+                Heightfield &localHeightfieldSeam = heightfields[index];
 
-            index++;
+                const int ax = bx + chunkSize * lod + x * rightLod;
+                const int az = bz + z * rightLod;
+                localHeightfieldSeam = getHeightField(ax, az);
+
+                index++;
+            }
         }
     }
 }
 Heightfield PGInstance::getHeightField(float bx, float bz) {
-    // int bxi = (int)bx;
-    // int bzi = (int)bz;
-    
     Heightfield localHeightfield;
 
     vm::vec2 fWorldPosition{bx, bz};
 
+    // height
     const float halfChunkSizeF = (float)chunkSize / 2.f;
     const float maxDistance = std::sqrt(halfChunkSizeF);
 
+    // water
+    constexpr int waterRange = 4;
+    const float maxWaterDistance = (float)std::sqrt((float)waterRange * (float)waterRange);
+    constexpr float baseWaterFactor = 0.25;
+
+    // acc height
     std::unordered_map<unsigned char, float> biomeCounts(numBiomes);
-    float totalSamples = 0;
-    for (float dz = -halfChunkSizeF; dz <= halfChunkSizeF; dz++)
-    {
-        for (float dx = -halfChunkSizeF; dx <= halfChunkSizeF; dx++)
-        {
+    float totalHeightFactors = 0;
+    // acc water
+    float sumWaterFactor = 0;
+    float totalWaterFactors = 0;
+    // loop
+    for (float dz = -halfChunkSizeF; dz <= halfChunkSizeF; dz++) {
+        for (float dx = -halfChunkSizeF; dx <= halfChunkSizeF; dx++) {
             float distance = std::sqrt(dx*dx + dz*dz);
-            float factor = std::max(1.f - (distance / maxDistance), 0.f);
 
-            if (factor > 0) {
-                float ax = bx + dx;
-                float az = bz + dz;
-                unsigned char b = getBiome(ax, az);
+            float ax = bx + dx;
+            float az = bz + dz;
+            unsigned char b = 0x0;
+            bool hasBiome = false;
 
-                biomeCounts[b] += factor;
-                totalSamples += factor;
+            if (distance < maxDistance) {
+                if (!hasBiome) {
+                    b = getBiome(ax, az);
+                    hasBiome = true;
+                }
+
+                float heightFactor = 1.f - (distance / maxDistance);
+
+                biomeCounts[b] += heightFactor;
+                totalHeightFactors += heightFactor;
+            }
+
+            if (distance < maxWaterDistance) {
+                if (!hasBiome) {
+                    b = getBiome(ax, az);
+                    hasBiome = true;
+                }
+
+                float waterFactor = 1.f - (distance / maxWaterDistance);
+                waterFactor =
+                    baseWaterFactor +
+                    (1.f - baseWaterFactor) * waterFactor;
+
+                if (isWaterBiome(b)) {
+                    sumWaterFactor += waterFactor;
+                }
+                totalWaterFactors += waterFactor;
             }
         }
     }
+    sumWaterFactor /= totalWaterFactors;
 
-    std::vector<unsigned char> seenBiomes;
-    for (auto kv : biomeCounts)
+    // postprocess height
     {
-        unsigned char b = kv.first;
-        seenBiomes.push_back(b);
-    }
-    
-    // sort by increasing occurence count of the biome
-    std::sort(
-        seenBiomes.begin(),
-        seenBiomes.end(),
-        [&](unsigned char b1, unsigned char b2) -> bool {
-            return biomeCounts[b1] > biomeCounts[b2];
-        }
-    );
-
-    for (size_t i = 0; i < 4; i++)
-    {
-        if (i < seenBiomes.size())
+        std::vector<unsigned char> seenBiomes;
+        for (auto kv : biomeCounts)
         {
-            localHeightfield.biomesVectorField[i] = seenBiomes[i];
-            localHeightfield.biomesWeightsVectorField[i] = biomeCounts[seenBiomes[i]] / totalSamples * 255.f;
+            unsigned char b = kv.first;
+            seenBiomes.push_back(b);
         }
-        else
+        
+        // sort by increasing occurence count of the biome
+        std::sort(
+            seenBiomes.begin(),
+            seenBiomes.end(),
+            [&](unsigned char b1, unsigned char b2) -> bool {
+                return biomeCounts[b1] > biomeCounts[b2];
+            }
+        );
+
+        for (size_t i = 0; i < 4; i++)
         {
-            localHeightfield.biomesVectorField[i] = 0;
-            localHeightfield.biomesWeightsVectorField[i] = 0;
+            if (i < seenBiomes.size())
+            {
+                localHeightfield.biomesVectorField[i] = seenBiomes[i];
+                localHeightfield.biomesWeightsVectorField[i] = biomeCounts[seenBiomes[i]] / totalHeightFactors * 255.f;
+            }
+            else
+            {
+                localHeightfield.biomesVectorField[i] = 0;
+                localHeightfield.biomesWeightsVectorField[i] = 0;
+            }
         }
+
+        float elevationSum = 0.f;
+        vm::vec2 fWorldPosition{bx, bz};
+        for (auto const &iter : biomeCounts)
+        {
+            elevationSum += iter.second * getComputedBiomeHeight(iter.first, fWorldPosition);
+        }
+
+        float elevation = elevationSum / totalHeightFactors;
+        localHeightfield.heightField = elevation;
     }
 
-    float elevationSum = 0.f;
-    for (auto const &iter : biomeCounts)
+    // postprocess water
     {
-        elevationSum += iter.second * getComputedBiomeHeight(iter.first, fWorldPosition);
+        localHeightfield.waterFactor = sumWaterFactor;
     }
-
-    float elevation = elevationSum / totalSamples;
-    localHeightfield.heightField = elevation;
-
 
     getComputedMaterials(localHeightfield, seenBiomes[0], fWorldPosition);
 
     return localHeightfield;
 }
 float PGInstance::getHeight(float bx, float bz) {
-    // int bxi = (int)bx;
-    // int bzi = (int)bz;
-
     const float halfChunkSizeF = (float)chunkSize / 2.f;
     const float maxDistance = std::sqrt(halfChunkSizeF + 1.f);
 
     std::unordered_map<unsigned char, float> biomeCounts(numBiomes);
-    float totalSamples = 0;
+    float totalHeightFactors = 0;
     for (float dz = -halfChunkSizeF; dz <= halfChunkSizeF; dz++)
     {
         for (float dx = -halfChunkSizeF; dx <= halfChunkSizeF; dx++)
@@ -2270,7 +2744,7 @@ float PGInstance::getHeight(float bx, float bz) {
                 unsigned char b = getBiome(ax, az);
 
                 biomeCounts[b] += factor;
-                totalSamples += factor;
+                totalHeightFactors += factor;
             }
         }
     }
@@ -2282,24 +2756,24 @@ float PGInstance::getHeight(float bx, float bz) {
         elevationSum += iter.second * getComputedBiomeHeight(iter.first, fWorldPosition);
     }
 
-    float elevation = elevationSum / totalSamples;
+    float elevation = elevationSum / totalHeightFactors;
     return elevation;
 }
 
 //
 
-void PGInstance::getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfields) {
+/* void PGInstance::getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfields) {
     for (int z = 0; z < chunkSize; z++)
     {
         for (int x = 0; x < chunkSize; x++)
         {
-            int index2D = x + z * chunkSize;
-            Waterfield &localWaterfield = waterfields[index2D];
+            const int index = x + z * chunkSize;
+            Waterfield &localWaterfield = waterfields[index];
             localWaterfield = getWaterField(bx + x * lod, bz + z * lod, lod);
         }
     }
 }
-void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Waterfield> &waterfields) {
+void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, int rowSize, std::vector<Waterfield> &waterfields) {
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
 
@@ -2309,50 +2783,64 @@ void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<in
     const int gridHeight = chunkSize * lod / rightLod;
     const int gridHeightP1 = gridHeight + 1;
 
-    const int waterfieldsCenterDataOffset = chunkSize * chunkSize;
+    const int waterfieldsCenterDataOffset = rowSize * rowSize;
 
     // bottom
     int index = waterfieldsCenterDataOffset;
     {
-        const int z = chunkSize;
-        for (int x = 0; x < gridWidthP1; x++) {
-            Waterfield &localWaterfieldSeam = waterfields[index];
-            localWaterfieldSeam = getWaterField(bx + x * bottomLod, bz + z * lod, lod);
+        for (int dz = 0; dz < 1; dz++) {
+            for (int dx = 0; dx < gridWidthP1; dx++) {
+                const int z = dz;
+                const int x = dx;
 
-            index++;
+                Waterfield &localWaterfieldSeam = waterfields[index];
+                
+                const int ax = bx + x * bottomLod;
+                const int az = bz + chunkSize * lod + z * bottomLod;
+                localWaterfieldSeam = getWaterField(ax, az, lod);
+
+                index++;
+            }
         }
     }
     // right
     {
-        const int x = chunkSize;
-        for (int z = 0; z < gridHeightP1; z++) {
-            Waterfield &localWaterfieldSeam = waterfields[index];
-            localWaterfieldSeam = getWaterField(bx + x * lod, bz + z * rightLod, lod);
+        for (int dx = 0; dx < 1; dx++) {
+            for (int dz = 0; dz < gridHeightP1; dz++) {
+                const int z = dz;
+                const int x = dx;
+                
+                Waterfield &localWaterfieldSeam = waterfields[index];
 
-            index++;
+                const int ax = bx + chunkSize * lod + x * rightLod;
+                const int az = bz + z * rightLod;
+                localWaterfieldSeam = getWaterField(ax, az, lod);
+
+                index++;
+            }
         }
     }
-}
+} */
 
 //
 
-Waterfield PGInstance::getWaterField(int bx, int bz, int lod) {
-    constexpr int range = 4;
-    // constexpr float maxWaterFactorSqrt = (2 * range) + 1;
-    // constexpr float maxWaterFactor = maxWaterFactorSqrt * maxWaterFactorSqrt;
-    const float maxDistance = (float)std::sqrt((float)range * (float)range);
-    constexpr float baseFactor = 0.25;
+/* Waterfield PGInstance::getWaterField(int bx, int bz, int lod) {
+    constexpr int waterRange = 4;
+    const float maxWaterDistance = (float)std::sqrt((float)waterRange * (float)waterRange);
+    constexpr float baseWaterFactor = 0.25;
 
     float waterFactor = 0;
     float maxWaterFactor = 0;
-    for (int dz = -range; dz <= range; dz++) {
+    for (int dz = -waterRange; dz <= waterRange; dz++) {
         const int az = bz + dz * lod;
 
-        for (int dx = -range; dx <= range; dx++) {
+        for (int dx = -waterRange; dx <= waterRange; dx++) {
             const int ax = bx + dx * lod;
 
             const float distance = (float)std::sqrt((float)dx * (float)dx + (float)dz * (float)dz);
-            const float localFactor = baseFactor + (1.f - baseFactor) * (1. - distance / maxDistance);
+            const float localFactor =
+              baseWaterFactor +
+              (1.f - baseWaterFactor) * (1. - distance / maxWaterDistance);
 
             unsigned char b = getBiome(ax, az);
             if (isWaterBiome(b)) {
@@ -2366,7 +2854,7 @@ Waterfield PGInstance::getWaterField(int bx, int bz, int lod) {
     return Waterfield{
         waterFactor
     };
-}
+} */
 
 //
 
@@ -2400,7 +2888,7 @@ Waterfield PGInstance::getWaterField(int bx, int bz, int lod) {
 
     skylight = std::min(std::max(skylight, (uint8_t)0), maxSkyLightu8);
 
-    // XXX should flood fill the light
+    // should flood fill the light
 
     return skylight;
 }
@@ -2650,7 +3138,7 @@ void PGInstance::trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec
         uint8_t *buffer = trackerUpdate.getBuffer();
         // std::cout << "trakcer update buffer address" << (void *)buffer << std::endl;
         if (!promise->resolve(buffer)) {
-          // XXX clean up
+          free(buffer);
         }
     });
     ProcGen::taskQueue.pushTask(trackerUpdateTask);
