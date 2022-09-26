@@ -425,7 +425,6 @@ void createPlaneGeometry(
     int widthSegments,
     int heightSegments,
     int rowSize,
-    int rowOffset,
     const std::vector<T> &heightfields,
     G &geometry
 ) {
@@ -441,8 +440,8 @@ void createPlaneGeometry(
     //
 
     auto pushPoint = [&](int x, int y) -> void {
-        const int dx = x + rowOffset;
-        const int dy = y + rowOffset;
+        const int dx = x + 1;
+        const int dy = y + 1;
         const int index = dx + dy * rowSize;
         const T &v0 = heightfields[index];
 
@@ -460,23 +459,23 @@ void createPlaneGeometry(
         // normal
         vm::vec3 normal;
         if (computeNormals == ComputeNormals::YES) {
-            const int Lx = (x - 1) + rowOffset;
-            const int Ly = y + rowOffset;
+            const int Lx = (x - 1) + 1;
+            const int Ly = y + 1;
             const int Lindex = Lx + Ly * rowSize;
             const float Lheight = heightfields[Lindex].getHeight();
 
-            const int Rx = (x + 1) + rowOffset;
-            const int Ry = y + rowOffset;
+            const int Rx = (x + 1) + 1;
+            const int Ry = y + 1;
             const int Rindex = Rx + Ry * rowSize;
             const float Rheight = heightfields[Rindex].getHeight();
 
-            const int Ux = x + rowOffset;
-            const int Uy = (y - 1) + rowOffset;
+            const int Ux = x + 1;
+            const int Uy = (y - 1) + 1;
             const int Uindex = Ux + Uy * rowSize;
             const float Uheight = heightfields[Uindex].getHeight();
 
-            const int Dx = x + rowOffset;
-            const int Dy = (y + 1) + rowOffset;
+            const int Dx = x + 1;
+            const int Dy = (y + 1) + 1;
             const int Dindex = Dx + Dy * rowSize;
             const float Dheight = heightfields[Dindex].getHeight();
 
@@ -527,8 +526,8 @@ void createPlaneGeometry(
     // indices
     for (int y = 0; y < gridY; y++) {
         for (int x = 0; x < gridX; x++) {
-            const int dx = x + rowOffset;
-            const int dy = y + rowOffset;
+            const int dx = x + 1;
+            const int dy = y + 1;
             
             const int ra = dx + rowSize * dy;
             const int rb = dx + rowSize * (dy + 1);
@@ -558,7 +557,6 @@ void createPlaneSeamsGeometry(
     const std::array<int, 2> &lodArray,
     int chunkSize,
     int rowSize,
-    int rowOffset,
     const std::vector<T> &heightfields,
     G &geometry
 ) {
@@ -787,8 +785,8 @@ void createPlaneSeamsGeometry(
         for (int innerPointX = 0; innerPointX < chunkSize; innerPointX++) {
             const int outerPointX = innerPointX;
 
-            const int innerPointDx = innerPointX + rowOffset;
-            const int innerPointDy = innerPointY + rowOffset;
+            const int innerPointDx = innerPointX + 1;
+            const int innerPointDy = innerPointY + 1;
 
             const int outerPointDx = outerPointX + 1;
 
@@ -814,8 +812,8 @@ void createPlaneSeamsGeometry(
         for (int innerPointX = 0; innerPointX < chunkSize; innerPointX++) {
             const int outerPointX = innerPointX / 2;
 
-            const int innerPointDx = innerPointX + rowOffset;
-            const int innerPointDy = innerPointY + rowOffset;
+            const int innerPointDx = innerPointX + 1;
+            const int innerPointDy = innerPointY + 1;
 
             const int outerPointDx = outerPointX + 1;
 
@@ -857,8 +855,8 @@ void createPlaneSeamsGeometry(
         for (int innerPointX = 0; innerPointX < chunkSize; innerPointX++) {
             int outerPointX = innerPointX * 2;
 
-            const int innerPointDx = innerPointX + rowOffset;
-            const int innerPointDy = innerPointY + rowOffset;
+            const int innerPointDx = innerPointX + 1;
+            const int innerPointDy = innerPointY + 1;
 
             int outerPointDx = outerPointX + 1;
 
@@ -921,8 +919,8 @@ void createPlaneSeamsGeometry(
         for (int innerPointY = 0; innerPointY < chunkSize; innerPointY++) {
             const int outerPointY = innerPointY;
 
-            const int innerPointDx = innerPointX + rowOffset;
-            const int innerPointDy = innerPointY + rowOffset;
+            const int innerPointDx = innerPointX + 1;
+            const int innerPointDy = innerPointY + 1;
 
             const int outerPointDy = outerPointY + 1;
 
@@ -949,8 +947,8 @@ void createPlaneSeamsGeometry(
         for (int innerPointY = 0; innerPointY < chunkSize; innerPointY++) {
             const int outerPointY = innerPointY / 2;
 
-            const int innerPointDx = innerPointX + rowOffset;
-            const int innerPointDy = innerPointY + rowOffset;
+            const int innerPointDx = innerPointX + 1;
+            const int innerPointDy = innerPointY + 1;
 
             const int outerPointDy = outerPointY + 1;
 
@@ -993,8 +991,8 @@ void createPlaneSeamsGeometry(
         for (int innerPointY = 0; innerPointY < chunkSize; innerPointY++) {
             int outerPointY = innerPointY * 2;
 
-            const int innerPointDx = innerPointX + rowOffset;
-            const int innerPointDy = innerPointY + rowOffset;
+            const int innerPointDx = innerPointX + 1;
+            const int innerPointDy = innerPointY + 1;
 
             int outerPointDy = outerPointY + 1;
 
@@ -1076,7 +1074,6 @@ void generateHeightfieldCenterMesh(
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
     const int rowSize = chunkSize + 2;
-    const int rowOffset = 1;
     createPlaneGeometry<
         Heightfield,
         TerrainGeometry,
@@ -1088,7 +1085,6 @@ void generateHeightfieldCenterMesh(
         chunkSizeM1,
         chunkSizeM1,
         rowSize,
-        rowOffset,
         heightfields,
         geometry
     );
@@ -1101,7 +1097,6 @@ void generateHeightfieldSeamsMesh(
     TerrainGeometry &geometry
 ) {
     const int rowSize = chunkSize + 2;
-    const int rowOffset = 1;
     createPlaneSeamsGeometry<
         Heightfield,
         TerrainGeometry,
@@ -1112,7 +1107,6 @@ void generateHeightfieldSeamsMesh(
         lodArray,
         chunkSize,
         rowSize,
-        rowOffset,
         heightfields,
         geometry
     );
@@ -1130,7 +1124,6 @@ void generateWaterfieldCenterMesh(
     const int worldSizeM1 = worldSize - lod;
     const int chunkSizeM1 = chunkSize - 1;
     const int rowSize = chunkSize + 2;
-    const int rowOffset = 1;
     createPlaneGeometry<
         Waterfield,
         WaterGeometry,
@@ -1142,7 +1135,6 @@ void generateWaterfieldCenterMesh(
         chunkSizeM1,
         chunkSizeM1,
         rowSize,
-        rowOffset,
         waterfields,
         geometry
     );
@@ -1155,7 +1147,6 @@ void generateWaterfieldSeamsMesh(
     WaterGeometry &geometry
 ) {
     const int rowSize = chunkSize + 2;
-    const int rowOffset = 1;
     createPlaneSeamsGeometry<
         Waterfield,
         WaterGeometry,
@@ -1166,7 +1157,6 @@ void generateWaterfieldSeamsMesh(
         lodArray,
         chunkSize,
         rowSize,
-        rowOffset,
         waterfields,
         geometry
     );
