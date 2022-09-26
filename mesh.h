@@ -100,5 +100,8 @@ public:
 class GrassGeometry : public SplatInstanceGeometry {
     // nothing
 };
+class VegetationGeometry : public SplatInstanceGeometry {
+    // nothing
+};
 
 #endif // MESH_H

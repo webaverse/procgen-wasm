@@ -53,6 +53,7 @@ EMSCRIPTEN_KEEPALIVE void createChunkMeshAsync(
     int lod,
     int *lodArray,
     int generateFlags,
+    int numVegetationInstances,
     int numGrassInstances
 ) {
     std::array<int, 2> lodArray2{
@@ -65,15 +66,16 @@ EMSCRIPTEN_KEEPALIVE void createChunkMeshAsync(
         lod,
         lodArray2,
         generateFlags,
+        numVegetationInstances,
         numGrassInstances
     );
 }
 /* EMSCRIPTEN_KEEPALIVE void createChunkGrassAsync(PGInstance *inst, uint32_t taskId, int x, int z, int lod, int numGrassInstances) {
     inst->createChunkGrassAsync(taskId, vm::ivec2{x, z}, lod, numGrassInstances);
 } */
-EMSCRIPTEN_KEEPALIVE void createChunkVegetationAsync(PGInstance *inst, uint32_t taskId, int x, int z, int lod, int numVegetationInstances) {
+/* EMSCRIPTEN_KEEPALIVE void createChunkVegetationAsync(PGInstance *inst, uint32_t taskId, int x, int z, int lod, int numVegetationInstances) {
     inst->createChunkVegetationAsync(taskId, vm::ivec2{x, z}, lod, numVegetationInstances);
-}
+} */
 
 /* EMSCRIPTEN_KEEPALIVE void createLiquidChunkMeshAsync(DCInstance *inst, uint32_t taskId, int x, int y, int z, int *lodArray) {
     inst->createLiquidChunkMeshAsync(taskId, vm::ivec3{x, y, z}, lodArray);
