@@ -584,13 +584,6 @@ void createPlaneSeamsGeometry(
 
     //
 
-    /* int bottomIndexOffset = heightfieldsCenterDataReadOffset;
-    bottomIndexOffset += gridWidthPOffset * rowOffsetSeam;
-    bottomIndexOffset += rowOffsetSeam;
-    int rightIndexOffset = bottomIndexOffset;
-    rightIndexOffset += gridWidthP1;
-    rightIndexOffset += rowOffsetSeam;
-    rightIndexOffset += gridWidthPOffset * rowOffsetSeam; */
     auto pushBottomPoint = [&](int x, int y) -> void {
         const int ax = x * bottomLod;
         const int ay = (y + chunkSize) * lod;
@@ -746,54 +739,25 @@ void createPlaneSeamsGeometry(
     };
 
     // positions
-    int heightfieldsBottomDataWriteOffset;
-    int heightfieldsBottomDataReadOffset;
+    const int heightfieldsBottomDataWriteOffset =
+        heightfieldsCenterDataWriteOffset +
+        gridWidthP1;
+    const int heightfieldsBottomDataReadOffset =
+        heightfieldsCenterDataReadOffset +
+        3 * gridWidthPOffset;
+    // bottom
     {
-        int writeIndex = heightfieldsCenterDataWriteOffset;
-        int readIndex = heightfieldsCenterDataReadOffset;
-        
-        // bottom
-        readIndex += gridWidthPOffset * rowOffsetSeam;
-        readIndex += rowOffsetSeam;
-        {
-            // const int y = chunkSize;
-            const int y = 0;
-            for (int x = 0; x < gridWidthP1; x++) {
-                /* const T &fieldValue = heightfields[readIndex];
-
-                const int ax = x * bottomLod;
-                const int ay = y * lod; */
-                pushBottomPoint(x, y);
-                
-                writeIndex++;
-                readIndex++;
-            }
+        const int y = 0;
+        for (int x = 0; x < gridWidthP1; x++) {
+            pushBottomPoint(x, y);
         }
-        readIndex += rowOffsetSeam;
-        readIndex += gridWidthPOffset * rowOffsetSeam;
-
-        heightfieldsBottomDataWriteOffset = writeIndex;
-        heightfieldsBottomDataReadOffset = readIndex;
-
-        // right
-        readIndex += gridHeightPOffset * rowOffsetSeam;
-        readIndex += rowOffsetSeam;
-        {
-            // const int x = chunkSize;
-            const int x = 0;
-            for (int y = 0; y < gridHeightP1; y++) {
-                /* const T &fieldValue = heightfields[readIndex];
-
-                const int ax = x * lod;
-                const int ay = y * rightLod; */
-                pushRightPoint(x, y);
-                
-                writeIndex++;
-                readIndex++;
-            }
+    }
+    // right
+    {
+        const int x = 0;
+        for (int y = 0; y < gridHeightP1; y++) {
+            pushRightPoint(x, y);
         }
-        readIndex += rowOffsetSeam;
-        readIndex += gridHeightPOffset * rowOffsetSeam;
     }
 
     //
