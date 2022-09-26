@@ -444,7 +444,7 @@ void createPlaneGeometry(
         const int dx = x + rowOffset;
         const int dy = y + rowOffset;
         const int index = dx + dy * rowSize;
-        const T &v0 = heightfields.at(index);
+        const T &v0 = heightfields[index];
 
         const int ax = x * segment_width;
         const int ay = y * segment_height;
@@ -463,22 +463,22 @@ void createPlaneGeometry(
             const int Lx = (x - 1) + rowOffset;
             const int Ly = y + rowOffset;
             const int Lindex = Lx + Ly * rowSize;
-            const float Lheight = heightfields.at(Lindex).getHeight();
+            const float Lheight = heightfields[Lindex].getHeight();
 
             const int Rx = (x + 1) + rowOffset;
             const int Ry = y + rowOffset;
             const int Rindex = Rx + Ry * rowSize;
-            const float Rheight = heightfields.at(Rindex).getHeight();
+            const float Rheight = heightfields[Rindex].getHeight();
 
             const int Ux = x + rowOffset;
             const int Uy = (y - 1) + rowOffset;
             const int Uindex = Ux + Uy * rowSize;
-            const float Uheight = heightfields.at(Uindex).getHeight();
+            const float Uheight = heightfields[Uindex].getHeight();
 
             const int Dx = x + rowOffset;
             const int Dy = (y + 1) + rowOffset;
             const int Dindex = Dx + Dy * rowSize;
-            const float Dheight = heightfields.at(Dindex).getHeight();
+            const float Dheight = heightfields[Dindex].getHeight();
 
             normal = vm::normalize(
                 vm::vec3{
@@ -508,9 +508,9 @@ void createPlaneGeometry(
     }
 
     auto pushTriangle = [&](int ra, int rb, int rc, int wa, int wb, int wc) -> void {
-        const T &hfA = heightfields.at(ra);
-        const T &hfB = heightfields.at(rb);
-        const T &hfC = heightfields.at(rc);
+        const T &hfA = heightfields[ra];
+        const T &hfB = heightfields[rb];
+        const T &hfC = heightfields[rc];
         if (T::acceptIndices(hfA, hfB, hfC)) {
             if (windingDirection == WindingDirection::CCW) {
                 geometry.indices.push_back(wa);
@@ -601,7 +601,7 @@ void createPlaneSeamsGeometry(
             heightfieldsCenterDataReadOffset +
             (dy * gridWidthPOffset) +
             dx;
-        const T &v0 = heightfields.at(index);
+        const T &v0 = heightfields[index];
 
         // position
         const float height = v0.getHeight();
@@ -620,7 +620,7 @@ void createPlaneSeamsGeometry(
                 heightfieldsCenterDataReadOffset +
                 (Ly * gridWidthPOffset) +
                 Lx;
-            const float Lheight = heightfields.at(Lindex).getHeight();
+            const float Lheight = heightfields[Lindex].getHeight();
 
             const int Rx = dx + 1;
             const int Ry = dy;
@@ -628,7 +628,7 @@ void createPlaneSeamsGeometry(
                 heightfieldsCenterDataReadOffset +
                 (Ry * gridWidthPOffset) +
                 Rx;
-            const float Rheight = heightfields.at(Rindex).getHeight();
+            const float Rheight = heightfields[Rindex].getHeight();
 
             const int Ux = dx;
             const int Uy = dy - 1;
@@ -636,7 +636,7 @@ void createPlaneSeamsGeometry(
                 heightfieldsCenterDataReadOffset +
                 (Uy * gridWidthPOffset) +
                 Ux;
-            const float Uheight = heightfields.at(Uindex).getHeight();
+            const float Uheight = heightfields[Uindex].getHeight();
 
             const int Dx = dx;
             const int Dy = dy + 1;
@@ -644,7 +644,7 @@ void createPlaneSeamsGeometry(
                 heightfieldsCenterDataReadOffset +
                 (Dy * gridWidthPOffset) +
                 Dx;
-            const float Dheight = heightfields.at(Dindex).getHeight();
+            const float Dheight = heightfields[Dindex].getHeight();
 
             normal = vm::normalize(
                 vm::vec3{
@@ -676,7 +676,7 @@ void createPlaneSeamsGeometry(
             (3 * gridWidthPOffset) +
             (dx * gridHeightPOffset) +
             dy;
-        const T &v0 = heightfields.at(index);
+        const T &v0 = heightfields[index];
 
         // position
         const float height = v0.getHeight();
@@ -696,7 +696,7 @@ void createPlaneSeamsGeometry(
                 (3 * gridWidthPOffset) +
                 (Lx * gridHeightPOffset) +
                 Ly;
-            const float Lheight = heightfields.at(Lindex).getHeight();
+            const float Lheight = heightfields[Lindex].getHeight();
 
             const int Rx = dx + 1;
             const int Ry = dy;
@@ -705,7 +705,7 @@ void createPlaneSeamsGeometry(
                 (3 * gridWidthPOffset) +
                 (Rx * gridHeightPOffset) +
                 Ry;
-            const float Rheight = heightfields.at(Rindex).getHeight();
+            const float Rheight = heightfields[Rindex].getHeight();
 
             const int Ux = dx;
             const int Uy = dy - 1;
@@ -714,7 +714,7 @@ void createPlaneSeamsGeometry(
                 (3 * gridWidthPOffset) +
                 (Ux * gridHeightPOffset) +
                 Uy;
-            const float Uheight = heightfields.at(Uindex).getHeight();
+            const float Uheight = heightfields[Uindex].getHeight();
 
             const int Dx = dx;
             const int Dy = dy + 1;
@@ -723,7 +723,7 @@ void createPlaneSeamsGeometry(
                 (3 * gridWidthPOffset) +
                 (Dx * gridHeightPOffset) +
                 Dy;
-            const float Dheight = heightfields.at(Dindex).getHeight();
+            const float Dheight = heightfields[Dindex].getHeight();
 
             normal = vm::normalize(
                 vm::vec3{
@@ -759,7 +759,7 @@ void createPlaneSeamsGeometry(
             // const int y = chunkSize;
             const int y = 0;
             for (int x = 0; x < gridWidthP1; x++) {
-                /* const T &fieldValue = heightfields.at(readIndex);
+                /* const T &fieldValue = heightfields[readIndex];
 
                 const int ax = x * bottomLod;
                 const int ay = y * lod; */
@@ -782,7 +782,7 @@ void createPlaneSeamsGeometry(
             // const int x = chunkSize;
             const int x = 0;
             for (int y = 0; y < gridHeightP1; y++) {
-                /* const T &fieldValue = heightfields.at(readIndex);
+                /* const T &fieldValue = heightfields[readIndex];
 
                 const int ax = x * lod;
                 const int ay = y * rightLod; */
@@ -806,9 +806,9 @@ void createPlaneSeamsGeometry(
     const int gridY1 = gridY + 1; // equals chunkSize
 
     auto pushTriangle = [&](int ra, int rb, int rc, int wa, int wb, int wc) {
-        const T &hfA = heightfields.at(ra);
-        const T &hfB = heightfields.at(rb);
-        const T &hfC = heightfields.at(rc);
+        const T &hfA = heightfields[ra];
+        const T &hfB = heightfields[rb];
+        const T &hfC = heightfields[rc];
         if (T::acceptIndices(hfA, hfB, hfC)) {
             if (windingDirection == WindingDirection::CCW) {
                 geometry.indices.push_back(wa);
