@@ -408,9 +408,27 @@ enum class WindingDirection {
     CCW,
     CW
 };
+enum class ComputeNormals {
+    NO,
+    YES
+};
 
-template<typename T, typename G, WindingDirection windingDirection>
-void createPlaneGeometry(int width, int height, int widthSegments, int heightSegments, int rowSize, int rowOffset, const std::vector<T> &heightfields, G &geometry) {
+template<
+    typename T,
+    typename G,
+    WindingDirection windingDirection,
+    ComputeNormals computeNormals
+>
+void createPlaneGeometry(
+    int width,
+    int height,
+    int widthSegments,
+    int heightSegments,
+    int rowSize,
+    int rowOffset,
+    const std::vector<T> &heightfields,
+    G &geometry
+) {
     const int &gridX = widthSegments; // equals chunkSize - 1
     const int &gridY = heightSegments; // equals chunkSize - 1
 
@@ -422,39 +440,77 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
 
     //
 
-    auto pushPoint = [&](int x, int y, const T &fieldValue) -> void {
-        const float height = fieldValue.getHeight();
+    auto pushPoint = [&](int x, int y) -> void {
+        const int dx = x + rowOffset;
+        const int dy = y + rowOffset;
+        const int index = dx + dy * rowSize;
+        const T &v0 = heightfields.at(index);
+
+        const int ax = x * segment_width;
+        const int ay = y * segment_height;
+
+        // position
+        const float height = v0.getHeight();
         geometry.positions.push_back(vm::vec3{
-            (float)x,
+            (float)ax,
             height,
-            (float)y
+            (float)ay
         });
-        geometry.normals.push_back(vm::vec3{
-            0,
-            1,
-            0
-        });
-        geometry.pushPointMetadata(fieldValue);
+
+        // normal
+        vm::vec3 normal;
+        if (computeNormals == ComputeNormals::YES) {
+            const int Lx = (x - 1) + rowOffset;
+            const int Ly = y + rowOffset;
+            const int Lindex = Lx + Ly * rowSize;
+            const float Lheight = heightfields.at(Lindex).getHeight();
+
+            const int Rx = (x + 1) + rowOffset;
+            const int Ry = y + rowOffset;
+            const int Rindex = Rx + Ry * rowSize;
+            const float Rheight = heightfields.at(Rindex).getHeight();
+
+            const int Ux = x + rowOffset;
+            const int Uy = (y - 1) + rowOffset;
+            const int Uindex = Ux + Uy * rowSize;
+            const float Uheight = heightfields.at(Uindex).getHeight();
+
+            const int Dx = x + rowOffset;
+            const int Dy = (y + 1) + rowOffset;
+            const int Dindex = Dx + Dy * rowSize;
+            const float Dheight = heightfields.at(Dindex).getHeight();
+
+            normal = vm::normalize(
+                vm::vec3{
+                    Lheight - Rheight,
+                    2.0f,
+                    Uheight - Dheight
+                }
+            );
+        } else {
+            normal = vm::vec3{
+                0,
+                1,
+                0
+            };
+        }
+        geometry.normals.push_back(normal);
+        
+        // metadata
+        geometry.pushPointMetadata(v0);
     };
 
     // positions
     for (int y = 0; y < gridY1; y++) {
         for (int x = 0; x < gridX1; x++) {
-            const int dx = x + rowOffset;
-            const int dy = y + rowOffset;
-            const int index = dx + dy * rowSize;
-            const T &fieldValue = heightfields[index];
-
-            const int ax = x * segment_width;
-            const int ay = y * segment_height;
-            pushPoint(ax, ay, fieldValue);
+            pushPoint(x, y);
         }
     }
 
     auto pushTriangle = [&](int ra, int rb, int rc, int wa, int wb, int wc) -> void {
-        const T &hfA = heightfields[ra];
-        const T &hfB = heightfields[rb];
-        const T &hfC = heightfields[rc];
+        const T &hfA = heightfields.at(ra);
+        const T &hfB = heightfields.at(rb);
+        const T &hfC = heightfields.at(rc);
         if (T::acceptIndices(hfA, hfB, hfC)) {
             if (windingDirection == WindingDirection::CCW) {
                 geometry.indices.push_back(wa);
@@ -491,8 +547,27 @@ void createPlaneGeometry(int width, int height, int widthSegments, int heightSeg
 
     }
 }
-template<typename T, typename G, WindingDirection windingDirection>
-void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int chunkSize, int rowSize, int rowOffset, int rowOffsetSeam, const std::vector<T> &heightfields, G &geometry) {
+template<
+    typename T,
+    typename G,
+    WindingDirection windingDirection,
+    ComputeNormals computeNormals
+>
+void createPlaneSeamsGeometry(
+    int lod,
+    const std::array<int, 2> &lodArray,
+    int chunkSize,
+    int rowSize,
+    int rowOffset,
+    int rowOffsetSeam,
+    const std::vector<T> &heightfields,
+    G &geometry
+) {
+    if (rowOffsetSeam != 1) {
+        std::cout << "unexpected rowOffsetSeam " << rowOffsetSeam << std::endl;
+        abort();
+    }
+
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
 
@@ -509,19 +584,214 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
 
     //
 
-    auto pushPoint = [&](int x, int y, const T &fieldValue) -> void {
-        const float height = fieldValue.getHeight();
+    /* int bottomIndexOffset = heightfieldsCenterDataReadOffset;
+    bottomIndexOffset += gridWidthPOffset * rowOffsetSeam;
+    bottomIndexOffset += rowOffsetSeam;
+    int rightIndexOffset = bottomIndexOffset;
+    rightIndexOffset += gridWidthP1;
+    rightIndexOffset += rowOffsetSeam;
+    rightIndexOffset += gridWidthPOffset * rowOffsetSeam; */
+    auto pushBottomPoint = [&](int x, int y) -> void {
+        const int ax = x * bottomLod;
+        const int ay = (y + chunkSize) * lod;
+
+        const int dx = x + 1;
+        const int dy = y + 1;
+        const int index =
+            heightfieldsCenterDataReadOffset +
+            (dy * gridWidthPOffset) +
+            dx;
+        if (index < 0 || index >= heightfields.size()) {
+            std::cout << "index outrange center A " << index << " " << dx << " " << dy << std::endl;
+            abort();
+        }
+        const T &v0 = heightfields.at(index);
+
+        // position
+        const float height = v0.getHeight();
         geometry.positions.push_back(vm::vec3{
-            (float)x,
+            (float)ax,
             height,
-            (float)y
+            (float)ay
         });
-        geometry.normals.push_back(vm::vec3{
-            0,
-            1,
-            0
+        
+        // normal
+        vm::vec3 normal;
+        if (computeNormals == ComputeNormals::YES) {
+            const int Lx = dx - 1;
+            const int Ly = dy;
+            const int Lindex =
+                heightfieldsCenterDataReadOffset +
+                (Ly * gridWidthPOffset) +
+                Lx;
+            if (Lindex < 0 || Lindex >= heightfields.size()) {
+                std::cout << "index outrange center B " << Lindex << " " << Lx << " " << Ly << std::endl;
+                abort();
+            }
+            const float Lheight = heightfields.at(Lindex).getHeight();
+
+            const int Rx = dx + 1;
+            const int Ry = dy;
+            const int Rindex =
+                heightfieldsCenterDataReadOffset +
+                (Ry * gridWidthPOffset) +
+                Rx;
+            if (Rindex < 0 || Rindex >= heightfields.size()) {
+                std::cout << "index outrange center C " << Rindex << " " << Rx << " " << Ry << std::endl;
+                abort();
+            }
+            const float Rheight = heightfields.at(Rindex).getHeight();
+
+            const int Ux = dx;
+            const int Uy = dy - 1;
+            const int Uindex =
+                heightfieldsCenterDataReadOffset +
+                (Uy * gridWidthPOffset) +
+                Ux;
+            if (Uindex < 0 || Uindex >= heightfields.size()) {
+                std::cout << "index outrange center D " << Uindex << " " << Ux << " " << Uy << std::endl;
+                abort();
+            }
+            const float Uheight = heightfields.at(Uindex).getHeight();
+
+            const int Dx = dx;
+            const int Dy = dy + 1;
+            const int Dindex =
+                heightfieldsCenterDataReadOffset +
+                (Dy * gridWidthPOffset) +
+                Dx;
+            if (Dindex < 0 || Dindex >= heightfields.size()) {
+                std::cout << "index outrange center E " << Dindex << " " << Dx << " " << Dy << std::endl;
+                abort();
+            }
+            const float Dheight = heightfields.at(Dindex).getHeight();
+
+            normal = vm::normalize(
+                vm::vec3{
+                    Lheight - Rheight,
+                    2.0f,
+                    Uheight - Dheight
+                }
+            );
+        } else {
+            normal = vm::vec3{
+                0,
+                1,
+                0
+            };
+        }
+        geometry.normals.push_back(normal);
+
+        // metadata
+        geometry.pushPointMetadata(v0);
+    };
+    auto pushRightPoint = [&](int x, int y) -> void {
+        const int ax = (x + chunkSize) * lod;
+        const int ay = y * rightLod;
+
+        const int dx = x + 1;
+        const int dy = y + 1;
+        const int index =
+            heightfieldsCenterDataReadOffset +
+            (3 * gridWidthPOffset) +
+            (dx * gridHeightPOffset) +
+            dy;
+        if (index < 0 || index >= heightfields.size()) {
+            std::cout << "index outrange seams A " << index << " " << x << " " << y << std::endl;
+            abort();
+        }
+        const T &v0 = heightfields.at(index);
+
+        // position
+        const float height = v0.getHeight();
+        geometry.positions.push_back(vm::vec3{
+            (float)ax,
+            height,
+            (float)ay
         });
-        geometry.pushPointMetadata(fieldValue);
+        
+        // normal
+        vm::vec3 normal;
+        if (computeNormals == ComputeNormals::YES) {
+            const int Lx = dx - 1;
+            const int Ly = dy;
+            const int Lindex =
+                heightfieldsCenterDataReadOffset +
+                (3 * gridWidthPOffset) +
+                (Lx * gridHeightPOffset) +
+                Ly;
+            if (Lindex < 0 || Lindex >= heightfields.size()) {
+                std::cout << "index outrange seams B " << Lindex << " " << Lx << " " << Ly << std::endl;
+                abort();
+            }
+            const float Lheight = heightfields.at(Lindex).getHeight();
+
+            const int Rx = dx + 1;
+            const int Ry = dy;
+            const int Rindex =
+                heightfieldsCenterDataReadOffset +
+                (3 * gridWidthPOffset) +
+                (Rx * gridHeightPOffset) +
+                Ry;
+            if (Rindex < 0 || Rindex >= heightfields.size()) {
+                std::cout << "index outrange seams C " << Rindex << " " << Rx << " " << Ry << std::endl;
+                abort();
+            }
+            const float Rheight = heightfields.at(Rindex).getHeight();
+
+            const int Ux = dx;
+            const int Uy = dy - 1;
+            const int Uindex =
+                heightfieldsCenterDataReadOffset +
+                (3 * gridWidthPOffset) +
+                (Ux * gridHeightPOffset) +
+                Uy;
+            if (Uindex < 0 || Uindex >= heightfields.size()) {
+                std::cout << "index outrange seams D " << Rindex << " " << Ux << " " << Uy << std::endl;
+                abort();
+            }
+            const float Uheight = heightfields.at(Uindex).getHeight();
+
+            const int Dx = dx;
+            const int Dy = dy + 1;
+            const int Dindex =
+                heightfieldsCenterDataReadOffset +
+                (3 * gridWidthPOffset) +
+                (Dx * gridHeightPOffset) +
+                Dy;
+            if (Dindex < 0 || Dindex >= heightfields.size()) {
+                std::cout << "index outrange seams E " <<
+                    "Dindex: " << Dindex << " " <<
+                    "Dx: " << Dx << " " <<
+                    "Dy: " << Dy << " " <<
+                    "rowSize: " << rowSize << " " <<
+                    "heightfieldsCenterDataReadOffset: " << heightfieldsCenterDataReadOffset << " " <<
+                    "gridWidthPOffset: " << gridWidthPOffset << " " <<
+                    "gridHeightPOffset: " << gridHeightPOffset << " " <<
+                    "heightfields.size(): " << heightfields.size() << " " <<
+                    std::endl;
+                abort();
+            }
+            const float Dheight = heightfields.at(Dindex).getHeight();
+
+            normal = vm::normalize(
+                vm::vec3{
+                    Lheight - Rheight,
+                    2.0f,
+                    Uheight - Dheight
+                }
+            );
+        } else {
+            normal = vm::vec3{
+                0,
+                1,
+                0
+            };
+        }
+        geometry.normals.push_back(normal);
+
+        // metadata
+        geometry.pushPointMetadata(v0);
     };
 
     // positions
@@ -535,13 +805,14 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         readIndex += gridWidthPOffset * rowOffsetSeam;
         readIndex += rowOffsetSeam;
         {
-            const int y = chunkSize;
+            // const int y = chunkSize;
+            const int y = 0;
             for (int x = 0; x < gridWidthP1; x++) {
-                const T &fieldValue = heightfields[readIndex];
+                /* const T &fieldValue = heightfields.at(readIndex);
 
                 const int ax = x * bottomLod;
-                const int ay = y * lod;
-                pushPoint(ax, ay, fieldValue);
+                const int ay = y * lod; */
+                pushBottomPoint(x, y);
                 
                 writeIndex++;
                 readIndex++;
@@ -557,13 +828,14 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
         readIndex += gridHeightPOffset * rowOffsetSeam;
         readIndex += rowOffsetSeam;
         {
-            const int x = chunkSize;
+            // const int x = chunkSize;
+            const int x = 0;
             for (int y = 0; y < gridHeightP1; y++) {
-                const T &fieldValue = heightfields[readIndex];
+                /* const T &fieldValue = heightfields.at(readIndex);
 
                 const int ax = x * lod;
-                const int ay = y * rightLod;
-                pushPoint(ax, ay, fieldValue);
+                const int ay = y * rightLod; */
+                pushRightPoint(x, y);
                 
                 writeIndex++;
                 readIndex++;
@@ -583,9 +855,9 @@ void createPlaneSeamsGeometry(int lod, const std::array<int, 2> &lodArray, int c
     const int gridY1 = gridY + 1; // equals chunkSize
 
     auto pushTriangle = [&](int ra, int rb, int rc, int wa, int wb, int wc) {
-        const T &hfA = heightfields[ra];
-        const T &hfB = heightfields[rb];
-        const T &hfC = heightfields[rc];
+        const T &hfA = heightfields.at(ra);
+        const T &hfB = heightfields.at(rb);
+        const T &hfC = heightfields.at(rc);
         if (T::acceptIndices(hfA, hfB, hfC)) {
             if (windingDirection == WindingDirection::CCW) {
                 geometry.indices.push_back(wa);
@@ -896,7 +1168,21 @@ void generateHeightfieldCenterMesh(
     const int chunkSizeM1 = chunkSize - 1;
     const int rowSize = chunkSize + 2;
     const int rowOffset = 1;
-    createPlaneGeometry<Heightfield, TerrainGeometry, WindingDirection::CCW>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, rowSize, rowOffset, heightfields, geometry);
+    createPlaneGeometry<
+        Heightfield,
+        TerrainGeometry,
+        WindingDirection::CCW,
+        ComputeNormals::YES
+    >(
+        worldSizeM1,
+        worldSizeM1,
+        chunkSizeM1,
+        chunkSizeM1,
+        rowSize,
+        rowOffset,
+        heightfields,
+        geometry
+    );
 }
 void generateHeightfieldSeamsMesh(
     int lod,
@@ -908,7 +1194,21 @@ void generateHeightfieldSeamsMesh(
     const int rowSize = chunkSize + 2;
     const int rowOffset = 1;
     const int rowOffsetSeam = 1;
-    createPlaneSeamsGeometry<Heightfield, TerrainGeometry, WindingDirection::CCW>(lod, lodArray, chunkSize, rowSize, rowOffset, rowOffsetSeam, heightfields, geometry);
+    createPlaneSeamsGeometry<
+        Heightfield,
+        TerrainGeometry,
+        WindingDirection::CCW,
+        ComputeNormals::YES
+    >(
+        lod,
+        lodArray,
+        chunkSize,
+        rowSize,
+        rowOffset,
+        rowOffsetSeam,
+        heightfields,
+        geometry
+    );
 }
 
 //
@@ -924,7 +1224,21 @@ void generateWaterfieldCenterMesh(
     const int chunkSizeM1 = chunkSize - 1;
     const int rowSize = chunkSize + 2;
     const int rowOffset = 1;
-    createPlaneGeometry<Waterfield, WaterGeometry, WindingDirection::CCW>(worldSizeM1, worldSizeM1, chunkSizeM1, chunkSizeM1, rowSize, rowOffset, waterfields, geometry);
+    createPlaneGeometry<
+        Waterfield,
+        WaterGeometry,
+        WindingDirection::CCW,
+        ComputeNormals::NO
+    >(
+        worldSizeM1,
+        worldSizeM1,
+        chunkSizeM1,
+        chunkSizeM1,
+        rowSize,
+        rowOffset,
+        waterfields,
+        geometry
+    );
 }
 void generateWaterfieldSeamsMesh(
     int lod,
@@ -936,7 +1250,21 @@ void generateWaterfieldSeamsMesh(
     const int rowSize = chunkSize + 2;
     const int rowOffset = 1;
     const int rowOffsetSeam = 1;
-    createPlaneSeamsGeometry<Waterfield, WaterGeometry, WindingDirection::CCW>(lod, lodArray, chunkSize, rowSize, rowOffset, rowOffsetSeam, waterfields, geometry);
+    createPlaneSeamsGeometry<
+        Waterfield,
+        WaterGeometry,
+        WindingDirection::CCW,
+        ComputeNormals::NO
+    >(
+        lod,
+        lodArray,
+        chunkSize,
+        rowSize,
+        rowOffset,
+        rowOffsetSeam,
+        waterfields,
+        geometry
+    );
 }
 
 //
@@ -1240,7 +1568,7 @@ void generateTerrainGeometry(
     generateHeightfieldCenterMesh(lod, chunkSize, heightfields, geometry);
     generateHeightfieldSeamsMesh(lod, lodArray, chunkSize, heightfields, geometry);
     offsetGeometry(geometry, worldPosition);
-    computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
+    // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
 
 //
@@ -2647,7 +2975,7 @@ void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<in
 
     skylight = std::min(std::max(skylight, (uint8_t)0), maxSkyLightu8);
 
-    // XXX should flood fill the light
+    // should flood fill the light
 
     return skylight;
 }
