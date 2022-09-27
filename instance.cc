@@ -1522,7 +1522,7 @@ public:
         return height;
     }
 };
-void generateGrassGeometry(
+void generateGrassInstances(
     const vm::ivec2 &worldPositionXZ,
     const int lod,
     const int chunkSize,
@@ -1962,7 +1962,7 @@ ChunkResult *PGInstance::createChunkMesh(
     if (generateFlags & GF_GRASS) {
         GrassGeometry grassGeometry;
 
-        generateGrassGeometry(
+        generateGrassInstances(
             worldPosition,
             lod,
             chunkSize,
