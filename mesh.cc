@@ -248,7 +248,7 @@ uint8_t *PoiGeometry::getBuffer() const {
   size_t size = sizeof(uint32_t) + // numPs
     sizeof(float) * ps.size() + // ps
     sizeof(uint32_t) + // numInstances
-    sizeof(float) * instances.size();
+    sizeof(int32_t) * instances.size();
 
   uint8_t *buffer = (uint8_t *)malloc(size);
   int index = 0;
