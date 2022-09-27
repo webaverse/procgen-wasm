@@ -1730,7 +1730,7 @@ void generatePoiInstances(
                 
                 float ax = (float)chunkMinX + chunkOffsetX;
                 float az = (float)chunkMinZ + chunkOffsetZ;
-                float noiseValue = noises.grassNoise.in2D(ax, az);
+                float noiseValue = noises.poiNoise.in2D(ax, az);
 
                 if (noiseValue < poiRate && throwNoise <= poiThrowRate) {
                     const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
