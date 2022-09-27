@@ -30,6 +30,7 @@ public:
     uint8_t *barrierMeshBuffer;
     uint8_t *vegetationInstancesBuffer;
     uint8_t *grassInstancesBuffer;
+    uint8_t *poiInstancesBuffer;
 
     void free() {
         std::free(terrainMeshBuffer);
@@ -37,6 +38,7 @@ public:
         std::free(barrierMeshBuffer);
         std::free(vegetationInstancesBuffer);
         std::free(grassInstancesBuffer);
+        std::free(poiInstancesBuffer);
         std::free(this);
     }
 };
@@ -161,7 +163,8 @@ public:
         const std::array<int, 2> &lodArray,
         int generateFlags,
         int numVegetationInstances,
-        int numGrassInstances
+        int numGrassInstances,
+        int numPoiInstances
     );
     // uint8_t *createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
     OctreeContext getChunkSeedOctree(const vm::ivec2 &worldPosition, int lod, int chunkSize);
@@ -198,7 +201,8 @@ public:
         const std::array<int, 2> &lodArray,
         int generateFlags,
         int numVegetationInstances,
-        int numGrassInstances
+        int numGrassInstances,
+        int numPoiInstances
     );
     // void createLiquidChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
     // void createChunkGrassAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int numGrassInstances);

@@ -54,7 +54,8 @@ EMSCRIPTEN_KEEPALIVE void createChunkMeshAsync(
     int *lodArray,
     int generateFlags,
     int numVegetationInstances,
-    int numGrassInstances
+    int numGrassInstances,
+    int numPoiInstances
 ) {
     std::array<int, 2> lodArray2{
         lodArray[0],
@@ -67,7 +68,8 @@ EMSCRIPTEN_KEEPALIVE void createChunkMeshAsync(
         lodArray2,
         generateFlags,
         numVegetationInstances,
-        numGrassInstances
+        numGrassInstances,
+        numPoiInstances
     );
 }
 /* EMSCRIPTEN_KEEPALIVE void createChunkGrassAsync(PGInstance *inst, uint32_t taskId, int x, int z, int lod, int numGrassInstances) {

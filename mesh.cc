@@ -240,3 +240,30 @@ uint8_t *SplatInstanceGeometry::getBuffer() const {
 
   return buffer;
 }
+
+//
+
+uint8_t *PoiGeometry::getBuffer() const {
+  // serialize
+  size_t size = sizeof(uint32_t) + // numPs
+    sizeof(float) * ps.size() + // ps
+    sizeof(uint32_t) + // numInstances
+    sizeof(float) * instances.size();
+
+  uint8_t *buffer = (uint8_t *)malloc(size);
+  int index = 0;
+
+  *((uint32_t *)(buffer + index)) = ps.size();
+  index += sizeof(uint32_t);
+
+  memcpy(buffer + index, ps.data(), sizeof(float) * ps.size());
+  index += sizeof(float) * ps.size();
+
+  *((uint32_t *)(buffer + index)) = instances.size();
+  index += sizeof(uint32_t);
+
+  memcpy(buffer + index, instances.data(), sizeof(int32_t) * instances.size());
+  index += sizeof(int32_t) * instances.size();
+
+  return buffer;
+}

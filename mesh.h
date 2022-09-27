@@ -104,4 +104,14 @@ class VegetationGeometry : public SplatInstanceGeometry {
     // nothing
 };
 
+//
+
+class PoiGeometry {
+public:
+    std::vector<float> ps;
+    std::vector<int32_t> instances;
+
+    uint8_t *getBuffer() const;
+};
+
 #endif // MESH_H
