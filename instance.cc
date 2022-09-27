@@ -1736,6 +1736,8 @@ void generatePoiInstances(
                     poiGeometry.ps.push_back(ax);
                     poiGeometry.ps.push_back(height);
                     poiGeometry.ps.push_back(az);
+
+                    poiGeometry.instances.push_back(instanceId);
                 }
             }
         }
