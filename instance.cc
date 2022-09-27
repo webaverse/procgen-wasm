@@ -1953,7 +1953,8 @@ ChunkResult *PGInstance::createChunkMesh(
         (generateFlags & GF_TERRAIN) |
         (generateFlags & GF_WATER) |
         (generateFlags & GF_VEGETATION) |
-        (generateFlags & GF_GRASS)
+        (generateFlags & GF_GRASS) |
+        (generateFlags & GF_POI)
     ) {
         heightfields = getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
     }
