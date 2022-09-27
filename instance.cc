@@ -1746,7 +1746,7 @@ void generatePoiInstances(
 
 //
 
-template<typename G>
+/* template<typename G>
 G &mergeGeometry(G &dst, G &a, G &b) {
     dst.positions.reserve(a.positions.size() + b.positions.size());
     dst.normals.reserve(a.normals.size() + b.normals.size());
@@ -1774,7 +1774,7 @@ G &mergeGeometry(G &dst, G &a, G &b) {
     }
 
     return dst;
-}
+} */
 
 //
 
