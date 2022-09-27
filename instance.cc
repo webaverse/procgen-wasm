@@ -1602,7 +1602,7 @@ void generateGrassInstances(
 
 //
 
-void generateVegetationGeometry(
+void generateVegetationInstances(
     const vm::ivec2 &worldPositionXZ,
     const int lod,
     const int chunkSize,
@@ -1944,7 +1944,7 @@ ChunkResult *PGInstance::createChunkMesh(
     if (generateFlags & GF_VEGETATION) {
         VegetationGeometry vegetationGeometry;
 
-        generateVegetationGeometry(
+        generateVegetationInstances(
             worldPosition,
             lod,
             chunkSize,
