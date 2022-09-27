@@ -1723,23 +1723,19 @@ void generatePoiInstances(
             std::uniform_real_distribution<float> dis(0.f, 1.f);
 
             for (int i = 0; i < maxNumPoisPerChunk; i++) {
+                float noiseValue = dis(rng);
                 float chunkOffsetX = dis(rng) * (float)chunkSize;
                 float chunkOffsetZ = dis(rng) * (float)chunkSize;
                 int instanceId = (int)std::round(dis(rng) * (float)(numPoiInstances - 1));
-                float throwNoise = dis(rng);
-                
-                float ax = (float)chunkMinX + chunkOffsetX;
-                float az = (float)chunkMinZ + chunkOffsetZ;
-                float noiseValue = noises.poiNoise.in2D(ax, az);
 
-                if (noiseValue < poiRate && throwNoise <= poiThrowRate) {
+                if (noiseValue < poiRate) {
+                    float ax = (float)chunkMinX + chunkOffsetX;
+                    float az = (float)chunkMinZ + chunkOffsetZ;
                     const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
 
                     poiGeometry.ps.push_back(ax);
                     poiGeometry.ps.push_back(height);
                     poiGeometry.ps.push_back(az);
-
-                    poiGeometry.instances.push_back(instanceId);
                 }
             }
         }
