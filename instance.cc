@@ -1975,10 +1975,10 @@ enum GenerateFlags {
     GF_NONE = 0,
     GF_TERRAIN = 1 << 0,
     GF_WATER = 1 << 1,
-    GF_BARRIER = 1 << 2,
-    GF_VEGETATION = 1 << 3,
-    GF_GRASS = 1 << 4,
-    GF_POI = 1 << 5
+    // GF_BARRIER = 1 << 2,
+    GF_VEGETATION = 1 << 2,
+    GF_GRASS = 1 << 3,
+    GF_POI = 1 << 4
 };
 ChunkResult *PGInstance::createChunkMesh(
     const vm::ivec2 &worldPosition,
