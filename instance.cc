@@ -2141,7 +2141,6 @@ uint8_t *PGInstance::createBarrierMesh(
     const vm::ivec2 &worldPosition,
     int minLod,
     int maxLod
-    // const std::array<int, 2> &lodArray,
 ) {
     OctreeContext octreeContext = getChunkSeedOctree(
         worldPosition,
