@@ -118,6 +118,10 @@ public:
 
     std::vector<OctreeNodePtr> leafNodes;
 
+    vm::ivec2 leafNodesMin;
+    vm::ivec2 leafNodesMax;
+    std::vector<int> leafNodesIndex;
+
     uint8_t *getBuffer() const;
 };
 

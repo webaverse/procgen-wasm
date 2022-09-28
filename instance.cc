@@ -1542,13 +1542,63 @@ void generateBarrierGeometry(
 
         geometries.push_back(std::move(g));
     }
-    mergeGeometries(geometry, geometries); // XXX
+    mergeGeometries(geometry, geometries);
 
     // leaf nodes
     geometry.leafNodes = seedLeafNodes;
 
     // leaf node index
-    // XXX
+    {
+        vm::ivec2 leafNodesMin{ // in chunks space
+            std::numeric_limits<int>::max(),
+            std::numeric_limits<int>::max()
+        };
+        vm::ivec2 leafNodesMax{ // in chunks space
+            std::numeric_limits<int>::min(),
+            std::numeric_limits<int>::min()
+        };
+        for (size_t i = 0; i < seedLeafNodes.size(); i++) {
+            OctreeNodePtr node = seedLeafNodes[i];
+            vm::ivec2 nodeChunkPosition = node->min / chunkSize; // in chunks space
+            const int &nodeLod = node->lod;
+
+            int minX = nodeChunkPosition.x;
+            int minZ = nodeChunkPosition.y;
+            int maxX = nodeChunkPosition.x + nodeLod;
+            int maxZ = nodeChunkPosition.y + nodeLod;
+
+            leafNodesMin.x = std::min(leafNodesMin.x, minX);
+            leafNodesMin.y = std::min(leafNodesMin.y, minZ);
+            leafNodesMax.x = std::max(leafNodesMax.x, maxX);
+            leafNodesMax.y = std::max(leafNodesMax.y, maxZ);
+        }
+        geometry.leafNodesMin = leafNodesMin * chunkSize; // in world space
+        geometry.leafNodesMax = leafNodesMax * chunkSize; // in world space
+
+        int w = leafNodesMax.x - leafNodesMin.x; // in chunks space
+        int h = leafNodesMax.y - leafNodesMin.y; // in chunks space
+        geometry.leafNodesIndex.resize(w * h);
+
+        for (size_t i = 0; i < seedLeafNodes.size(); i++) {
+            OctreeNodePtr node = seedLeafNodes[i];
+            vm::ivec2 nodeChunkPosition = node->min / chunkSize; // in chunks space
+            const int &nodeLod = node->lod;
+
+            int minX = nodeChunkPosition.x;
+            int minZ = nodeChunkPosition.y;
+            int maxX = nodeChunkPosition.x + nodeLod;
+            int maxZ = nodeChunkPosition.y + nodeLod;
+
+            for (int z = minZ; z < maxZ; z++) {
+                for (int x = minX; x < maxX; x++) {
+                    int dx = x - leafNodesMin.x;
+                    int dz = z - leafNodesMin.y;
+                    int index = dx + dz * w;
+                    geometry.leafNodesIndex[index] = i;
+                }
+            }
+        }
+    }
 }
 
 //
