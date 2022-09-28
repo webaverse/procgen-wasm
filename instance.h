@@ -167,7 +167,12 @@ public:
         int numPoiInstances
     );
     // uint8_t *createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
-    OctreeContext getChunkSeedOctree(const vm::ivec2 &worldPosition, int lod, int chunkSize);
+    OctreeContext getChunkSeedOctree(
+        const vm::ivec2 &worldPosition,
+        int minLod,
+        int maxLod,
+        int chunkSize
+    );
 
     //
 
@@ -216,6 +221,20 @@ public:
     //
 
     void createMobSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority);
+    
+    //
+
+    uint8_t *createBarrierMesh(
+        const vm::ivec2 &worldPosition,
+        int minLod,
+        int maxLod
+    );
+    void createBarrierMeshAsync(
+        uint32_t id,
+        const vm::ivec2 &worldPosition,
+        int minLod,
+        int maxLod
+    );
 
     //
 

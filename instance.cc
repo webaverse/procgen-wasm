@@ -1366,14 +1366,13 @@ void setPositions2D(BarrierGeometry &geometry, const vm::ivec2 position2D) {
         geometry.positions2D.push_back(position2D);
     }
 }
-void generateBarrierMesh(
+void generateBarrierGeometry(
     const vm::ivec2 &worldPosition,
-    int lod,
     int chunkSize,
     OctreeContext &octreeContext,
     BarrierGeometry &geometry
 ) {
-    const int lodRange = lod * chunkSize;
+    // const int lodRange = lod * chunkSize;
 
     int index = 0;
     std::vector<OctreeNodePtr> seedLeafNodes = octreeContext.getLeafNodes();
@@ -1778,7 +1777,7 @@ G &mergeGeometry(G &dst, G &a, G &b) {
 
 //
 
-void generateBarrierGeometry(
+/* void generateBarrierGeometry(
     const vm::ivec2 &worldPosition,
     int lod,
     int chunkSize,
@@ -1788,7 +1787,7 @@ void generateBarrierGeometry(
     generateBarrierMesh(worldPosition, lod, chunkSize, octreeContext, geometry);
     // offsetGeometry(geometry, worldPosition);
     // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
-}
+} */
 
 //
 
@@ -1815,28 +1814,86 @@ void generateBarrierGeometry(
     );
     return *iter;
 } */
-OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int lod, int chunkSize) {
-    constexpr int minLod = 1;
-    // const int minLodRange = (1 << (minLod - 1)) * chunkSize;
-    constexpr int maxLod = 7;
-    const int maxLodRange = (1 << (maxLod - 1)) * chunkSize;
-    vm::ivec2 maxLodCenter{
+inline int getLodRange(int lod, int chunkSize) {
+    return (1 << (lod - 1)) * chunkSize;
+}
+OctreeContext PGInstance::getChunkSeedOctree(
+    const vm::ivec2 &worldPosition,
+    // int lod,
+    int minLod,
+    int maxLod, // we will sample a 3x3 of this lod
+    int chunkSize
+) {
+    // constexpr int minLod = 1;
+    // constexpr int maxLod = 6; // we will sample a 3x3 of this lod
+
+    const int maxLodRange = getLodRange(maxLod, chunkSize);
+    /* const int maxLodP1 = maxLod + 1;
+    const int maxLodP1Range = (1 << (maxLodP1 - 1)) * chunkSize;
+    vm::ivec2 maxLodP1Center{
         (int)std::floor((float)worldPosition.x / (float)maxLodRange) * maxLodRange,
         (int)std::floor((float)worldPosition.y / (float)maxLodRange) * maxLodRange
-    };
+    }; */
+
+    constexpr int maxNumSplits = 16;
+
+    std::vector<vm::ivec2> maxLodChunkPositions;
+    for (int dz = -1; dz <= 1; dz++) {
+        for (int dx = -1; dx <= 1; dx++) {
+            vm::ivec2 baseNode{
+                (int)std::floor(
+                    (float)(((float)worldPosition.x + (float)maxLodRange / 2.f) / (float)maxLodRange)
+                ) * maxLodRange,
+                (int)std::floor(
+                    (float)((float)worldPosition.y + (float)maxLodRange / 2.f) / (float)maxLodRange
+                ) * maxLodRange
+            };
+
+            // insert the node if it does not exist
+            auto iter = std::find(
+                maxLodChunkPositions.begin(),
+                maxLodChunkPositions.end(),
+                baseNode
+            );
+            if (iter == maxLodChunkPositions.end()) {
+                maxLodChunkPositions.push_back(baseNode);
+            }
+        }
+    }
 
     // compute splits
     std::vector<std::pair<vm::ivec2, int>> lodSplits;
-    {
-        float numSplits = (float)noises.numSplitsNoise.in2D(maxLodCenter.x, maxLodCenter.y);
-        uint32_t numSplitsHash;
-        MurmurHash3_x86_32(&numSplits, sizeof(numSplits), 0, &numSplitsHash);
-        numSplitsHash = (uint32_t)((float)numSplitsHash * 8.f / (float)0xFFFFFFFFu);
+    for (size_t i = 0; i < maxLodChunkPositions.size(); i++) {
+        const vm::ivec2 &baseNode = maxLodChunkPositions[i];
 
-        /* if (worldPosition.x == 0 && worldPosition.y == 0) {
-            std::cout << "num splits hash: " << maxLodCenter.x << " " << maxLodCenter.y << " " << numSplitsHash << std::endl;
-        } */
+        float chunkSeed = noises.numSplitsNoise.in2D(baseNode.x, baseNode.y);
+        unsigned int seedInt = *(unsigned int *)&chunkSeed;
+        std::mt19937 rng(seedInt);
+        std::uniform_real_distribution<float> dis(0.f, 1.f);
 
+        uint32_t numSplits = (uint32_t)(dis(rng) * (float)maxNumSplits);
+        for (uint32_t i = 0; i < numSplits; i++) {
+            uint32_t splitLodDX = (uint32_t)(dis(rng) * (float)maxLodRange);
+            uint32_t splitLodDZ = (uint32_t)(dis(rng) * (float)maxLodRange);
+            uint32_t splitLod = (uint32_t)(dis(rng) * (float)(maxLod - minLod) + minLod);
+
+            int splitLodDXInt = baseNode.x + (int)splitLodDX;
+            int splitLodDZInt = baseNode.y + (int)splitLodDZ;
+            int splitLodInt = 1 << ((int)splitLod - 1);
+
+            lodSplits.push_back(
+                std::make_pair(
+                    vm::ivec2{
+                        splitLodDXInt,
+                        splitLodDZInt
+                    },
+                    splitLodInt
+                )
+            );
+        }
+    }
+
+    /* {
         float splitsLodNoise = (float)noises.numSplitsNoise.in2D(maxLodCenter.x, maxLodCenter.y);
         for (uint32_t i = 0; i < numSplitsHash; i++) {
             uint32_t splitLodDX;
@@ -1858,20 +1915,6 @@ OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int
             int splitLodDZInt = maxLodCenter.y + (int)splitLodDZ;
             int splitLodInt = 1 << ((int)splitLod - 1);
 
-            /* if (worldPosition.x == 0 && worldPosition.y == 0) {
-              std::cout << "get split " << maxLodCenter.x << " " << maxLodCenter.y << " : " << splitLodDXInt << ", " << splitLodDZInt << " : " << splitLodInt << std::endl;
-            } */
-
-            /* if (
-                splitLodDXInt >= maxLodCenter.x && splitLodDXInt < maxLodCenter.x + maxLodRange &&
-                splitLodDZInt >= maxLodCenter.y && splitLodDZInt < maxLodCenter.y + maxLodRange
-            ) {
-                // nothing
-            } else {
-                std::cout << "invalid split lod: " << splitLodDXInt << " " << splitLodDZInt << " " << splitLodInt << std::endl;
-                abort();
-            } */
-
             lodSplits.push_back(
                 std::make_pair(
                     vm::ivec2{
@@ -1882,16 +1925,15 @@ OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int
                 )
             );
         }
-    }
+    } */
 
     OctreeContext octreeContext;
     constructSeedTree(
         octreeContext,
-        maxLodCenter,
+        maxLodChunkPositions,
         maxLodRange,
         lodSplits
     );
-
     return octreeContext;
 }
 std::vector<Heightfield> PGInstance::getHeightfields(
@@ -1993,10 +2035,12 @@ ChunkResult *PGInstance::createChunkMesh(
         result->waterMeshBuffer = nullptr;
     }
 
-    // barrier
+    /* // barrier
     if (generateFlags & GF_BARRIER) {
-        BarrierGeometry barrierGeometry;
         OctreeContext octreeContext = getChunkSeedOctree(worldPosition, lod, chunkSize);
+
+        BarrierGeometry barrierGeometry;
+
         generateBarrierGeometry(
             worldPosition,
             lod,
@@ -2004,10 +2048,11 @@ ChunkResult *PGInstance::createChunkMesh(
             octreeContext,
             barrierGeometry
         );
+
         result->barrierMeshBuffer = barrierGeometry.getBuffer();
     } else {
         result->barrierMeshBuffer = nullptr;
-    }
+    } */
 
     // vegetation
     if (generateFlags & GF_VEGETATION) {
@@ -2065,6 +2110,112 @@ ChunkResult *PGInstance::createChunkMesh(
 
     return result;
 }
+void PGInstance::createMobSplatAsync(
+    uint32_t id,
+    const vm::ivec2 &worldPositionXZ,
+    const int lod,
+    const int priority
+) {
+    std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
+
+    vm::vec3 worldPositionF{
+        (float)worldPositionXZ.x,
+        (float)(MIN_WORLD_HEIGHT + MAX_WORLD_HEIGHT) / 2.f,
+        (float)worldPositionXZ.y
+    };
+    Task *mobSplatTask = new Task(id, worldPositionF, lod, priority, [
+        this,
+        promise,
+        worldPositionXZ,
+        lod
+    ]() -> void {
+        void *result = createMobSplat(worldPositionXZ, lod);
+        promise->resolve(result);
+    });
+    ProcGen::taskQueue.pushTask(mobSplatTask);
+}
+
+//
+
+uint8_t *PGInstance::createBarrierMesh(
+    const vm::ivec2 &worldPosition,
+    int minLod,
+    int maxLod
+    // const std::array<int, 2> &lodArray,
+) {
+    OctreeContext octreeContext = getChunkSeedOctree(
+        worldPosition,
+        minLod,
+        maxLod,
+        chunkSize
+    );
+
+    BarrierGeometry barrierGeometry;
+
+    generateBarrierGeometry(
+        worldPosition,
+        chunkSize,
+        octreeContext,
+        barrierGeometry
+    );
+
+    uint8_t *result = barrierGeometry.getBuffer();
+
+    // ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
+
+    /* // heightfield
+    std::vector<Heightfield> heightfields;
+    if (
+        (generateFlags & GF_TERRAIN) |
+        (generateFlags & GF_WATER) |
+        (generateFlags & GF_VEGETATION) |
+        (generateFlags & GF_GRASS) |
+        (generateFlags & GF_POI)
+    ) {
+        heightfields = getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
+    } */
+
+    return result;
+}
+void PGInstance::createBarrierMeshAsync(
+    uint32_t id,
+    const vm::ivec2 &worldPosition,
+    int minLod,
+    int maxLod
+) {
+    std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
+
+    // this is so the chunk center is roughly the center of the one used by createBarrierMesh
+    const int maxLodRange = getLodRange(maxLod, chunkSize);
+    vm::vec3 basePositionF{
+        std::floor(
+            (float)(((float)worldPosition.x + (float)maxLodRange / 2.f) / (float)maxLodRange)
+        ) * maxLodRange,
+        (float)(-WORLD_BASE_HEIGHT) + ((float)MIN_WORLD_HEIGHT + (float)MAX_WORLD_HEIGHT) / 2.f,
+        std::floor(
+            (float)(((float)worldPosition.y + (float)maxLodRange / 2.f) / (float)maxLodRange)
+        ) * maxLodRange,
+    };
+    const int maxLodP1 = maxLod + 1;
+    Task *terrainTask = new Task(id, basePositionF, maxLodP1, [
+        this,
+        promise,
+        worldPosition,
+        minLod,
+        maxLod
+    ]() -> void {
+        uint8_t *result = createBarrierMesh(
+            worldPosition,
+            minLod,
+            maxLod
+        );
+        if (!promise->resolve(result)) {
+            free(result);
+        }
+    });
+    ProcGen::taskQueue.pushTask(terrainTask);
+}
+
 /* uint8_t *PGInstance::createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
 {
     const int chunkSizeP1 = chunkSize + 1;
@@ -2536,25 +2687,6 @@ void PGInstance::getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, in
     });
     ProcGen::taskQueue.pushTask(grassSplatTask);
 } */
-void PGInstance::createMobSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority) {
-    std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
-
-    vm::vec3 worldPositionF{
-        (float)worldPositionXZ.x,
-        (float)(MIN_WORLD_HEIGHT + MAX_WORLD_HEIGHT) / 2.f,
-        (float)worldPositionXZ.y
-    };
-    Task *mobSplatTask = new Task(id, worldPositionF, lod, priority, [
-        this,
-        promise,
-        worldPositionXZ,
-        lod
-    ]() -> void {
-        void *result = createMobSplat(worldPositionXZ, lod);
-        promise->resolve(result);
-    });
-    ProcGen::taskQueue.pushTask(mobSplatTask);
-}
 
 // 2d caches
 

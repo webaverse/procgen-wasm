@@ -125,10 +125,10 @@ void serializeDataRequests(const std::vector<DataRequestPtr> &datas, uint8_t *pt
     index += sizeof(int[2]);
   }
 }
-void serializeChunkPosition(const vm::ivec2 &chunkPosition, uint8_t *ptr, int &index) {
+/* void serializeChunkPosition(const vm::ivec2 &chunkPosition, uint8_t *ptr, int &index) {
   memcpy(ptr + index, &chunkPosition, sizeof(chunkPosition));
   index += sizeof(vm::ivec2);
-}
+} */
 
 uint8_t *TrackerUpdate::getBuffer() const {
   // compute size
@@ -148,7 +148,7 @@ uint8_t *TrackerUpdate::getBuffer() const {
   size += sizeof(int32_t); // numCancelDataRequests
   size += octreeNodeSize * cancelDataRequests.size();
 
-  size += sizeof(vm::ivec2); // chunkPosition
+  // size += sizeof(vm::ivec2); // chunkPosition
 
   // serialize
   uint8_t *ptr = (uint8_t *)malloc(size);
@@ -158,7 +158,7 @@ uint8_t *TrackerUpdate::getBuffer() const {
   serializeDataRequests(newDataRequests, ptr, index);
   serializeDataRequests(keepDataRequests, ptr, index);
   serializeDataRequests(cancelDataRequests, ptr, index);
-  serializeChunkPosition(chunkPosition, ptr, index);
+  // serializeChunkPosition(chunkPosition, ptr, index);
 
   return ptr;
 }
@@ -604,20 +604,30 @@ void constructLodTree(OctreeContext &octreeContext, const vm::ivec2 &currentCoor
 
   initializeLodArrays(octreeContext);
 }
-void constructSeedTree(OctreeContext &octreeContext, const vm::ivec2 &maxLodCenter, const int maxLod, const std::vector<std::pair<vm::ivec2, int>> &lodSplits) {
+void constructSeedTree(
+  OctreeContext &octreeContext,
+  const std::vector<vm::ivec2> &maxLodChunkPositions,
+  const int maxLod,
+  const std::vector<std::pair<vm::ivec2, int>> &lodSplits
+) {
   auto &nodeMap = octreeContext.nodeMap;
 
-  // initialize max lod
-  /* vm::ivec2 maxLodCenter{
-    (int)std::floor((float)currentCoord.x / (float)maxLod) * maxLod,
-    (int)std::floor((float)currentCoord.y / (float)maxLod) * maxLod
-  }; */
+  /* // initialize max lod
   OctreeNodePtr childNode = getOrCreateNode(
     octreeContext,
     maxLodCenter,
     maxLod
-  );
-  // std::cout << "construct seed tree " << maxLodCenter.x << " " << maxLodCenter.y << " " << maxLod << std::endl;
+  ); */
+
+  // initialize base lods
+  for (size_t i = 0; i < maxLodChunkPositions.size(); i++) {
+    const vm::ivec2 &nodePos = maxLodChunkPositions[i];
+    OctreeNodePtr childNode = getOrCreateNode(
+      octreeContext,
+      nodePos,
+      maxLod
+    );
+  }
 
   // initialize other lods
   for (const std::pair<vm::ivec2, int> &lodSplit : lodSplits) {
@@ -1089,7 +1099,7 @@ TrackerUpdate Tracker::update(const vm::vec3 &position) {
 
   //
 
-  vm::ivec2 worldPosition{
+  /* vm::ivec2 worldPosition{
     currentCoord.x * chunkSize,
     currentCoord.y * chunkSize
   };
@@ -1102,7 +1112,7 @@ TrackerUpdate Tracker::update(const vm::vec3 &position) {
   } else {
       std::cerr << "could not find node at point " << worldPosition.x << " " << worldPosition.y << std::endl;
       abort();
-  }
+  } */
 
   //
 
@@ -1113,7 +1123,7 @@ TrackerUpdate Tracker::update(const vm::vec3 &position) {
   result.newDataRequests = std::move(dataRequestUpdate.newDataRequests);
   result.keepDataRequests = std::move(dataRequestUpdate.keepDataRequests);
   result.cancelDataRequests = std::move(dataRequestUpdate.cancelDataRequests);
-  result.chunkPosition = node->min / chunkSize;
+  // result.chunkPosition = node->min / chunkSize;
 
   //
 
