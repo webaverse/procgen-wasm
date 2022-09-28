@@ -76,22 +76,6 @@ public:
 
 //
 
-class BarrierGeometry {
-public:
-    PositionBuffer positions;
-    NormalBuffer normals;
-    IndexBuffer indices;
-    
-    UvBuffer uvs;
-    PositionInt2DBuffer positions2D;
-
-    std::vector<OctreeNodePtr> leafNodes;
-
-    uint8_t *getBuffer() const;
-};
-
-//
-
 class SplatInstance {
 public:
     int instanceId;
@@ -117,6 +101,22 @@ class PoiGeometry {
 public:
     std::vector<float> ps;
     std::vector<int32_t> instances;
+
+    uint8_t *getBuffer() const;
+};
+
+//
+
+class BarrierGeometry {
+public:
+    PositionBuffer positions;
+    NormalBuffer normals;
+    IndexBuffer indices;
+    
+    UvBuffer uvs;
+    PositionInt2DBuffer positions2D;
+
+    std::vector<OctreeNodePtr> leafNodes;
 
     uint8_t *getBuffer() const;
 };
