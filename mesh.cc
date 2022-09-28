@@ -1,4 +1,5 @@
 #include "mesh.h"
+#include "octree.h"
 #include "util.h"
 #include <iostream>
 
@@ -159,7 +160,10 @@ uint8_t *BarrierGeometry::getBuffer() const {
     positions2D.size() * sizeof(positions2D[0]) +
     // indices
     sizeof(uint32_t) +
-    indices.size() * sizeof(indices[0]);
+    indices.size() * sizeof(indices[0]) + 
+    // numLeafNodes
+    sizeof(uint32_t) +
+    leafNodes.size() * (sizeof(vm::ivec2) + sizeof(int));
 
   // allocate buffer
   uint8_t *buffer = (uint8_t *)malloc(neededSize);
@@ -194,6 +198,19 @@ uint8_t *BarrierGeometry::getBuffer() const {
   index += sizeof(uint32_t);
   std::memcpy(buffer + index, &indices[0], indices.size() * sizeof(indices[0]));
   index += indices.size() * sizeof(indices[0]);
+
+  // leaf nodes
+  *((uint32_t *)(buffer + index)) = leafNodes.size();
+  index += sizeof(uint32_t);
+  for (size_t i = 0; i < leafNodes.size(); i++) {
+    OctreeNodePtr nodePtr = leafNodes[i];
+    OctreeNode &node = *nodePtr;
+
+    std::memcpy(buffer + index, &node.min, sizeof(vm::ivec2));
+    index += sizeof(vm::ivec2);
+    std::memcpy(buffer + index, &node.lod, sizeof(int));
+    index += sizeof(int);
+  }
 
   return buffer;
 }

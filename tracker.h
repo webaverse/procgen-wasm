@@ -2,6 +2,7 @@
 #define _TRACKER_H_
 
 #include "vectorMath.h"
+#include "octree.h"
 #include <vector>
 #include <unordered_map>
 #include <iostream>
@@ -11,12 +12,10 @@
 //
 
 class PGInstance;
-class OctreeNode;
 
 //
 
 constexpr size_t numCachedOctreeNodes = 64 * 1024;
-typedef std::shared_ptr<OctreeNode> OctreeNodePtr;
 
 class OctreeNodeAllocator {
 public: 

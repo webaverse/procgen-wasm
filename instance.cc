@@ -1374,17 +1374,19 @@ void generateBarrierGeometry(
 ) {
     // const int lodRange = lod * chunkSize;
 
-    int index = 0;
+    // int index = 0;
     std::vector<OctreeNodePtr> seedLeafNodes = octreeContext.getLeafNodes();
-    auto iter = std::find_if(
-        seedLeafNodes.begin(),
-        seedLeafNodes.end(),
-        [&worldPosition](const OctreeNodePtr &node) {
-            return node->min == worldPosition;
-        }
-    );
-    if (iter != seedLeafNodes.end()) {
-        OctreeNodePtr node = *iter;
+    // auto iter = std::find_if(
+    //     seedLeafNodes.begin(),
+    //     seedLeafNodes.end(),
+    //     [&worldPosition](const OctreeNodePtr &node) {
+    //         return node->min == worldPosition;
+    //     }
+    // );
+    // if (iter != seedLeafNodes.end()) {
+
+    for (size_t i = 0; i < seedLeafNodes.size(); i++) {
+        OctreeNodePtr node = seedLeafNodes[i];
 
         /* {
             std::cout << "main leaf node: ";
@@ -1447,6 +1449,8 @@ void generateBarrierGeometry(
         );
         setPositions2D(geometry, node->min / chunkSize);
     }
+
+    geometry.leafNodes = seedLeafNodes;
 }
 
 //

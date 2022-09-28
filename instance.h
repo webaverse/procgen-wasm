@@ -10,6 +10,7 @@
 #include <memory>
 #include "chunk.h"
 #include "context.h"
+#include "mesh.h"
 #include "task.h"
 #include "vector.h"
 #include "noises.h"
@@ -20,6 +21,7 @@
 class Tracker;
 class OctreeNodeSpec;
 class OctreeNode;
+class OctreeContext;
 
 //
 

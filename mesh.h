@@ -13,6 +13,11 @@
 
 //
 
+class OctreeNode;
+typedef std::shared_ptr<OctreeNode> OctreeNodePtr;
+
+//
+
 typedef std::vector<vm::vec3> PositionBuffer;
 typedef std::vector<vm::ivec2> PositionInt2DBuffer;
 typedef std::vector<vm::vec3> NormalBuffer;
@@ -79,6 +84,8 @@ public:
     
     UvBuffer uvs;
     PositionInt2DBuffer positions2D;
+
+    std::vector<OctreeNodePtr> leafNodes;
 
     uint8_t *getBuffer() const;
 };
