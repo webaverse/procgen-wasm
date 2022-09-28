@@ -1360,12 +1360,99 @@ void createBoxGeometry(float width, float height, float depth, int widthSegments
     // this.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
 }
 
+//
+
+/* template<typename G>
+G &mergeGeometry(G &dst, G &a, G &b) {
+    dst.positions.reserve(a.positions.size() + b.positions.size());
+    dst.normals.reserve(a.normals.size() + b.normals.size());
+    dst.indices.reserve(a.indices.size() + b.indices.size());
+    
+    for (size_t i = 0; i < a.positions.size(); i++) {
+        dst.positions.push_back(a.positions[i]);
+    }
+    for (size_t i = 0; i < a.normals.size(); i++) {
+        dst.normals.push_back(a.normals[i]);
+    }
+    for (size_t i = 0; i < a.indices.size(); i++) {
+        dst.indices.push_back(a.indices[i]);
+    }
+
+    uint32_t indexOffset = (uint32_t)a.positions.size();
+    for (size_t i = 0; i < b.positions.size(); i++) {
+        dst.positions.push_back(b.positions[i]);
+    }
+    for (size_t i = 0; i < b.normals.size(); i++) {
+        dst.normals.push_back(b.normals[i]);
+    }
+    for (size_t i = 0; i < b.indices.size(); i++) {
+        dst.indices.push_back(indexOffset + b.indices[i]);
+    }
+
+    return dst;
+} */
+template<typename G>
+G &mergeGeometries(G &dst, std::vector<G> &geometries) {
+    size_t numPositions = 0;
+    for (size_t i = 0; i < geometries.size(); i++) {
+        numPositions += geometries[i].positions.size();
+    }
+
+    size_t numNormals = 0;
+    for (size_t i = 0; i < geometries.size(); i++) {
+        numNormals += geometries[i].normals.size();
+    }
+    
+    size_t numIndices = 0;
+    for (size_t i = 0; i < geometries.size(); i++) {
+        numIndices += geometries[i].indices.size();
+    }
+
+    size_t numUvs = 0;
+    for (size_t i = 0; i < geometries.size(); i++) {
+        numUvs += geometries[i].uvs.size();
+    }
+
+    size_t numPositions2D = 0;
+    for (size_t i = 0; i < geometries.size(); i++) {
+        numPositions2D += geometries[i].positions2D.size();
+    }
+
+    dst.positions.reserve(numPositions);
+    dst.normals.reserve(numNormals);
+    dst.indices.reserve(numIndices);
+    
+    for (size_t i = 0; i < geometries.size(); i++) {
+        G &g = geometries[i];
+        for (size_t j = 0; j < g.positions.size(); j++) {
+            dst.positions.push_back(g.positions[j]);
+        }
+        for (size_t j = 0; j < g.normals.size(); j++) {
+            dst.normals.push_back(g.normals[j]);
+        }
+        size_t positionOffset = dst.positions.size() / 3;
+        for (size_t j = 0; j < g.indices.size(); j++) {
+            dst.indices.push_back(positionOffset + g.indices[j]);
+        }
+        for (size_t j = 0; j < g.uvs.size(); j++) {
+            dst.uvs.push_back(g.uvs[j]);
+        }
+        for (size_t j = 0; j < g.positions2D.size(); j++) {
+            dst.positions2D.push_back(g.positions2D[j]);
+        }
+    }
+
+    return dst;
+}
 void setPositions2D(BarrierGeometry &geometry, const vm::ivec2 position2D) {
     geometry.positions2D.reserve(geometry.positions.size());
     for (size_t i = 0; i < geometry.positions.size(); i++) {
         geometry.positions2D.push_back(position2D);
     }
 }
+
+//
+
 void generateBarrierGeometry(
     const vm::ivec2 &worldPosition,
     int chunkSize,
@@ -1385,8 +1472,12 @@ void generateBarrierGeometry(
     // );
     // if (iter != seedLeafNodes.end()) {
 
+    // geometry
+    std::vector<BarrierGeometry> geometries;
     for (size_t i = 0; i < seedLeafNodes.size(); i++) {
         OctreeNodePtr node = seedLeafNodes[i];
+
+        BarrierGeometry g;
 
         /* {
             std::cout << "main leaf node: ";
@@ -1436,21 +1527,28 @@ void generateBarrierGeometry(
             1,
             1,
             1,
-            geometry
+            g
         );
         vm::ivec2 worldOffset{
             width / 2 + worldPosition.x,
             depth / 2 + worldPosition.y
         };
         offsetGeometry(
-            geometry,
+            g,
             worldOffset,
             height / 2.f + barrierMinHeight
         );
-        setPositions2D(geometry, node->min / chunkSize);
-    }
+        setPositions2D(g, node->min / chunkSize);
 
+        geometries.push_back(std::move(g));
+    }
+    mergeGeometries(geometry, geometries); // XXX
+
+    // leaf nodes
     geometry.leafNodes = seedLeafNodes;
+
+    // leaf node index
+    // XXX
 }
 
 //
@@ -1746,38 +1844,6 @@ void generatePoiInstances(
         }
     }
 }
-
-//
-
-/* template<typename G>
-G &mergeGeometry(G &dst, G &a, G &b) {
-    dst.positions.reserve(a.positions.size() + b.positions.size());
-    dst.normals.reserve(a.normals.size() + b.normals.size());
-    dst.indices.reserve(a.indices.size() + b.indices.size());
-    
-    for (size_t i = 0; i < a.positions.size(); i++) {
-        dst.positions.push_back(a.positions[i]);
-    }
-    for (size_t i = 0; i < a.normals.size(); i++) {
-        dst.normals.push_back(a.normals[i]);
-    }
-    for (size_t i = 0; i < a.indices.size(); i++) {
-        dst.indices.push_back(a.indices[i]);
-    }
-
-    uint32_t indexOffset = (uint32_t)a.positions.size();
-    for (size_t i = 0; i < b.positions.size(); i++) {
-        dst.positions.push_back(b.positions[i]);
-    }
-    for (size_t i = 0; i < b.normals.size(); i++) {
-        dst.normals.push_back(b.normals[i]);
-    }
-    for (size_t i = 0; i < b.indices.size(); i++) {
-        dst.indices.push_back(indexOffset + b.indices[i]);
-    }
-
-    return dst;
-} */
 
 //
 
