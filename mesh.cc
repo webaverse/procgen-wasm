@@ -213,7 +213,6 @@ uint8_t *PoiGeometry::getBuffer() const {
 
 //
 
-
 uint8_t *BarrierGeometry::getBuffer() const {
   // calculate size
   size_t neededSize =
@@ -282,6 +281,18 @@ uint8_t *BarrierGeometry::getBuffer() const {
     std::memcpy(buffer + index, &node.lod, sizeof(int));
     index += sizeof(int);
   }
+
+  // leafNodesMin;
+  std::memcpy(buffer + index, &leafNodesMin, sizeof(leafNodesMin));
+  index += sizeof(leafNodesMin);
+  
+  // leafNodesMax;
+  std::memcpy(buffer + index, &leafNodesMax, sizeof(leafNodesMax));
+  index += sizeof(leafNodesMax);
+  
+  // leafNodesIndex
+  memcpy(buffer + index, leafNodesIndex.data(), leafNodesIndex.size() * sizeof(leafNodesIndex[0]));
+  index += leafNodesIndex.size() * sizeof(leafNodesIndex[0]);
 
   return buffer;
 }
