@@ -233,7 +233,13 @@ uint8_t *BarrierGeometry::getBuffer() const {
     indices.size() * sizeof(indices[0]) + 
     // numLeafNodes
     sizeof(uint32_t) +
-    leafNodes.size() * (sizeof(vm::ivec2) + sizeof(int));
+    leafNodes.size() * (sizeof(vm::ivec2) + sizeof(int)) +
+    // leafNodesMin
+    sizeof(leafNodesMin) +
+    // leafNodesMax
+    sizeof(leafNodesMax) +
+    // leafNodesIndex
+    leafNodesIndex.size() * sizeof(leafNodesIndex[0]);
 
   // allocate buffer
   uint8_t *buffer = (uint8_t *)malloc(neededSize);
@@ -282,11 +288,11 @@ uint8_t *BarrierGeometry::getBuffer() const {
     index += sizeof(int);
   }
 
-  // leafNodesMin;
+  // leafNodesMin
   std::memcpy(buffer + index, &leafNodesMin, sizeof(leafNodesMin));
   index += sizeof(leafNodesMin);
   
-  // leafNodesMax;
+  // leafNodesMax
   std::memcpy(buffer + index, &leafNodesMax, sizeof(leafNodesMax));
   index += sizeof(leafNodesMax);
   
