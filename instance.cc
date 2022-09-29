@@ -1459,18 +1459,7 @@ void generateBarrierGeometry(
     OctreeContext &octreeContext,
     BarrierGeometry &geometry
 ) {
-    // const int lodRange = lod * chunkSize;
-
-    // int index = 0;
     std::vector<OctreeNodePtr> seedLeafNodes = octreeContext.getLeafNodes();
-    // auto iter = std::find_if(
-    //     seedLeafNodes.begin(),
-    //     seedLeafNodes.end(),
-    //     [&worldPosition](const OctreeNodePtr &node) {
-    //         return node->min == worldPosition;
-    //     }
-    // );
-    // if (iter != seedLeafNodes.end()) {
 
     // geometry
     std::vector<BarrierGeometry> geometries;
@@ -2155,25 +2144,6 @@ ChunkResult *PGInstance::createChunkMesh(
         result->waterMeshBuffer = nullptr;
     }
 
-    /* // barrier
-    if (generateFlags & GF_BARRIER) {
-        OctreeContext octreeContext = getChunkSeedOctree(worldPosition, lod, chunkSize);
-
-        BarrierGeometry barrierGeometry;
-
-        generateBarrierGeometry(
-            worldPosition,
-            lod,
-            chunkSize,
-            octreeContext,
-            barrierGeometry
-        );
-
-        result->barrierMeshBuffer = barrierGeometry.getBuffer();
-    } else {
-        result->barrierMeshBuffer = nullptr;
-    } */
-
     // vegetation
     if (generateFlags & GF_VEGETATION) {
         VegetationGeometry vegetationGeometry;
@@ -2279,21 +2249,6 @@ uint8_t *PGInstance::createBarrierMesh(
     );
 
     uint8_t *result = barrierGeometry.getBuffer();
-
-    // ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
-
-    /* // heightfield
-    std::vector<Heightfield> heightfields;
-    if (
-        (generateFlags & GF_TERRAIN) |
-        (generateFlags & GF_WATER) |
-        (generateFlags & GF_VEGETATION) |
-        (generateFlags & GF_GRASS) |
-        (generateFlags & GF_POI)
-    ) {
-        heightfields = getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
-    } */
-
     return result;
 }
 void PGInstance::createBarrierMeshAsync(
