@@ -25,8 +25,10 @@ typedef std::array<float, 4> MaterialsArray;
 class Heightfield {
 public:
     float heightField;
+
     std::array<unsigned char, 4> biomesVectorField;
     std::array<unsigned char, 4> biomesWeightsVectorField;
+
     float waterFactor;
 
     MaterialsArray materials;

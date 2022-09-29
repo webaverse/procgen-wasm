@@ -673,6 +673,7 @@ void createPlaneSeamsGeometry(
 
         // position
         const float height = v0.getHeight();
+        const MaterialsArray &materialWeights = v0.materialsWeights;
         geometry.positions.push_back(vm::vec3{
             (float)ax,
             height,
@@ -2714,6 +2715,8 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
 
         float elevation = elevationSum / totalHeightFactors;
         localHeightfield.heightField = elevation;
+
+        getComputedMaterials(localHeightfield, seenBiomes[0], fWorldPosition);
     }
 
     // postprocess water
@@ -2721,7 +2724,6 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
         localHeightfield.waterFactor = sumWaterFactor;
     }
 
-    getComputedMaterials(localHeightfield, seenBiomes[0], fWorldPosition);
 
     return localHeightfield;
 }
