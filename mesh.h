@@ -19,6 +19,7 @@ typedef std::vector<vm::vec3> NormalBuffer;
 typedef std::vector<vm::vec2> UvBuffer;
 typedef std::vector<vm::ivec4> BiomesBuffer;
 typedef std::vector<vm::vec4> BiomesWeightBuffer;
+typedef std::vector<vm::ivec4> MaterialsBuffer;
 typedef std::vector<vm::vec4> MaterialsWeightBuffer;
 typedef std::vector<std::array<UV, 2>> BiomesUvsBuffer;
 typedef std::vector<uint32_t> IndexBuffer;
@@ -41,6 +42,7 @@ public:
     BiomesUvsBuffer biomesUvs1;
     BiomesUvsBuffer biomesUvs2;
 
+    MaterialsBuffer materials;
     MaterialsWeightBuffer materialsWeights;
 
     // SeedBuffer seeds;
@@ -65,8 +67,9 @@ public:
 
     FactorBuffer factors;
 
-    // PeekBuffer peeks;
+    MaterialsBuffer materials;
     MaterialsWeightBuffer materialsWeights;
+    // PeekBuffer peeks;
 
     void pushPointMetadata(const Waterfield &fieldValue);
 

@@ -20,7 +20,8 @@ inline int modulo(int x, int N){
 
 //
 
-typedef std::array<float, 4> MaterialsArray;
+typedef std::array<uint8_t, 4> MaterialsArray;
+typedef std::array<float, 4> MaterialsWeightsArray;
 
 class Heightfield {
 public:
@@ -32,7 +33,7 @@ public:
     float waterFactor;
 
     MaterialsArray materials;
-    MaterialsArray materialsWeights;
+    MaterialsWeightsArray materialsWeights;
 
     float getHeight() const {
       return heightField;

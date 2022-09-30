@@ -50,7 +50,6 @@ public:
     oceanNoise(rng(), 0.001, 4),
     riverNoise(rng(), 0.001, 4),
     lavaNoise(rng(), 0.01, 4),
-    grassMaterialNoise(rng(), 0.02, 1),
     grassSeedNoise(rng(), 0.01, 4),
     grassNoise(rng(), 0.01, 4),
     vegetationSeedNoise(rng(), 0.1, 4),

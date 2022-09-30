@@ -450,12 +450,23 @@ void createPlaneGeometry(
 
         // position
         const float height = v0.getHeight();
-        const MaterialsArray &materialWeights = v0.materialsWeights;
+
+        const MaterialsArray &materials = v0.materials;
+        const MaterialsWeightsArray &materialWeights = v0.materialsWeights;
+
         geometry.positions.push_back(vm::vec3{
             (float)ax,
             height,
             (float)ay
         });
+
+        geometry.materials.push_back(vm::ivec4{
+            materials[0],
+            materials[1],
+            materials[2],
+            materials[3]
+        });
+
         geometry.materialsWeights.push_back(vm::vec4{
             materialWeights[0],
             materialWeights[1],
@@ -597,12 +608,21 @@ void createPlaneSeamsGeometry(
 
         // position
         const float height = v0.getHeight();
-        const MaterialsArray &materialWeights = v0.materialsWeights;
+
+        const MaterialsArray &materials = v0.materials;
+        const MaterialsWeightsArray &materialWeights = v0.materialsWeights;
 
         geometry.positions.push_back(vm::vec3{
             (float)ax,
             height,
             (float)ay
+        });
+
+        geometry.materials.push_back(vm::ivec4{
+            materials[0],
+            materials[1],
+            materials[2],
+            materials[3]
         });
 
         geometry.materialsWeights.push_back(vm::vec4{
@@ -681,12 +701,23 @@ void createPlaneSeamsGeometry(
 
         // position
         const float height = v0.getHeight();
-        const MaterialsArray &materialWeights = v0.materialsWeights;
+
+        const MaterialsArray &materials = v0.materials;
+        const MaterialsWeightsArray &materialWeights = v0.materialsWeights;
+
         geometry.positions.push_back(vm::vec3{
             (float)ax,
             height,
             (float)ay
         });
+
+        geometry.materials.push_back(vm::ivec4{
+            materials[0],
+            materials[1],
+            materials[2],
+            materials[3]
+        });
+
         geometry.materialsWeights.push_back(vm::vec4{
             materialWeights[0],
             materialWeights[1],
@@ -2637,6 +2668,9 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
     // acc height
     std::unordered_map<unsigned char, float> biomeCounts(numBiomes);
     float totalHeightFactors = 0;
+    // acc material
+    std::unordered_map<uint8_t, float> materialsCounts(numMaterials);
+    float totalMaterialFactors = 0;
     // acc water
     float sumWaterFactor = 0;
     float totalWaterFactors = 0;
@@ -2724,7 +2758,30 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
         float elevation = elevationSum / totalHeightFactors;
         localHeightfield.heightField = elevation;
 
-        getComputedMaterials(localHeightfield, seenBiomes[0], fWorldPosition);
+        // materials
+
+        getComputedMaterials(localHeightfield, materialsCounts, totalMaterialFactors, fWorldPosition);
+
+        std::vector<uint8_t> seenMaterials;
+        for (auto kv : materialsCounts)
+        {
+            unsigned char b = kv.first;
+            seenMaterials.push_back(b);
+        }
+        
+        for (size_t i = 0; i < 4; i++)
+        {
+            if (i < seenMaterials.size())
+            {
+                localHeightfield.materials[i] = seenMaterials[i];
+                localHeightfield.materialsWeights[i] = materialsCounts[seenMaterials[i]] / totalMaterialFactors;
+            }
+            else
+            {
+                localHeightfield.materials[i] = 0;
+                localHeightfield.materialsWeights[i] = 0;
+            }
+        }
     }
 
     // postprocess water
@@ -3113,23 +3170,38 @@ float PGInstance::getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldP
     return biomeHeight;
 }
 
-
-
 // materials
-void PGInstance::getComputedMaterials(Heightfield &localHeightfield, uint8_t b, const vm::vec2 &worldPosition) {
-    const float &ax = worldPosition.x;
-    const float &az = worldPosition.y;
+void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::unordered_map<uint8_t, float> &materialsCounts, float &totalMaterialFactors, const vm::vec2 &worldPosition)
+{
+    const std::array<uint8_t, 4> &biomes = localHeightfield.biomesVectorField;
+    const std::array<uint8_t, 4> &biomesWeights = localHeightfield.biomesWeightsVectorField;
 
-    switch (b)
+    const uint8_t GRASS = (uint8_t)MATERIAL::matGrass;
+    const uint8_t DIRT = (uint8_t)MATERIAL::matDirt;
+
+    for (int i = 0; i < 4; i++)
     {
-    // TODO : Define a different set of material rules for each biome, for now we're using these rules as default
-    default:
-        const float materialNoise = vm::clamp(noises.grassMaterialNoise.in2DTwist((double)worldPosition.x, (double)worldPosition.y) * 2.f, 0.f, 4.f);
-        localHeightfield.materialsWeights[0] = 4.f - materialNoise;
-        localHeightfield.materialsWeights[1] = materialNoise;
-        localHeightfield.materials[0] = (float)MATERIAL::matGrass;
-        localHeightfield.materials[1] = (float)MATERIAL::matDirt;
-        break;
+        const uint8_t b = biomes[i];
+        const float bw = biomesWeights[i];
+
+        switch (b)
+        {
+        // TODO : Define a different set of material rules for each biome, for now we're using these rules as default
+        default:
+            const float grassNoiseRoof = 4.f;
+            const float materialNoise = noises.grassMaterialNoise.in2DWarp(worldPosition) * 2.f;
+
+            const float grassWeight = (grassNoiseRoof - materialNoise) * bw;
+            const float dirtWeight = (materialNoise) * bw;
+
+            materialsCounts[GRASS] += grassWeight;
+            materialsCounts[DIRT] += dirtWeight;
+
+            totalMaterialFactors += grassWeight;
+            totalMaterialFactors += dirtWeight;
+
+            break;
+        }
     }
 }
 

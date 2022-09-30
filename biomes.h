@@ -1497,7 +1497,8 @@ enum class MATERIAL : uint8_t {
   matGrass = 0,
   matDirt = 1,
   matStone = 2,
-  matRock = 3
+  matRock = 3,
+  NUM_MATERIALS = 4,
 };
 
 bool isWaterBiome(unsigned char b);

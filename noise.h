@@ -5,6 +5,8 @@
 #include "Worley.hpp"
 #include "vectorMath.h"
 
+using namespace vm;
+
 class Noise {
  public:
   FastNoise fastNoise;
@@ -22,13 +24,13 @@ class Noise {
   double in3DBidirectional(double x, double y, double z);
 };
 
-class UberNoise : Noise
+class UberNoise
 {
 public:
-  UberNoise(int s = 0, double frequency = 0.01, int octaves = 1);
+  UberNoise();
   ~UberNoise();
-  float FBM(const vm::vec2 &position);
-  float in2DTwist(double x, double y);
+
+  float in2DWarp(const vec2 &position);
 };
 
 #endif
