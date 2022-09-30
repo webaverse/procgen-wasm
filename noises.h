@@ -22,6 +22,8 @@ public:
 
   Noise grassSeedNoise;
   Noise grassNoise;
+  Noise poiSeedNoise;
+  Noise poiNoise;
   Noise vegetationSeedNoise;
   Noise mobNoise;
   

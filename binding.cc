@@ -54,20 +54,38 @@ EMSCRIPTEN_KEEPALIVE void createChunkMeshAsync(
     int *lodArray,
     int generateFlags,
     int numVegetationInstances,
-    int numGrassInstances
+    int numGrassInstances,
+    int numPoiInstances
 ) {
+    vm::ivec2 worldPosition{x, z};
     std::array<int, 2> lodArray2{
         lodArray[0],
         lodArray[1]
     };
     inst->createChunkMeshAsync(
         taskId,
-        vm::ivec2{x, z},
+        worldPosition,
         lod,
         lodArray2,
         generateFlags,
         numVegetationInstances,
-        numGrassInstances
+        numGrassInstances,
+        numPoiInstances
+    );
+}
+EMSCRIPTEN_KEEPALIVE void createBarrierMeshAsync(
+    PGInstance *inst,
+    uint32_t taskId,
+    int x, int z,
+    int minLod,
+    int maxLod
+) {
+    vm::ivec2 worldPosition{x, z};
+    inst->createBarrierMeshAsync(
+        taskId,
+        worldPosition,
+        minLod,
+        maxLod
     );
 }
 /* EMSCRIPTEN_KEEPALIVE void createChunkGrassAsync(PGInstance *inst, uint32_t taskId, int x, int z, int lod, int numGrassInstances) {

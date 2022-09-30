@@ -1,4 +1,5 @@
 #include "mesh.h"
+#include "octree.h"
 #include "util.h"
 #include <iostream>
 
@@ -160,64 +161,6 @@ uint8_t *WaterGeometry::getBuffer() const {
 
 //
 
-uint8_t *BarrierGeometry::getBuffer() const {
-  // calculate size
-  size_t neededSize =
-    // positions
-    sizeof(uint32_t) +
-    positions.size() * sizeof(positions[0]) +
-    // normals
-    sizeof(uint32_t) +
-    normals.size() * sizeof(normals[0]) +
-    // uvs
-    sizeof(uvs) +
-    uvs.size() * sizeof(uvs[0]) +
-    // positions2D
-    sizeof(positions2D) +
-    positions2D.size() * sizeof(positions2D[0]) +
-    // indices
-    sizeof(uint32_t) +
-    indices.size() * sizeof(indices[0]);
-
-  // allocate buffer
-  uint8_t *buffer = (uint8_t *)malloc(neededSize);
-  int index = 0;
-
-  // positions
-  *((uint32_t *)(buffer + index)) = positions.size();
-  index += sizeof(uint32_t);
-  std::memcpy(buffer + index, &positions[0], positions.size() * sizeof(positions[0]));
-  index += positions.size() * sizeof(positions[0]);
-
-  // normals
-  *((uint32_t *)(buffer + index)) = normals.size();
-  index += sizeof(uint32_t);
-  std::memcpy(buffer + index, &normals[0], normals.size() * sizeof(normals[0]));
-  index += normals.size() * sizeof(normals[0]);
-
-  // uvs
-  *((uint32_t *)(buffer + index)) = uvs.size();
-  index += sizeof(uint32_t);
-  std::memcpy(buffer + index, &uvs[0], uvs.size() * sizeof(uvs[0]));
-  index += uvs.size() * sizeof(uvs[0]);
-
-  // positions2D
-  *((uint32_t *)(buffer + index)) = positions2D.size();
-  index += sizeof(uint32_t);
-  std::memcpy(buffer + index, &positions2D[0], positions2D.size() * sizeof(positions2D[0]));
-  index += positions2D.size() * sizeof(positions2D[0]);
-
-  // indices
-  *((uint32_t *)(buffer + index)) = indices.size();
-  index += sizeof(uint32_t);
-  std::memcpy(buffer + index, &indices[0], indices.size() * sizeof(indices[0]));
-  index += indices.size() * sizeof(indices[0]);
-
-  return buffer;
-}
-
-//
-
 uint8_t *SplatInstanceGeometry::getBuffer() const {
   // serialize
   size_t size = sizeof(uint32_t); // numInstances
@@ -255,6 +198,125 @@ uint8_t *SplatInstanceGeometry::getBuffer() const {
       memcpy(buffer + index, instance.qs.data(), sizeof(float) * instance.qs.size());
       index += sizeof(float) * instance.qs.size();
   }
+
+  return buffer;
+}
+
+//
+
+uint8_t *PoiGeometry::getBuffer() const {
+  // serialize
+  size_t size = sizeof(uint32_t) + // numPs
+    sizeof(float) * ps.size() + // ps
+    sizeof(uint32_t) + // numInstances
+    sizeof(int32_t) * instances.size();
+
+  uint8_t *buffer = (uint8_t *)malloc(size);
+  int index = 0;
+
+  *((uint32_t *)(buffer + index)) = ps.size();
+  index += sizeof(uint32_t);
+
+  memcpy(buffer + index, ps.data(), sizeof(float) * ps.size());
+  index += sizeof(float) * ps.size();
+
+  *((uint32_t *)(buffer + index)) = instances.size();
+  index += sizeof(uint32_t);
+
+  memcpy(buffer + index, instances.data(), sizeof(int32_t) * instances.size());
+  index += sizeof(int32_t) * instances.size();
+
+  return buffer;
+}
+
+//
+
+uint8_t *BarrierGeometry::getBuffer() const {
+  // calculate size
+  size_t neededSize =
+    // positions
+    sizeof(uint32_t) +
+    positions.size() * sizeof(positions[0]) +
+    // normals
+    sizeof(uint32_t) +
+    normals.size() * sizeof(normals[0]) +
+    // uvs
+    sizeof(uvs) +
+    uvs.size() * sizeof(uvs[0]) +
+    // positions2D
+    sizeof(positions2D) +
+    positions2D.size() * sizeof(positions2D[0]) +
+    // indices
+    sizeof(uint32_t) +
+    indices.size() * sizeof(indices[0]) + 
+    // numLeafNodes
+    sizeof(uint32_t) +
+    leafNodes.size() * (sizeof(vm::ivec2) + sizeof(int)) +
+    // leafNodesMin
+    sizeof(leafNodesMin) +
+    // leafNodesMax
+    sizeof(leafNodesMax) +
+    // leafNodesIndex
+    leafNodesIndex.size() * sizeof(leafNodesIndex[0]);
+
+  // allocate buffer
+  uint8_t *buffer = (uint8_t *)malloc(neededSize);
+  int index = 0;
+
+  // positions
+  *((uint32_t *)(buffer + index)) = positions.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &positions[0], positions.size() * sizeof(positions[0]));
+  index += positions.size() * sizeof(positions[0]);
+
+  // normals
+  *((uint32_t *)(buffer + index)) = normals.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &normals[0], normals.size() * sizeof(normals[0]));
+  index += normals.size() * sizeof(normals[0]);
+
+  // uvs
+  *((uint32_t *)(buffer + index)) = uvs.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &uvs[0], uvs.size() * sizeof(uvs[0]));
+  index += uvs.size() * sizeof(uvs[0]);
+
+  // positions2D
+  *((uint32_t *)(buffer + index)) = positions2D.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &positions2D[0], positions2D.size() * sizeof(positions2D[0]));
+  index += positions2D.size() * sizeof(positions2D[0]);
+
+  // indices
+  *((uint32_t *)(buffer + index)) = indices.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &indices[0], indices.size() * sizeof(indices[0]));
+  index += indices.size() * sizeof(indices[0]);
+
+  // leaf nodes
+  *((uint32_t *)(buffer + index)) = leafNodes.size();
+  index += sizeof(uint32_t);
+  for (size_t i = 0; i < leafNodes.size(); i++) {
+    OctreeNodePtr nodePtr = leafNodes[i];
+    OctreeNode &node = *nodePtr;
+
+    std::memcpy(buffer + index, &node.min, sizeof(vm::ivec2));
+    index += sizeof(vm::ivec2);
+    std::memcpy(buffer + index, &node.lod, sizeof(int));
+    index += sizeof(int);
+  }
+
+  // leafNodesMin
+  std::memcpy(buffer + index, &leafNodesMin, sizeof(leafNodesMin));
+  index += sizeof(leafNodesMin);
+  
+  // leafNodesMax
+  std::memcpy(buffer + index, &leafNodesMax, sizeof(leafNodesMax));
+  index += sizeof(leafNodesMax);
+  
+  // leafNodesIndex
+  memcpy(buffer + index, leafNodesIndex.data(), leafNodesIndex.size() * sizeof(leafNodesIndex[0]));
+  index += leafNodesIndex.size() * sizeof(leafNodesIndex[0]);
 
   return buffer;
 }

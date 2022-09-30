@@ -10,6 +10,7 @@
 #include <memory>
 #include "chunk.h"
 #include "context.h"
+#include "mesh.h"
 #include "task.h"
 #include "vector.h"
 #include "noises.h"
@@ -20,6 +21,7 @@
 class Tracker;
 class OctreeNodeSpec;
 class OctreeNode;
+class OctreeContext;
 
 //
 
@@ -27,16 +29,16 @@ class ChunkResult {
 public:
     uint8_t *terrainMeshBuffer;
     uint8_t *waterMeshBuffer;
-    uint8_t *barrierMeshBuffer;
     uint8_t *vegetationInstancesBuffer;
     uint8_t *grassInstancesBuffer;
+    uint8_t *poiInstancesBuffer;
 
     void free() {
         std::free(terrainMeshBuffer);
         std::free(waterMeshBuffer);
-        std::free(barrierMeshBuffer);
         std::free(vegetationInstancesBuffer);
         std::free(grassInstancesBuffer);
+        std::free(poiInstancesBuffer);
         std::free(this);
     }
 };
@@ -162,10 +164,16 @@ public:
         const std::array<int, 2> &lodArray,
         int generateFlags,
         int numVegetationInstances,
-        int numGrassInstances
+        int numGrassInstances,
+        int numPoiInstances
     );
     // uint8_t *createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
-    OctreeContext getChunkSeedOctree(const vm::ivec2 &worldPosition, int lod, int chunkSize);
+    OctreeContext getChunkSeedOctree(
+        const vm::ivec2 &worldPosition,
+        int minLod,
+        int maxLod,
+        int chunkSize
+    );
 
     //
 
@@ -199,7 +207,8 @@ public:
         const std::array<int, 2> &lodArray,
         int generateFlags,
         int numVegetationInstances,
-        int numGrassInstances
+        int numGrassInstances,
+        int numPoiInstances
     );
     // void createLiquidChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray);
     // void createChunkGrassAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int numGrassInstances);
@@ -213,6 +222,20 @@ public:
     //
 
     void createMobSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority);
+    
+    //
+
+    uint8_t *createBarrierMesh(
+        const vm::ivec2 &worldPosition,
+        int minLod,
+        int maxLod
+    );
+    void createBarrierMeshAsync(
+        uint32_t id,
+        const vm::ivec2 &worldPosition,
+        int minLod,
+        int maxLod
+    );
 
     //
 

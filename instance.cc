@@ -1414,32 +1414,113 @@ void createBoxGeometry(float width, float height, float depth, int widthSegments
     // this.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
 }
 
+//
+
+/* template<typename G>
+G &mergeGeometry(G &dst, G &a, G &b) {
+    dst.positions.reserve(a.positions.size() + b.positions.size());
+    dst.normals.reserve(a.normals.size() + b.normals.size());
+    dst.indices.reserve(a.indices.size() + b.indices.size());
+    
+    for (size_t i = 0; i < a.positions.size(); i++) {
+        dst.positions.push_back(a.positions[i]);
+    }
+    for (size_t i = 0; i < a.normals.size(); i++) {
+        dst.normals.push_back(a.normals[i]);
+    }
+    for (size_t i = 0; i < a.indices.size(); i++) {
+        dst.indices.push_back(a.indices[i]);
+    }
+
+    uint32_t indexOffset = (uint32_t)a.positions.size();
+    for (size_t i = 0; i < b.positions.size(); i++) {
+        dst.positions.push_back(b.positions[i]);
+    }
+    for (size_t i = 0; i < b.normals.size(); i++) {
+        dst.normals.push_back(b.normals[i]);
+    }
+    for (size_t i = 0; i < b.indices.size(); i++) {
+        dst.indices.push_back(indexOffset + b.indices[i]);
+    }
+
+    return dst;
+} */
+template<typename G>
+G &mergeGeometries(G &dst, std::vector<G> &geometries) {
+    size_t numPositions = 0;
+    for (size_t i = 0; i < geometries.size(); i++) {
+        numPositions += geometries[i].positions.size();
+    }
+
+    size_t numNormals = 0;
+    for (size_t i = 0; i < geometries.size(); i++) {
+        numNormals += geometries[i].normals.size();
+    }
+    
+    size_t numIndices = 0;
+    for (size_t i = 0; i < geometries.size(); i++) {
+        numIndices += geometries[i].indices.size();
+    }
+
+    size_t numUvs = 0;
+    for (size_t i = 0; i < geometries.size(); i++) {
+        numUvs += geometries[i].uvs.size();
+    }
+
+    size_t numPositions2D = 0;
+    for (size_t i = 0; i < geometries.size(); i++) {
+        numPositions2D += geometries[i].positions2D.size();
+    }
+
+    dst.positions.reserve(numPositions);
+    dst.normals.reserve(numNormals);
+    dst.indices.reserve(numIndices);
+    
+    for (size_t i = 0; i < geometries.size(); i++) {
+        G &g = geometries[i];
+        for (size_t j = 0; j < g.positions.size(); j++) {
+            dst.positions.push_back(g.positions[j]);
+        }
+        for (size_t j = 0; j < g.normals.size(); j++) {
+            dst.normals.push_back(g.normals[j]);
+        }
+        size_t positionOffset = dst.positions.size() / 3;
+        for (size_t j = 0; j < g.indices.size(); j++) {
+            dst.indices.push_back(positionOffset + g.indices[j]);
+        }
+        for (size_t j = 0; j < g.uvs.size(); j++) {
+            dst.uvs.push_back(g.uvs[j]);
+        }
+        for (size_t j = 0; j < g.positions2D.size(); j++) {
+            dst.positions2D.push_back(g.positions2D[j]);
+        }
+    }
+
+    return dst;
+}
 void setPositions2D(BarrierGeometry &geometry, const vm::ivec2 position2D) {
     geometry.positions2D.reserve(geometry.positions.size());
     for (size_t i = 0; i < geometry.positions.size(); i++) {
         geometry.positions2D.push_back(position2D);
     }
 }
-void generateBarrierMesh(
+
+//
+
+void generateBarrierGeometry(
     const vm::ivec2 &worldPosition,
-    int lod,
     int chunkSize,
     OctreeContext &octreeContext,
     BarrierGeometry &geometry
 ) {
-    const int lodRange = lod * chunkSize;
-
-    int index = 0;
     std::vector<OctreeNodePtr> seedLeafNodes = octreeContext.getLeafNodes();
-    auto iter = std::find_if(
-        seedLeafNodes.begin(),
-        seedLeafNodes.end(),
-        [&worldPosition](const OctreeNodePtr &node) {
-            return node->min == worldPosition;
-        }
-    );
-    if (iter != seedLeafNodes.end()) {
-        OctreeNodePtr node = *iter;
+
+    // geometry
+    std::vector<BarrierGeometry> geometries;
+    for (size_t i = 0; i < seedLeafNodes.size(); i++) {
+        OctreeNodePtr node = seedLeafNodes[i];
+
+        BarrierGeometry g;
 
         /* {
             std::cout << "main leaf node: ";
@@ -1489,18 +1570,77 @@ void generateBarrierMesh(
             1,
             1,
             1,
-            geometry
+            g
         );
         vm::ivec2 worldOffset{
             width / 2 + worldPosition.x,
             depth / 2 + worldPosition.y
         };
         offsetGeometry(
-            geometry,
+            g,
             worldOffset,
             height / 2.f + barrierMinHeight
         );
-        setPositions2D(geometry, node->min / chunkSize);
+        setPositions2D(g, node->min / chunkSize);
+
+        geometries.push_back(std::move(g));
+    }
+    mergeGeometries(geometry, geometries);
+
+    // leaf nodes
+    geometry.leafNodes = seedLeafNodes;
+
+    // leaf node index
+    {
+        vm::ivec2 leafNodesMin{ // in chunks space
+            std::numeric_limits<int>::max(),
+            std::numeric_limits<int>::max()
+        };
+        vm::ivec2 leafNodesMax{ // in chunks space
+            std::numeric_limits<int>::min(),
+            std::numeric_limits<int>::min()
+        };
+        for (size_t i = 0; i < seedLeafNodes.size(); i++) {
+            OctreeNodePtr node = seedLeafNodes[i];
+            vm::ivec2 nodeChunkPosition = node->min / chunkSize; // in chunks space
+            const int &nodeLod = node->lod;
+
+            int minX = nodeChunkPosition.x;
+            int minZ = nodeChunkPosition.y;
+            int maxX = nodeChunkPosition.x + nodeLod;
+            int maxZ = nodeChunkPosition.y + nodeLod;
+
+            leafNodesMin.x = std::min(leafNodesMin.x, minX);
+            leafNodesMin.y = std::min(leafNodesMin.y, minZ);
+            leafNodesMax.x = std::max(leafNodesMax.x, maxX);
+            leafNodesMax.y = std::max(leafNodesMax.y, maxZ);
+        }
+        geometry.leafNodesMin = leafNodesMin * chunkSize; // in world space
+        geometry.leafNodesMax = leafNodesMax * chunkSize; // in world space
+
+        int w = leafNodesMax.x - leafNodesMin.x; // in chunks space
+        int h = leafNodesMax.y - leafNodesMin.y; // in chunks space
+        geometry.leafNodesIndex.resize(w * h);
+
+        for (size_t i = 0; i < seedLeafNodes.size(); i++) {
+            OctreeNodePtr node = seedLeafNodes[i];
+            vm::ivec2 nodeChunkPosition = node->min / chunkSize; // in chunks space
+            const int &nodeLod = node->lod;
+
+            int minX = nodeChunkPosition.x;
+            int minZ = nodeChunkPosition.y;
+            int maxX = nodeChunkPosition.x + nodeLod;
+            int maxZ = nodeChunkPosition.y + nodeLod;
+
+            for (int z = minZ; z < maxZ; z++) {
+                for (int x = minX; x < maxX; x++) {
+                    int dx = x - leafNodesMin.x;
+                    int dz = z - leafNodesMin.y;
+                    int index = dx + dz * w;
+                    geometry.leafNodesIndex[index] = i;
+                }
+            }
+        }
     }
 }
 
@@ -1576,7 +1716,88 @@ public:
         return height;
     }
 };
-void generateGrassGeometry(
+
+//
+
+void generateVegetationInstances(
+    const vm::ivec2 &worldPositionXZ,
+    const int lod,
+    const int chunkSize,
+    const int numVegetationInstances,
+    const std::vector<Heightfield> &heightfields,
+    Noises &noises,
+    VegetationGeometry &vegetationGeometry
+) {
+    constexpr int maxNumVeggiesPerChunk = 8;
+    constexpr float maxVeggieRate = 0.35;
+    // const float veggieRate = maxVeggieRate / (float)(lod * lod);
+    const float veggieRate = maxVeggieRate / (float)lod;
+    // const float veggieRate = maxVeggieRate;
+
+    int baseMinX = worldPositionXZ.x;
+    int baseMinZ = worldPositionXZ.y;
+
+    vm::vec2 worldPositionXZf{
+        (float)worldPositionXZ.x,
+        (float)worldPositionXZ.y
+    };
+    HeightfieldSampler heightfieldSampler(
+        worldPositionXZf,
+        lod,
+        chunkSize,
+        heightfields
+    );
+    
+    for (int dz = 0; dz < lod; dz++) {
+        for (int dx = 0; dx < lod; dx++) {
+            int chunkMinX = baseMinX + dx * chunkSize;
+            int chunkMinZ = baseMinZ + dz * chunkSize;
+
+            float chunkSeed = noises.vegetationSeedNoise.in2D(chunkMinX, chunkMinZ);
+            unsigned int seedInt = *(unsigned int *)&chunkSeed;
+            std::mt19937 rng(seedInt);
+            std::uniform_real_distribution<float> dis(0.f, 1.f);
+
+            for (int i = 0; i < maxNumVeggiesPerChunk; i++) {
+                float noiseValue = dis(rng);
+                float chunkOffsetX = dis(rng) * (float)chunkSize;
+                float chunkOffsetZ = dis(rng) * (float)chunkSize;
+                float rot = dis(rng) * 2.0f * M_PI;
+                int instanceId = (int)std::round(dis(rng) * (float)(numVegetationInstances - 1));
+
+                if (noiseValue < veggieRate) {
+                    auto iterPair = vegetationGeometry.instances.emplace(
+                        std::make_pair(instanceId, SplatInstance{})
+                    );
+                    auto iter = iterPair.first;
+                    const bool &inserted = iterPair.second;
+                    SplatInstance &instance = iter->second;
+                    if (inserted) {
+                        instance.instanceId = instanceId;
+                    }
+
+                    float ax = (float)chunkMinX + chunkOffsetX;
+                    float az = (float)chunkMinZ + chunkOffsetZ;
+                    const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
+
+                    instance.ps.push_back(ax);
+                    instance.ps.push_back(height);
+                    instance.ps.push_back(az);
+
+                    Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
+                    instance.qs.push_back(q.x);
+                    instance.qs.push_back(q.y);
+                    instance.qs.push_back(q.z);
+                    instance.qs.push_back(q.w);
+                }
+            }
+        }
+    }
+}
+
+//
+
+void generateGrassInstances(
     const vm::ivec2 &worldPositionXZ,
     const int lod,
     const int chunkSize,
@@ -1656,20 +1877,20 @@ void generateGrassGeometry(
 
 //
 
-void generateVegetationGeometry(
+void generatePoiInstances(
     const vm::ivec2 &worldPositionXZ,
     const int lod,
     const int chunkSize,
-    const int numVegetationInstances,
+    const int numPoiInstances,
     const std::vector<Heightfield> &heightfields,
     Noises &noises,
-    VegetationGeometry &vegetationGeometry
+    PoiGeometry &poiGeometry
 ) {
-    constexpr int maxNumVeggiesPerChunk = 8;
-    constexpr float maxVeggieRate = 0.35;
-    // const float veggieRate = maxVeggieRate / (float)(lod * lod);
-    const float veggieRate = maxVeggieRate / (float)lod;
-    // const float veggieRate = maxVeggieRate;
+    constexpr int maxNumPoisPerChunk = 16;
+    constexpr float poiRate = 0.3;
+    // const float poiRate = maxPoiRate / (float)(lod * lod);
+    const float poiThrowRate = 1.f / (float)lod;
+    // const float poiRate = maxPoiRate;
 
     int baseMinX = worldPositionXZ.x;
     int baseMinZ = worldPositionXZ.y;
@@ -1690,42 +1911,27 @@ void generateVegetationGeometry(
             int chunkMinX = baseMinX + dx * chunkSize;
             int chunkMinZ = baseMinZ + dz * chunkSize;
 
-            float chunkSeed = noises.vegetationSeedNoise.in2D(chunkMinX, chunkMinZ);
+            float chunkSeed = noises.poiSeedNoise.in2D(chunkMinX, chunkMinZ);
             unsigned int seedInt = *(unsigned int *)&chunkSeed;
             std::mt19937 rng(seedInt);
             std::uniform_real_distribution<float> dis(0.f, 1.f);
 
-            for (int i = 0; i < maxNumVeggiesPerChunk; i++) {
+            for (int i = 0; i < maxNumPoisPerChunk; i++) {
                 float noiseValue = dis(rng);
                 float chunkOffsetX = dis(rng) * (float)chunkSize;
                 float chunkOffsetZ = dis(rng) * (float)chunkSize;
-                float rot = dis(rng) * 2.0f * M_PI;
-                int instanceId = (int)std::round(dis(rng) * (float)(numVegetationInstances - 1));
+                int instanceId = (int)std::round(dis(rng) * (float)(numPoiInstances - 1));
 
-                if (noiseValue < veggieRate) {
-                    auto iterPair = vegetationGeometry.instances.emplace(
-                        std::make_pair(instanceId, SplatInstance{})
-                    );
-                    auto iter = iterPair.first;
-                    const bool &inserted = iterPair.second;
-                    SplatInstance &instance = iter->second;
-                    if (inserted) {
-                        instance.instanceId = instanceId;
-                    }
-
+                if (noiseValue < poiRate) {
                     float ax = (float)chunkMinX + chunkOffsetX;
                     float az = (float)chunkMinZ + chunkOffsetZ;
                     const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
 
-                    instance.ps.push_back(ax);
-                    instance.ps.push_back(height);
-                    instance.ps.push_back(az);
+                    poiGeometry.ps.push_back(ax);
+                    poiGeometry.ps.push_back(height);
+                    poiGeometry.ps.push_back(az);
 
-                    Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
-                    instance.qs.push_back(q.x);
-                    instance.qs.push_back(q.y);
-                    instance.qs.push_back(q.z);
-                    instance.qs.push_back(q.w);
+                    poiGeometry.instances.push_back(instanceId);
                 }
             }
         }
@@ -1734,39 +1940,7 @@ void generateVegetationGeometry(
 
 //
 
-template<typename G>
-G &mergeGeometry(G &dst, G &a, G &b) {
-    dst.positions.reserve(a.positions.size() + b.positions.size());
-    dst.normals.reserve(a.normals.size() + b.normals.size());
-    dst.indices.reserve(a.indices.size() + b.indices.size());
-    
-    for (size_t i = 0; i < a.positions.size(); i++) {
-        dst.positions.push_back(a.positions[i]);
-    }
-    for (size_t i = 0; i < a.normals.size(); i++) {
-        dst.normals.push_back(a.normals[i]);
-    }
-    for (size_t i = 0; i < a.indices.size(); i++) {
-        dst.indices.push_back(a.indices[i]);
-    }
-
-    uint32_t indexOffset = (uint32_t)a.positions.size();
-    for (size_t i = 0; i < b.positions.size(); i++) {
-        dst.positions.push_back(b.positions[i]);
-    }
-    for (size_t i = 0; i < b.normals.size(); i++) {
-        dst.normals.push_back(b.normals[i]);
-    }
-    for (size_t i = 0; i < b.indices.size(); i++) {
-        dst.indices.push_back(indexOffset + b.indices[i]);
-    }
-
-    return dst;
-}
-
-//
-
-void generateBarrierGeometry(
+/* void generateBarrierGeometry(
     const vm::ivec2 &worldPosition,
     int lod,
     int chunkSize,
@@ -1776,7 +1950,7 @@ void generateBarrierGeometry(
     generateBarrierMesh(worldPosition, lod, chunkSize, octreeContext, geometry);
     // offsetGeometry(geometry, worldPosition);
     // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
-}
+} */
 
 //
 
@@ -1803,28 +1977,86 @@ void generateBarrierGeometry(
     );
     return *iter;
 } */
-OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int lod, int chunkSize) {
-    constexpr int minLod = 1;
-    // const int minLodRange = (1 << (minLod - 1)) * chunkSize;
-    constexpr int maxLod = 7;
-    const int maxLodRange = (1 << (maxLod - 1)) * chunkSize;
-    vm::ivec2 maxLodCenter{
+inline int getLodRange(int lod, int chunkSize) {
+    return (1 << (lod - 1)) * chunkSize;
+}
+OctreeContext PGInstance::getChunkSeedOctree(
+    const vm::ivec2 &worldPosition,
+    // int lod,
+    int minLod,
+    int maxLod, // we will sample a 3x3 of this lod
+    int chunkSize
+) {
+    // constexpr int minLod = 1;
+    // constexpr int maxLod = 6; // we will sample a 3x3 of this lod
+
+    const int maxLodRange = getLodRange(maxLod, chunkSize);
+    /* const int maxLodP1 = maxLod + 1;
+    const int maxLodP1Range = (1 << (maxLodP1 - 1)) * chunkSize;
+    vm::ivec2 maxLodP1Center{
         (int)std::floor((float)worldPosition.x / (float)maxLodRange) * maxLodRange,
         (int)std::floor((float)worldPosition.y / (float)maxLodRange) * maxLodRange
-    };
+    }; */
+
+    constexpr int maxNumSplits = 16;
+
+    std::vector<vm::ivec2> maxLodChunkPositions;
+    for (int dz = -1; dz <= 1; dz++) {
+        for (int dx = -1; dx <= 1; dx++) {
+            vm::ivec2 baseNode{
+                (int)std::floor(
+                    (float)(((float)worldPosition.x + (float)maxLodRange / 2.f) / (float)maxLodRange)
+                ) * maxLodRange,
+                (int)std::floor(
+                    (float)((float)worldPosition.y + (float)maxLodRange / 2.f) / (float)maxLodRange
+                ) * maxLodRange
+            };
+
+            // insert the node if it does not exist
+            auto iter = std::find(
+                maxLodChunkPositions.begin(),
+                maxLodChunkPositions.end(),
+                baseNode
+            );
+            if (iter == maxLodChunkPositions.end()) {
+                maxLodChunkPositions.push_back(baseNode);
+            }
+        }
+    }
 
     // compute splits
     std::vector<std::pair<vm::ivec2, int>> lodSplits;
-    {
-        float numSplits = (float)noises.numSplitsNoise.in2D(maxLodCenter.x, maxLodCenter.y);
-        uint32_t numSplitsHash;
-        MurmurHash3_x86_32(&numSplits, sizeof(numSplits), 0, &numSplitsHash);
-        numSplitsHash = (uint32_t)((float)numSplitsHash * 8.f / (float)0xFFFFFFFFu);
+    for (size_t i = 0; i < maxLodChunkPositions.size(); i++) {
+        const vm::ivec2 &baseNode = maxLodChunkPositions[i];
 
-        /* if (worldPosition.x == 0 && worldPosition.y == 0) {
-            std::cout << "num splits hash: " << maxLodCenter.x << " " << maxLodCenter.y << " " << numSplitsHash << std::endl;
-        } */
+        float chunkSeed = noises.numSplitsNoise.in2D(baseNode.x, baseNode.y);
+        unsigned int seedInt = *(unsigned int *)&chunkSeed;
+        std::mt19937 rng(seedInt);
+        std::uniform_real_distribution<float> dis(0.f, 1.f);
 
+        uint32_t numSplits = (uint32_t)(dis(rng) * (float)maxNumSplits);
+        for (uint32_t i = 0; i < numSplits; i++) {
+            uint32_t splitLodDX = (uint32_t)(dis(rng) * (float)maxLodRange);
+            uint32_t splitLodDZ = (uint32_t)(dis(rng) * (float)maxLodRange);
+            uint32_t splitLod = (uint32_t)(dis(rng) * (float)(maxLod - minLod) + minLod);
+
+            int splitLodDXInt = baseNode.x + (int)splitLodDX;
+            int splitLodDZInt = baseNode.y + (int)splitLodDZ;
+            int splitLodInt = 1 << ((int)splitLod - 1);
+
+            lodSplits.push_back(
+                std::make_pair(
+                    vm::ivec2{
+                        splitLodDXInt,
+                        splitLodDZInt
+                    },
+                    splitLodInt
+                )
+            );
+        }
+    }
+
+    /* {
         float splitsLodNoise = (float)noises.numSplitsNoise.in2D(maxLodCenter.x, maxLodCenter.y);
         for (uint32_t i = 0; i < numSplitsHash; i++) {
             uint32_t splitLodDX;
@@ -1846,20 +2078,6 @@ OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int
             int splitLodDZInt = maxLodCenter.y + (int)splitLodDZ;
             int splitLodInt = 1 << ((int)splitLod - 1);
 
-            /* if (worldPosition.x == 0 && worldPosition.y == 0) {
-              std::cout << "get split " << maxLodCenter.x << " " << maxLodCenter.y << " : " << splitLodDXInt << ", " << splitLodDZInt << " : " << splitLodInt << std::endl;
-            } */
-
-            /* if (
-                splitLodDXInt >= maxLodCenter.x && splitLodDXInt < maxLodCenter.x + maxLodRange &&
-                splitLodDZInt >= maxLodCenter.y && splitLodDZInt < maxLodCenter.y + maxLodRange
-            ) {
-                // nothing
-            } else {
-                std::cout << "invalid split lod: " << splitLodDXInt << " " << splitLodDZInt << " " << splitLodInt << std::endl;
-                abort();
-            } */
-
             lodSplits.push_back(
                 std::make_pair(
                     vm::ivec2{
@@ -1870,16 +2088,15 @@ OctreeContext PGInstance::getChunkSeedOctree(const vm::ivec2 &worldPosition, int
                 )
             );
         }
-    }
+    } */
 
     OctreeContext octreeContext;
     constructSeedTree(
         octreeContext,
-        maxLodCenter,
+        maxLodChunkPositions,
         maxLodRange,
         lodSplits
     );
-
     return octreeContext;
 }
 std::vector<Heightfield> PGInstance::getHeightfields(
@@ -1917,9 +2134,10 @@ enum GenerateFlags {
     GF_NONE = 0,
     GF_TERRAIN = 1 << 0,
     GF_WATER = 1 << 1,
-    GF_BARRIER = 1 << 2,
-    GF_VEGETATION = 1 << 3,
-    GF_GRASS = 1 << 4
+    // GF_BARRIER = 1 << 2,
+    GF_VEGETATION = 1 << 2,
+    GF_GRASS = 1 << 3,
+    GF_POI = 1 << 4
 };
 ChunkResult *PGInstance::createChunkMesh(
     const vm::ivec2 &worldPosition,
@@ -1927,7 +2145,8 @@ ChunkResult *PGInstance::createChunkMesh(
     const std::array<int, 2> &lodArray,
     int generateFlags,
     int numVegetationInstances,
-    int numGrassInstances
+    int numGrassInstances,
+    int numPoiInstances
 ) {
     ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
 
@@ -1937,7 +2156,8 @@ ChunkResult *PGInstance::createChunkMesh(
         (generateFlags & GF_TERRAIN) |
         (generateFlags & GF_WATER) |
         (generateFlags & GF_VEGETATION) |
-        (generateFlags & GF_GRASS)
+        (generateFlags & GF_GRASS) |
+        (generateFlags & GF_POI)
     ) {
         heightfields = getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
     }
@@ -1978,27 +2198,11 @@ ChunkResult *PGInstance::createChunkMesh(
         result->waterMeshBuffer = nullptr;
     }
 
-    // barrier
-    if (generateFlags & GF_BARRIER) {
-        BarrierGeometry barrierGeometry;
-        OctreeContext octreeContext = getChunkSeedOctree(worldPosition, lod, chunkSize);
-        generateBarrierGeometry(
-            worldPosition,
-            lod,
-            chunkSize,
-            octreeContext,
-            barrierGeometry
-        );
-        result->barrierMeshBuffer = barrierGeometry.getBuffer();
-    } else {
-        result->barrierMeshBuffer = nullptr;
-    }
-
     // vegetation
     if (generateFlags & GF_VEGETATION) {
         VegetationGeometry vegetationGeometry;
 
-        generateVegetationGeometry(
+        generateVegetationInstances(
             worldPosition,
             lod,
             chunkSize,
@@ -2016,7 +2220,7 @@ ChunkResult *PGInstance::createChunkMesh(
     if (generateFlags & GF_GRASS) {
         GrassGeometry grassGeometry;
 
-        generateGrassGeometry(
+        generateGrassInstances(
             worldPosition,
             lod,
             chunkSize,
@@ -2030,8 +2234,116 @@ ChunkResult *PGInstance::createChunkMesh(
         result->grassInstancesBuffer = nullptr;
     }
 
+    // poi
+    if (generateFlags & GF_POI) {
+        PoiGeometry poiGeometry;
+
+        generatePoiInstances(
+            worldPosition,
+            lod,
+            chunkSize,
+            numPoiInstances,
+            heightfields,
+            noises,
+            poiGeometry
+        );
+        result->poiInstancesBuffer = poiGeometry.getBuffer();
+    } else {
+        result->poiInstancesBuffer = nullptr;
+    }
+
     return result;
 }
+void PGInstance::createMobSplatAsync(
+    uint32_t id,
+    const vm::ivec2 &worldPositionXZ,
+    const int lod,
+    const int priority
+) {
+    std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
+
+    vm::vec3 worldPositionF{
+        (float)worldPositionXZ.x,
+        (float)(MIN_WORLD_HEIGHT + MAX_WORLD_HEIGHT) / 2.f,
+        (float)worldPositionXZ.y
+    };
+    Task *mobSplatTask = new Task(id, worldPositionF, lod, priority, [
+        this,
+        promise,
+        worldPositionXZ,
+        lod
+    ]() -> void {
+        void *result = createMobSplat(worldPositionXZ, lod);
+        promise->resolve(result);
+    });
+    ProcGen::taskQueue.pushTask(mobSplatTask);
+}
+
+//
+
+uint8_t *PGInstance::createBarrierMesh(
+    const vm::ivec2 &worldPosition,
+    int minLod,
+    int maxLod
+) {
+    OctreeContext octreeContext = getChunkSeedOctree(
+        worldPosition,
+        minLod,
+        maxLod,
+        chunkSize
+    );
+
+    BarrierGeometry barrierGeometry;
+
+    generateBarrierGeometry(
+        worldPosition,
+        chunkSize,
+        octreeContext,
+        barrierGeometry
+    );
+
+    uint8_t *result = barrierGeometry.getBuffer();
+    return result;
+}
+void PGInstance::createBarrierMeshAsync(
+    uint32_t id,
+    const vm::ivec2 &worldPosition,
+    int minLod,
+    int maxLod
+) {
+    std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
+
+    // this is so the chunk center is roughly the center of the one used by createBarrierMesh
+    const int maxLodRange = getLodRange(maxLod, chunkSize);
+    vm::vec3 basePositionF{
+        std::floor(
+            (float)(((float)worldPosition.x + (float)maxLodRange / 2.f) / (float)maxLodRange)
+        ) * maxLodRange,
+        (float)(-WORLD_BASE_HEIGHT) + ((float)MIN_WORLD_HEIGHT + (float)MAX_WORLD_HEIGHT) / 2.f,
+        std::floor(
+            (float)(((float)worldPosition.y + (float)maxLodRange / 2.f) / (float)maxLodRange)
+        ) * maxLodRange,
+    };
+    const int maxLodP1 = maxLod + 1;
+    Task *terrainTask = new Task(id, basePositionF, maxLodP1, [
+        this,
+        promise,
+        worldPosition,
+        minLod,
+        maxLod
+    ]() -> void {
+        uint8_t *result = createBarrierMesh(
+            worldPosition,
+            minLod,
+            maxLod
+        );
+        if (!promise->resolve(result)) {
+            free(result);
+        }
+    });
+    ProcGen::taskQueue.pushTask(terrainTask);
+}
+
 /* uint8_t *PGInstance::createLiquidChunkMesh(const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
 {
     const int chunkSizeP1 = chunkSize + 1;
@@ -2272,7 +2584,8 @@ void PGInstance::createChunkMeshAsync(
     const std::array<int, 2> &lodArray,
     int generateFlags,
     int numVegetationInstances,
-    int numGrassInstances
+    int numGrassInstances,
+    int numPoiInstances
 ) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
@@ -2293,7 +2606,8 @@ void PGInstance::createChunkMeshAsync(
         lodArray2,
         generateFlags,
         numVegetationInstances,
-        numGrassInstances
+        numGrassInstances,
+        numPoiInstances
     ]() -> void {
         ChunkResult *result = createChunkMesh(
             worldPosition,
@@ -2301,7 +2615,8 @@ void PGInstance::createChunkMeshAsync(
             lodArray2,
             generateFlags,
             numVegetationInstances,
-            numGrassInstances
+            numGrassInstances,
+            numPoiInstances
         );
         if (!promise->resolve(result)) {
             result->free();
@@ -2500,25 +2815,6 @@ void PGInstance::getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, in
     });
     ProcGen::taskQueue.pushTask(grassSplatTask);
 } */
-void PGInstance::createMobSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority) {
-    std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
-
-    vm::vec3 worldPositionF{
-        (float)worldPositionXZ.x,
-        (float)(MIN_WORLD_HEIGHT + MAX_WORLD_HEIGHT) / 2.f,
-        (float)worldPositionXZ.y
-    };
-    Task *mobSplatTask = new Task(id, worldPositionF, lod, priority, [
-        this,
-        promise,
-        worldPositionXZ,
-        lod
-    ]() -> void {
-        void *result = createMobSplat(worldPositionXZ, lod);
-        promise->resolve(result);
-    });
-    ProcGen::taskQueue.pushTask(mobSplatTask);
-}
 
 // 2d caches
 

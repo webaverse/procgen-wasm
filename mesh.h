@@ -13,6 +13,11 @@
 
 //
 
+class OctreeNode;
+typedef std::shared_ptr<OctreeNode> OctreeNodePtr;
+
+//
+
 typedef std::vector<vm::vec3> PositionBuffer;
 typedef std::vector<vm::ivec2> PositionInt2DBuffer;
 typedef std::vector<vm::vec3> NormalBuffer;
@@ -78,20 +83,6 @@ public:
 
 //
 
-class BarrierGeometry {
-public:
-    PositionBuffer positions;
-    NormalBuffer normals;
-    IndexBuffer indices;
-    
-    UvBuffer uvs;
-    PositionInt2DBuffer positions2D;
-
-    uint8_t *getBuffer() const;
-};
-
-//
-
 class SplatInstance {
 public:
     int instanceId;
@@ -109,6 +100,35 @@ class GrassGeometry : public SplatInstanceGeometry {
 };
 class VegetationGeometry : public SplatInstanceGeometry {
     // nothing
+};
+
+//
+
+class PoiGeometry {
+public:
+    std::vector<float> ps;
+    std::vector<int32_t> instances;
+
+    uint8_t *getBuffer() const;
+};
+
+//
+
+class BarrierGeometry {
+public:
+    PositionBuffer positions;
+    NormalBuffer normals;
+    IndexBuffer indices;
+    
+    UvBuffer uvs;
+    PositionInt2DBuffer positions2D;
+
+    std::vector<OctreeNodePtr> leafNodes;
+    vm::ivec2 leafNodesMin;
+    vm::ivec2 leafNodesMax;
+    std::vector<int> leafNodesIndex;
+
+    uint8_t *getBuffer() const;
 };
 
 #endif // MESH_H

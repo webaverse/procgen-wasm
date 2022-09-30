@@ -6,7 +6,7 @@
 
 #include "procgen.h"
 // #include "qef.h"
-#include "mesh.h"
+// #include "mesh.h"
 #include <iostream>
 #include <vector>
 #include <functional>
@@ -49,11 +49,7 @@ public:
     int lodArray[2];
 };
 
-class OctreeNode;
-typedef std::shared_ptr<OctreeNode> OctreeNodePtr;
-
-class OctreeNode : public OctreeNodeSpec
-{
+class OctreeNode : public OctreeNodeSpec {
 public:
     OctreeNode(const vm::ivec2 &min, int lod) :
       OctreeNodeSpec{min, lod, {0, 0}}
@@ -103,6 +99,8 @@ public:
         return buffer;
     }
 };
+// class OctreeNode;
+typedef std::shared_ptr<OctreeNode> OctreeNodePtr;
 
 //
 
