@@ -598,12 +598,20 @@ void createPlaneSeamsGeometry(
         // position
         const float height = v0.getHeight();
         const MaterialsArray &materialWeights = v0.materialsWeights;
+
         geometry.positions.push_back(vm::vec3{
             (float)ax,
             height,
             (float)ay
         });
-        
+
+        geometry.materialsWeights.push_back(vm::vec4{
+            materialWeights[0],
+            materialWeights[1],
+            materialWeights[2],
+            materialWeights[3]
+        });
+
         // normal
         vm::vec3 normal;
         if (computeNormals == ComputeNormals::YES) {
