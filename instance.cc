@@ -3074,7 +3074,9 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
             seenMaterials.begin(),
             seenMaterials.end(),
             [&](unsigned char b1, unsigned char b2) -> bool {
-                return materialsCounts[b1].first > materialsCounts[b2].first;
+                const MaterialCountWeightPair matPair1 = materialsCounts[b1];
+                const MaterialCountWeightPair matPair2 = materialsCounts[b2];
+                return matPair1.pair.first > matPair2.pair.first;
             }
         );
 
@@ -3083,7 +3085,7 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
             if (i < seenMaterials.size())
             {
                 localHeightfield.materials[i] = seenMaterials[i];
-                localHeightfield.materialsWeights[i] = materialsCounts[seenMaterials[i]].second / totalMaterialFactors;
+                localHeightfield.materialsWeights[i] = materialsCounts[seenMaterials[i]].pair.second / totalMaterialFactors;
             }
             else
             {
@@ -3485,8 +3487,8 @@ void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::unorde
     const std::array<uint8_t, 4> &biomes = localHeightfield.biomesVectorField;
     const std::array<uint8_t, 4> &biomesWeights = localHeightfield.biomesWeightsVectorField;
 
-    const uint8_t GRASS = (uint8_t)MATERIAL::matGrass;
-    const uint8_t DIRT = (uint8_t)MATERIAL::matDirt;
+    const uint8_t GRASS = (uint8_t)MATERIAL::GRASS;
+    const uint8_t DIRT = (uint8_t)MATERIAL::DIRT;
 
     for (int i = 0; i < 4; i++)
     {
@@ -3503,11 +3505,11 @@ void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::unorde
             const float grassWeight = (grassNoiseRoof - materialNoise) * bw;
             const float dirtWeight = (materialNoise) * bw;
 
-            materialsCounts[GRASS].first += 1;
-            materialsCounts[DIRT].first += 1;
+            MaterialCountWeightPair &grassMaterial = materialsCounts[GRASS];
+            MaterialCountWeightPair &dirtMaterial = materialsCounts[DIRT];
 
-            materialsCounts[GRASS].second += grassWeight;
-            materialsCounts[DIRT].second += dirtWeight;
+            grassMaterial.addWeight(grassWeight);
+            dirtMaterial.addWeight(dirtWeight);
 
             totalMaterialFactors += grassWeight;
             totalMaterialFactors += dirtWeight;

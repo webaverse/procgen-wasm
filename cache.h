@@ -20,7 +20,16 @@ inline int modulo(int x, int N){
 
 //
 
-typedef std::pair<int, float> MaterialCountWeightPair;
+struct MaterialCountWeightPair {
+  std::pair<int, float> pair;
+
+  MaterialCountWeightPair() : pair(0, 0.f){};
+
+  void addWeight(float weight){
+    pair.first += 1;
+    pair.second += weight;
+  }
+};
 typedef std::array<uint8_t, 4> MaterialsArray;
 typedef std::array<float, 4> MaterialsWeightsArray;
 
