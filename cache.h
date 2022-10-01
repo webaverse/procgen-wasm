@@ -20,6 +20,7 @@ inline int modulo(int x, int N){
 
 //
 
+typedef std::pair<int, float> MaterialCountWeightPair;
 typedef std::array<uint8_t, 4> MaterialsArray;
 typedef std::array<float, 4> MaterialsWeightsArray;
 
