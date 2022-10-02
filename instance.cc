@@ -3016,11 +3016,12 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
     // postprocess height
     {
         std::vector<uint8_t> seenBiomes;
-        for (uint8_t b = 0; b < biomeCounts.size(); b++)
+        for (size_t i = 0; i < biomeCounts.size(); i++)
         {
-            const float &biomeWeight = biomeCounts[b];
+            const uint8_t biome = (uint8_t)i;
+            const float &biomeWeight = biomeCounts[biome];
             if(biomeWeight > 0){
-                seenBiomes.push_back(b);
+                seenBiomes.push_back(biome);
             }
         }
         
@@ -3053,11 +3054,12 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
 
         float elevationSum = 0.f;
         vm::vec2 fWorldPosition{bx, bz};
-        for (uint8_t b = 0; b < biomeCounts.size(); b++)
+        for (size_t i = 0; i < biomeCounts.size(); i++)
         {
-            const float &biomeWeight = biomeCounts[b];
+            const uint8_t biome = (uint8_t)i;
+            const float &biomeWeight = biomeCounts[biome];
             if(biomeWeight > 0) {
-                elevationSum += biomeWeight * getComputedBiomeHeight(b, fWorldPosition);
+                elevationSum += biomeWeight * getComputedBiomeHeight(biome, fWorldPosition);
             }
         }
 
@@ -3069,11 +3071,12 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
         getComputedMaterials(localHeightfield, materialsCountWeightMap, totalMaterialFactors, fWorldPosition);
 
         std::vector<uint8_t> seenMaterials;
-        for (int m = 0; m < materialsCountWeightMap.size(); m++)
+        for (size_t i = 0; i < materialsCountWeightMap.size(); i++)
         {
-            const int &materialCount = materialsCountWeightMap[m].pair.first;
+            const uint8_t material = (uint8_t)i;
+            const int &materialCount = materialsCountWeightMap[material].pair.first;
             if(materialCount > 0){
-                seenMaterials.push_back((uint8_t)m);
+                seenMaterials.push_back(material);
             }
         }
         
