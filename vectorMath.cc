@@ -218,6 +218,68 @@ float vm::dot(const vm::vec3 &v, const vm::vec3 &o) {
     return v.x * o.x + v.y * o.y + v.z * o.z;
 }
 
+vm::vec2 vm::mod(const vec2 v, const float m) {
+    return vm::vec2{(float)((int)v.x % (int)m), (float)((int)v.y % (int)m)};
+};
+vm::vec3 vm::mod(const vec3 v, const float m) {
+    return vm::vec3{(float)((int)v.x % (int)m), (float)((int)v.y % (int)m), (float)((int)v.z % (int)m)};
+};
+vm::vec4 vm::mod(const vec4 v, const float m) {
+    return vm::vec4{(float)((int)v.x % (int)m), (float)((int)v.y % (int)m), (float)((int)v.z % (int)m), (float)((int)v.w % (int)m)};
+};
+vm::ivec2 vm::mod(const ivec2 v, const float m) {
+    return vm::ivec2{(int)v.x % (int)m, (int)v.y % (int)m};
+};
+vm::ivec3 vm::mod(const ivec3 v, const float m) {
+    return vm::ivec3{(int)v.x % (int)m, (int)v.y % (int)m, (int)v.z % (int)m};
+};
+vm::ivec4 vm::mod(const ivec4 v, const float m) {
+    return vm::ivec4{(int)v.x % (int)m, (int)v.y % (int)m, (int)v.z % (int)m, (int)v.w % (int)m};
+};
+
+
+float vm::mix(const float v1, const float v2, const float m) {
+    return v1 * (1.f - m) + v2 * m; 
+};
+vm::vec2 vm::mix(const vm::vec2 v1, const vm::vec2 v2, const float m) {
+    return vm::vec2{v1.x * (1.f - m) + v2.x * m, v1.y * (1.f - m) + v2.y * m};
+};
+vm::vec3 vm::mix(const vm::vec3 v1, const vm::vec3 v2, const float m) {
+    return vm::vec3{v1.x * (1.f - m) + v2.x * m, v1.y * (1.f - m) + v2.y * m, v1.y * (1.f - m) + v2.y * m};
+};
+vm::vec4 vm::mix(const vm::vec4 v1, const vm::vec4 v2, const float m) {
+    return vm::vec4{v1.x * (1.f - m) + v2.x * m, v1.y * (1.f - m) + v2.y * m, v1.y * (1.f - m) + v2.y * m, v1.w * (1.f - m) + v2.w * m};
+};
+vm::vec2 vm::mix(const vm::ivec2 v1, const vm::ivec2 v2, const float m) {
+    return vm::vec2{v1.x * (1.f - m) + v2.x * m, v1.y * (1.f - m) + v2.y * m};
+};
+vm::vec3 vm::mix(const vm::ivec3 v1, const vm::ivec3 v2, const float m) {
+    return vm::vec3{v1.x * (1.f - m) + v2.x * m, v1.y * (1.f - m) + v2.y * m, v1.y * (1.f - m) + v2.y * m};
+};
+vm::vec4 vm::mix(const vm::ivec4 v1, const vm::ivec4 v2, const float m) {
+    return vm::vec4{v1.x * (1.f - m) + v2.x * m, v1.y * (1.f - m) + v2.y * m, v1.y * (1.f - m) + v2.y * m, v1.w * (1.f - m) + v2.w * m};
+};
+
+vm::vec2 vm::floor(const vm::vec2 v){
+    return vm::vec2{std::floor(v.x), std::floor(v.y)};
+};
+vm::vec3 vm::floor(const vm::vec3 v){
+    return vm::vec3{std::floor(v.x), std::floor(v.y), std::floor(v.z)};
+};
+vm::vec4 vm::floor(const vm::vec4 v){
+    return vm::vec4{std::floor(v.x), std::floor(v.y), std::floor(v.z), std::floor(v.w)};
+};
+
+vm::vec2 vm::fract(const vm::vec2 v){
+    return vm::vec2{v.x - std::floor(v.x), v.y - std::floor(v.y)};
+};
+vm::vec3 vm::fract(const vm::vec3 v){
+    return vm::vec3{v.x - std::floor(v.x), v.y - std::floor(v.y), v.z - std::floor(v.z)};
+};
+vm::vec4 vm::fract(const vm::vec4 v){
+    return vm::vec4{v.x - std::floor(v.x), v.y - std::floor(v.y), v.z - std::floor(v.z), v.w - std::floor(v.w)};
+};
+
 // + operator
 vm::vec2 vm::operator+(const vm::vec2 &v1, const vm::vec2 &v2)
 {

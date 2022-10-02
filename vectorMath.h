@@ -173,6 +173,29 @@ namespace vm
     float dot(const vm::vec2 &v, const vm::vec2 &o);
     float dot(const vm::vec3 &v, const vm::vec3 &o);
 
+    vec2 mod(const vec2 v, const float m);
+    vec3 mod(const vec3 v, const float m);
+    vec4 mod(const vec4 v, const float m);
+    ivec2 mod(const ivec2 v, const float m);
+    ivec3 mod(const ivec3 v, const float m);
+    ivec4 mod(const ivec4 v, const float m);
+
+    float mix(const float v1, const float v2, const float m);
+    vec2 mix(const vec2 v1, const vec2 v2, const float m);
+    vec3 mix(const vec3 v1, const vec3 v2, const float m);
+    vec4 mix(const vec4 v1, const vec4 v2, const float m);
+    vec2 mix(const ivec2 v1, const ivec2 v2, const float m);
+    vec3 mix(const ivec3 v1, const ivec3 v2, const float m);
+    vec4 mix(const ivec4 v1, const ivec4 v2, const float m);
+
+    vec2 floor(const vec2 v);
+    vec3 floor(const vec3 v);
+    vec4 floor(const vec4 v);
+
+    vec2 fract(const vec2 v);
+    vec3 fract(const vec3 v);
+    vec4 fract(const vec4 v);
+
     template <typename T>
     T clamp(const T v, const T min, const T max) {
        return std::max(min, std::min(v, max));
