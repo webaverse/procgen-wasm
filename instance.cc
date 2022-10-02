@@ -2963,10 +2963,10 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
     constexpr float baseWaterFactor = 0.25;
 
     // acc height
-    std::unordered_map<unsigned char, float> biomeCounts(numBiomes);
+    std::vector<float> biomeCounts(numBiomes);
     float totalHeightFactors = 0;
     // acc material
-    std::unordered_map<uint8_t, MaterialCountWeightPair> materialsCountWeightMap(numMaterials);
+    std::vector<MaterialCountWeightPair> materialsCountWeightMap(numMaterials);
     float totalMaterialFactors = 0;
     // acc water
     float sumWaterFactor = 0;
@@ -3015,18 +3015,20 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
 
     // postprocess height
     {
-        std::vector<unsigned char> seenBiomes;
-        for (auto kv : biomeCounts)
+        std::vector<uint8_t> seenBiomes;
+        for (uint8_t b = 0; b < biomeCounts.size(); b++)
         {
-            unsigned char b = kv.first;
-            seenBiomes.push_back(b);
+            const float &biomeWeight = biomeCounts[b];
+            if(biomeWeight > 0){
+                seenBiomes.push_back(b);
+            }
         }
         
         // sort by increasing occurence count of the biome
         std::sort(
             seenBiomes.begin(),
             seenBiomes.end(),
-            [&](unsigned char b1, unsigned char b2) -> bool {
+            [&](uint8_t b1, uint8_t b2) -> bool {
                 return biomeCounts[b1] > biomeCounts[b2];
             }
         );
@@ -3038,8 +3040,9 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
         {
             if (i < seenBiomes.size())
             {
-                localHeightfield.biomesVectorField[i] = seenBiomes[i];
-                localHeightfield.biomesWeightsVectorField[i] = biomeCounts[seenBiomes[i]] / totalHeightFactors * biomeWeightFitter;
+                const uint8_t &biome = seenBiomes[i];
+                localHeightfield.biomesVectorField[i] = biome;
+                localHeightfield.biomesWeightsVectorField[i] = biomeCounts[biome] / totalHeightFactors * biomeWeightFitter;
             }
             else
             {
@@ -3050,9 +3053,12 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
 
         float elevationSum = 0.f;
         vm::vec2 fWorldPosition{bx, bz};
-        for (auto const &iter : biomeCounts)
+        for (uint8_t b = 0; b < biomeCounts.size(); b++)
         {
-            elevationSum += iter.second * getComputedBiomeHeight(iter.first, fWorldPosition);
+            const float &biomeWeight = biomeCounts[b];
+            if(biomeWeight > 0) {
+                elevationSum += biomeWeight * getComputedBiomeHeight(b, fWorldPosition);
+            }
         }
 
         float elevation = elevationSum / totalHeightFactors;
@@ -3063,17 +3069,19 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
         getComputedMaterials(localHeightfield, materialsCountWeightMap, totalMaterialFactors, fWorldPosition);
 
         std::vector<uint8_t> seenMaterials;
-        for (auto kv : materialsCountWeightMap)
+        for (int m = 0; m < materialsCountWeightMap.size(); m++)
         {
-            unsigned char b = kv.first;
-            seenMaterials.push_back(b);
+            const int &materialCount = materialsCountWeightMap[m].pair.first;
+            if(materialCount > 0){
+                seenMaterials.push_back((uint8_t)m);
+            }
         }
         
         // sort by increasing occurence count of the material
         std::sort(
             seenMaterials.begin(),
             seenMaterials.end(),
-            [&](unsigned char b1, unsigned char b2) -> bool {
+            [&](uint8_t b1, uint8_t b2) -> bool {
                 const MaterialCountWeightPair matPair1 = materialsCountWeightMap[b1];
                 const MaterialCountWeightPair matPair2 = materialsCountWeightMap[b2];
                 return matPair1.pair.first > matPair2.pair.first;
@@ -3483,13 +3491,10 @@ float PGInstance::getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldP
 }
 
 // materials
-void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::unordered_map<uint8_t, MaterialCountWeightPair> &materialsCountWeightMap, float &totalMaterialFactors, const vm::vec2 &worldPosition)
+void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::vector<MaterialCountWeightPair> &materialsCountWeightMap, float &totalMaterialFactors, const vm::vec2 &worldPosition)
 {
     const std::array<uint8_t, 4> &biomes = localHeightfield.biomesVectorField;
     const std::array<uint8_t, 4> &biomesWeights = localHeightfield.biomesWeightsVectorField;
-
-    const uint8_t GRASS = (uint8_t)MATERIAL::GRASS;
-    const uint8_t DIRT = (uint8_t)MATERIAL::DIRT;
 
     for (int i = 0; i < 4; i++)
     {
@@ -3506,11 +3511,11 @@ void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::unorde
             const float grassWeight = (grassNoiseRoof - materialNoise) * bw;
             const float dirtWeight = (materialNoise) * bw;
 
-            MaterialCountWeightPair &grassMaterial = materialsCountWeightMap[GRASS];
-            MaterialCountWeightPair &dirtMaterial = materialsCountWeightMap[DIRT];
+            MaterialCountWeightPair &grassMaterial = materialsCountWeightMap[(int)MATERIAL::GRASS];
+            MaterialCountWeightPair &dirtMaterial = materialsCountWeightMap[(int)MATERIAL::DIRT];
 
-            grassMaterial.addWeight(grassWeight);
-            dirtMaterial.addWeight(dirtWeight);
+            grassMaterial.addMaterialWeight(grassWeight, bw);
+            dirtMaterial.addMaterialWeight(dirtWeight, bw);
 
             totalMaterialFactors += grassWeight;
             totalMaterialFactors += dirtWeight;

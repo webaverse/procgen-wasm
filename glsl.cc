@@ -22,7 +22,7 @@ float FBM(vec2 position)
 
     for (int i = 0; i < octaves; i++)
     {
-        noise += simplex2D(position.x, position.y) * amplitude;
+        noise += simplex2D(position) * amplitude;
         p *= lacunarity;
         amplitude *= persistence;
     }
@@ -30,6 +30,7 @@ float FBM(vec2 position)
     return noise;
 }
 
+// ? Domain Warping : https://www.shadertoy.com/view/4s23zz
 float warpNoise2D(vec2 position)
 {
     vec2 q = vec2(FBM(position + vec2(0.0, 0.0)), FBM(position + vec2(7.2, 2.3)));
@@ -40,9 +41,9 @@ float warpNoise2D(vec2 position)
 
 // 
 
-float GLSL::simplex2D(float a, float b)
+float GLSL::simplex2D(const vec2 &position)
 {
-    return glslNoise.in2D((double)a, (double)b);
+    return glslNoise.in2D((double)position.x, (double)position.y);
 }
 
 float GLSL::in2DWarp(const vec2 &position)

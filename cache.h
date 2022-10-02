@@ -25,8 +25,8 @@ struct MaterialCountWeightPair {
 
   MaterialCountWeightPair() : pair(0, 0.f){};
 
-  void addWeight(float weight){
-    pair.first += 1;
+  void addMaterialWeight(float weight, float biomeWeight){
+    pair.first += biomeWeight;
     pair.second += weight;
   }
 };

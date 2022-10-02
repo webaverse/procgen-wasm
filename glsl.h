@@ -14,9 +14,8 @@ namespace GLSL
     #define vec2(a, b) vec2{a, b}
     #define vec3(a, b, c) vec3{a, b, c}
     #define vec4(a, b, c, d) vec4{a, b, c, d}
-    #define simplex2D(a, b) simplex2D(a, b)
 
-    float simplex2D(float a, float b);
+    float simplex2D(const vec2 &position);
     float in2DWarp(const vec2 &position);
 };
 
