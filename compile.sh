@@ -14,6 +14,7 @@ emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=104857600 -
   vectorMath.cc \
   sync.cc \
   noise.cc \
+  glsl.cc \
   vector.cc \
   promise.cc \
   tracker.cc \

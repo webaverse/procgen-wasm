@@ -27,6 +27,12 @@ uint8_t *TerrainGeometry::getBuffer() const {
     // biomesUvs2
     sizeof(uint32_t) +
     biomesUvs2.size() * sizeof(biomesUvs2[0]) +
+    // materials
+    sizeof(uint32_t) +
+    materials.size() * sizeof(materials[0]) +
+    // materials weights
+    sizeof(uint32_t) +
+    materialsWeights.size() * sizeof(materialsWeights[0]) +
     // seeds
     // sizeof(uint32_t) +
     // seeds.size() * sizeof(seeds[0]) +
@@ -79,6 +85,18 @@ uint8_t *TerrainGeometry::getBuffer() const {
   // index += sizeof(uint32_t);
   // std::memcpy(buffer + index, &seeds[0], seeds.size() * sizeof(seeds[0]));
   // index += seeds.size() * sizeof(seeds[0]);
+
+  // materials
+  *((uint32_t *)(buffer + index)) = materials.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &materials[0], materials.size() * sizeof(materials[0]));
+  index += materials.size() * sizeof(materials[0]);
+
+  // materials weights
+  *((uint32_t *)(buffer + index)) = materialsWeights.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &materialsWeights[0], materialsWeights.size() * sizeof(materialsWeights[0]));
+  index += materialsWeights.size() * sizeof(materialsWeights[0]);
 
   // indices
   *((uint32_t *)(buffer + index)) = indices.size();

@@ -20,12 +20,30 @@ inline int modulo(int x, int N){
 
 //
 
+struct MaterialCountWeightPair {
+  std::pair<int, float> pair;
+
+  MaterialCountWeightPair() : pair(0, 0.f){};
+
+  void addMaterialWeight(float weight, float biomeWeight){
+    pair.first += biomeWeight;
+    pair.second += weight;
+  }
+};
+typedef std::array<uint8_t, 4> MaterialsArray;
+typedef std::array<float, 4> MaterialsWeightsArray;
+
 class Heightfield {
 public:
     float heightField;
+
     std::array<unsigned char, 4> biomesVectorField;
     std::array<unsigned char, 4> biomesWeightsVectorField;
+
     float waterFactor;
+
+    MaterialsArray materials;
+    MaterialsWeightsArray materialsWeights;
 
     float getHeight() const {
       return heightField;

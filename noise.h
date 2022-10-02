@@ -3,6 +3,9 @@
 
 #include "FastNoise.h"
 #include "Worley.hpp"
+#include "vectorMath.h"
+
+using namespace vm;
 
 class Noise {
  public:
@@ -19,6 +22,15 @@ class Noise {
 
   double in2DBidirectional(double x, double y);
   double in3DBidirectional(double x, double y, double z);
+};
+
+class UberNoise
+{
+public:
+  UberNoise();
+  ~UberNoise();
+
+  float in2DWarp(const vec2 &position);
 };
 
 #endif

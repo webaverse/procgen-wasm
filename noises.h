@@ -18,6 +18,8 @@ public:
   Noise riverNoise;
   Noise lavaNoise;
   
+  UberNoise grassMaterialNoise;
+
   Noise grassSeedNoise;
   Noise grassNoise;
   Noise poiSeedNoise;
