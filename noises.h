@@ -9,9 +9,10 @@ public:
   int seed;
   std::mt19937 rng;
   
-  Noise elevationNoise1;
-  Noise elevationNoise2;
-  Noise elevationNoise3;
+  UberNoise elevationNoise1;
+  UberNoise elevationNoise2;
+  UberNoise elevationNoise3;
+
   Noise temperatureNoise;
   Noise humidityNoise;
   Noise oceanNoise;
@@ -44,9 +45,9 @@ public:
   Noises(int seed) :
     seed(seed),
     rng(seed),
-    elevationNoise1(rng(), 2, 1),
-    elevationNoise2(rng(), 2, 1),
-    elevationNoise3(rng(), 2, 1),
+    // elevationNoise1(rng(), 2, 1),
+    // elevationNoise2(rng(), 2, 1),
+    // elevationNoise3(rng(), 2, 1),
     temperatureNoise(rng(), 0.001, 4),
     humidityNoise(rng(), 0.001, 4),
     oceanNoise(rng(), 0.001, 4),

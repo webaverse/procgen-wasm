@@ -3486,9 +3486,9 @@ float PGInstance::getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldP
     const float &az = worldPosition.y;
 
     float biomeHeight = biome.baseHeight +
-        noises.elevationNoise1.in2D(ax * biome.amps[0][0], az * biome.amps[0][0]) * biome.amps[0][1] +
-        noises.elevationNoise2.in2D(ax * biome.amps[1][0], az * biome.amps[1][0]) * biome.amps[1][1] +
-        noises.elevationNoise3.in2D(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1];
+        noises.elevationNoise1.in2DWarp(ax * biome.amps[0][0] * 15.f, az * biome.amps[0][0] * 15.f) * biome.amps[0][1] / 2.f +
+        noises.elevationNoise2.in2DWarp(ax * biome.amps[1][0] * 15.f, az * biome.amps[1][0] * 15.f) * biome.amps[1][1] / 2.f +
+        noises.elevationNoise3.in2DWarp(ax * biome.amps[2][0] * 15.f, az * biome.amps[2][0] * 15.f) * biome.amps[2][1] / 2.f;
     return biomeHeight;
 }
 
@@ -3509,7 +3509,7 @@ void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::vector
         {
         // TODO : Define a different set of material rules for each biome, for now we're using these rules as default
         default:
-            const float materialNoise = vm::clamp(noises.grassMaterialNoise.in2DWarp(worldPosition), 0.f, 1.f);
+            const float materialNoise = vm::clamp(noises.grassMaterialNoise.in2DWarp(worldPosition.x, worldPosition.y) + 0.2f, 0.f, 1.f);
 
             const float grassWeight = (1.f - materialNoise) * bw;
             const float dirtWeight = (materialNoise) * bw;

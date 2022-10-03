@@ -35,7 +35,7 @@ double Noise::in3DBidirectional(double x, double y, double z) {
 UberNoise::UberNoise(){};
 UberNoise::~UberNoise() {};
 
-float UberNoise::in2DWarp(const vec2 &position)
+float UberNoise::in2DWarp(float x, float z)
 {
-  return GLSL::in2DWarp(position);
+  return GLSL::in2DWarp(vm::vec2(x, z));
 }

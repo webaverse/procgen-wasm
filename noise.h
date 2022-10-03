@@ -30,7 +30,7 @@ public:
   UberNoise();
   ~UberNoise();
 
-  float in2DWarp(const vec2 &position);
+  float in2DWarp(float x, float z);
 };
 
 #endif
