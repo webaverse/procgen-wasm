@@ -3081,13 +3081,13 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
         }
         
         // sort by the overall weight of the material
-        std::sort(
-            seenMaterials.begin(),
-            seenMaterials.end(),
-            [&](uint8_t b1, uint8_t b2) -> bool {
-                return materialWeightAccumulators[b1].getWeight() > materialWeightAccumulators[b2].getWeight();
-            }
-        );
+        // std::sort(
+        //     seenMaterials.begin(),
+        //     seenMaterials.end(),
+        //     [&](uint8_t b1, uint8_t b2) -> bool {
+        //         return materialWeightAccumulators[b1].getWeight() > materialWeightAccumulators[b2].getWeight();
+        //     }
+        // );
 
         for (size_t i = 0; i < 4; i++)
         {
@@ -3509,33 +3509,19 @@ void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::vector
         {
         // TODO : Define a different set of material rules for each biome, for now we're using these rules as default
         default:
-            for (int z = -chunkSize; z <= chunkSize; z++)
-            {
-                for (int x = -chunkSize; x <= chunkSize; x++)
-                {
-                    const vm::vec2 samplePosition = worldPosition + vm::vec2{(float)x, (float)z};
-                    const float materialNoise = vm::clamp(noises.grassMaterialNoise.in2DWarp(samplePosition), 0.f, 1.f);
+            const float materialNoise = vm::clamp(noises.grassMaterialNoise.in2DWarp(worldPosition), 0.f, 1.f);
 
-                    const float distance = vm::distance(worldPosition, samplePosition);
-                    const float materialWeight = 1.f / (1.f + distance);
+            const float grassWeight = (1.f - materialNoise) * bw;
+            const float dirtWeight = (materialNoise) * bw;
 
-                    const float grassWeight = (1.f - materialNoise) * materialWeight;
-                    const float dirtWeight = (materialNoise) * materialWeight;
+            MaterialWeightAccumulator &grassWeightAcc = materialWeightAccumulators[GRASS];
+            MaterialWeightAccumulator &dirtWeightAcc = materialWeightAccumulators[DIRT];
 
-                    MaterialWeightAccumulator &grassWeightAcc = materialWeightAccumulators[GRASS];
-                    MaterialWeightAccumulator &dirtWeightAcc = materialWeightAccumulators[DIRT];
+            grassWeightAcc.addWeight(grassWeight);
+            dirtWeightAcc.addWeight(dirtWeight);
 
-                    grassWeightAcc.addWeight(grassWeight);
-                    dirtWeightAcc.addWeight(dirtWeight);
-
-                    totalMaterialFactors += grassWeight;
-                    totalMaterialFactors += dirtWeight;
-                }
-            }
-            // const float materialNoise = vm::clamp(noises.grassMaterialNoise.in2DWarp(worldPosition), 0.f, 1.f);
-
-            //             const float grassWeight = (1.f - materialNoise) * bw;
-            //             const float dirtWeight = (materialNoise) * bw;
+            totalMaterialFactors += grassWeight;
+            totalMaterialFactors += dirtWeight;
 
             break;
         }
