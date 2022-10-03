@@ -20,16 +20,30 @@ inline int modulo(int x, int N){
 
 //
 
-struct MaterialCountWeightPair {
-  std::pair<int, float> pair;
+class MaterialWeightAccumulator {
+public:
+  MaterialWeightAccumulator() : seen(false), weight(0.f) {};
 
-  MaterialCountWeightPair() : pair(0, 0.f){};
-
-  void addMaterialWeight(float weight, float biomeWeight){
-    pair.first += biomeWeight;
-    pair.second += weight;
+  void addWeight(const float &w){
+    // seen
+    seen = true;
+    // add weight
+    weight += w;
   }
+
+  bool getSeen(){
+    return seen;
+  }
+
+  float getWeight(){
+    return weight;
+  }
+
+private:
+  bool seen;
+  float weight;
 };
+
 typedef std::array<uint8_t, 4> MaterialsArray;
 typedef std::array<float, 4> MaterialsWeightsArray;
 
