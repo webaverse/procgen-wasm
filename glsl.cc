@@ -6,7 +6,7 @@ using namespace GLSL;
 
 // * START GLSL ---------------------
 
-const float NOISE_SCALE = 256.f;
+const float NOISE_SCALE = 512.f;
 
 // ? Simplex noise implementation from : https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83
 vec3 permute(vec3 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
@@ -39,7 +39,7 @@ float snoise(vec2 v)
 float FBM(vec2 position)
 {
     int octaves = 4;
-    float frequency = 0.54f;
+    float frequency = 0.94f;
     float lacunarity = 3.f;
     float persistence = 0.5f;
 
@@ -57,13 +57,13 @@ float FBM(vec2 position)
         amplitude *= persistence;
     }
 
-    return (noise * 0.5f) + 0.5f;
+    return (noise + 1.f) * 0.5f;
 }
 
 // ? Domain Warping : https://www.shadertoy.com/view/4s23zz
 float warpNoise2D(vec2 position)
 {
-    vec2 q = vec2(FBM(position + vec2(0.0, 0.0)), FBM(position + vec2(27.2, 52.3)));
+    vec2 q = vec2(FBM(position + vec2(0.0f, 0.0f)), FBM(position + vec2(7.4f, 30.2f)));
     return FBM(position + q * NOISE_SCALE * 2.f);
 }
 
