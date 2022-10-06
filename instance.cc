@@ -1615,8 +1615,8 @@ void generateBarrierGeometry(
             leafNodesMax.x = std::max(leafNodesMax.x, maxX);
             leafNodesMax.y = std::max(leafNodesMax.y, maxZ);
         }
-        geometry.leafNodesMin = leafNodesMin * chunkSize; // in world space
-        geometry.leafNodesMax = leafNodesMax * chunkSize; // in world space
+        geometry.leafNodesMin = leafNodesMin; // in chunks space
+        geometry.leafNodesMax = leafNodesMax; // in chunks space
 
         int w = leafNodesMax.x - leafNodesMin.x; // in chunks space
         int h = leafNodesMax.y - leafNodesMin.y; // in chunks space
