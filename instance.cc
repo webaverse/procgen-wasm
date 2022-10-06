@@ -2020,6 +2020,11 @@ OctreeContext PGInstance::getChunkSeedOctree(
             );
             if (iter == maxLodChunkPositions.end()) {
                 maxLodChunkPositions.push_back(baseNode);
+            } else {
+                std::cerr << "ERROR: duplicate node found: " <<
+                    baseNode.x << ", " << baseNode.y << " : " << dx << " " << dz <<
+                    std::endl;
+                abort();
             }
         }
     }
