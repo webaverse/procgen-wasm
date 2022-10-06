@@ -2005,10 +2005,10 @@ OctreeContext PGInstance::getChunkSeedOctree(
         for (int dx = -1; dx <= 1; dx++) {
             vm::ivec2 baseNode{
                 (int)std::floor(
-                    (float)(((float)worldPosition.x + (float)maxLodRange / 2.f) / (float)maxLodRange)
+                    (float)(((float)worldPosition.x) / (float)maxLodRange) + (float)dx
                 ) * maxLodRange,
                 (int)std::floor(
-                    (float)((float)worldPosition.y + (float)maxLodRange / 2.f) / (float)maxLodRange
+                    (float)(((float)worldPosition.y) / (float)maxLodRange) + (float)dz
                 ) * maxLodRange
             };
 
