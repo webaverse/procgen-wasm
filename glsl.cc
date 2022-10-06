@@ -36,10 +36,34 @@ float snoise(vec2 v)
     return 135.f * dot(m, g);
 }
 
-float FBM(vec2 position)
+float FBM_4(vec2 position)
 {
     int octaves = 4;
-    float frequency = 0.94f;
+    float frequency = 0.8f;
+    float lacunarity = 3.f;
+    float persistence = 0.3f;
+
+    float SCALE = 1.f / NOISE_SCALE;
+    vec2 p = position * SCALE;
+    float noise = 0.f;
+
+    float amplitude = 1.f;
+    p *= frequency;
+
+    for (int i = 0; i < octaves; i++)
+    {
+        noise += snoise(p) * amplitude;
+        p *= lacunarity;
+        amplitude *= persistence;
+    }
+
+    return (noise + 0.5f) * 0.5f;
+}
+
+float FBM_2(vec2 position)
+{
+    int octaves = 2;
+    float frequency = 0.74f;
     float lacunarity = 3.f;
     float persistence = 0.5f;
 
@@ -57,14 +81,41 @@ float FBM(vec2 position)
         amplitude *= persistence;
     }
 
-    return (noise + 1.f) * 0.5f;
+    return (noise + 0.5f) * 0.5f;
 }
 
 // ? Domain Warping : https://www.shadertoy.com/view/4s23zz
 float warpNoise2D(vec2 position)
 {
-    vec2 q = vec2(FBM(position + vec2(0.0f, 0.0f)), FBM(position + vec2(7.4f, 30.2f)));
-    return FBM(position + q * NOISE_SCALE * 2.f);
+    vec2 q = vec2(FBM_4(position + vec2(0.0f, 0.0f)), FBM_4(position + vec2(7.4f, 30.2f)));
+    return FBM_4(position + q * NOISE_SCALE * 2.f);
+}
+
+float terrainNoise(vec2 position)
+{
+    float fbm2 = FBM_2(position);
+    float fbm2d2 = FBM_2(position/2.f);
+    float fbm2d3 = FBM_2(position/3.f);
+    float fbm2d5 = FBM_2(position/5.f);
+
+    float fbm4 = FBM_4(position);
+
+    float noiseArea = clamp(fbm2d2 * 5.f, 0.f, 1.f);
+    float noise2D = clamp(fbm2d3, 0.f, 1.f);
+    float bigMountains = clamp(fbm4 , 0.f, 1.f);
+    float detailedNoise = clamp(fbm2 *2.f - bigMountains/5.f + 0.7f, 0.f, 1.f);
+    float cliffNoise = clamp(fbm2 *3.f - bigMountains/ 2.f + 0.6f, 0.f, 1.f);
+    float smallHills = detailedNoise * (1.f - noiseArea) * 50.f;
+    float mountains = (fbm2d3 * 300.f) * noiseArea ;
+
+    float terrainBlend = clamp(fbm2d3 * 2.f, 0.f, 1.f);
+    float terrainFlatter = clamp(fbm2d5 * 5.f, 0.2f + clamp(fbm2/5.f, 0.f, 1.f), 1.f);
+
+    float terrain1 = (smallHills + mountains) * terrainBlend;
+    // terrain1 = 0.f;
+    float terrain2 = (cliffNoise + fbm2d2 * 500.f) * (1.f - terrainBlend);
+    // terrain2 = 0.f;
+    return (terrain1 + terrain2) * terrainFlatter;
 }
 
 // * END GLSL ---------------------
@@ -79,4 +130,9 @@ float GLSL::simplex2D(const vec2 &position)
 float GLSL::in2DWarp(const vec2 &position)
 {
     return warpNoise2D(position);
+}
+
+float GLSL::in2DTerrain(const vec2 &position)
+{
+    return terrainNoise(position);
 }

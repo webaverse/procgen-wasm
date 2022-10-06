@@ -17,6 +17,7 @@ namespace GLSL
 
     float simplex2D(const vec2 &position);
     float in2DWarp(const vec2 &position);
+    float in2DTerrain(const vec2 &position);
 };
 
 #endif // GLSL_H

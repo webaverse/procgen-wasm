@@ -31,6 +31,7 @@ public:
   ~UberNoise();
 
   float in2DWarp(float x, float z);
+  float in2DTerrain(float x, float z);
 };
 
 #endif

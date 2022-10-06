@@ -39,3 +39,7 @@ float UberNoise::in2DWarp(float x, float z)
 {
   return GLSL::in2DWarp(vm::vec2(x, z));
 }
+float UberNoise::in2DTerrain(float x, float z)
+{
+  return GLSL::in2DTerrain(vm::vec2(x, z));
+}
