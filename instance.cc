@@ -1998,7 +1998,7 @@ OctreeContext PGInstance::getChunkSeedOctree(
         (int)std::floor((float)worldPosition.y / (float)maxLodRange) * maxLodRange
     }; */
 
-    constexpr int maxNumSplits = 16;
+    constexpr int maxNumSplits = 3;
 
     std::vector<vm::ivec2> maxLodChunkPositions;
     for (int dz = -1; dz <= 1; dz++) {
