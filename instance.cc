@@ -2315,14 +2315,14 @@ void PGInstance::createBarrierMeshAsync(
 
     // this is so the chunk center is roughly the center of the one used by createBarrierMesh
     const int maxLodRange = getLodRange(maxLod, chunkSize);
-    vm::vec3 basePositionF{
+    vm::vec3 basePositionF{ // center of the middle 3x3 chunks
         std::floor(
-            (float)(((float)worldPosition.x + (float)maxLodRange / 2.f) / (float)maxLodRange)
-        ) * maxLodRange,
+            (float)(((float)worldPosition.x) / (float)maxLodRange)
+        ) * maxLodRange + (maxLodRange / 2.f),
         (float)(-WORLD_BASE_HEIGHT) + ((float)MIN_WORLD_HEIGHT + (float)MAX_WORLD_HEIGHT) / 2.f,
         std::floor(
             (float)(((float)worldPosition.y + (float)maxLodRange / 2.f) / (float)maxLodRange)
-        ) * maxLodRange,
+        ) * maxLodRange + (maxLodRange / 2.f),
     };
     const int maxLodP1 = maxLod + 1;
     Task *terrainTask = new Task(id, basePositionF, maxLodP1, [
