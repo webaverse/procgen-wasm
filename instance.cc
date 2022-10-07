@@ -2144,6 +2144,8 @@ void generateGridHeightfield(
     HeightfieldGeometry &heightfieldGeometry,
     int chunkSize
 ) {
+    heightfieldGeometry.heightfieldImage.resize(chunkSize * chunkSize);
+
     const int chunkSizeP2 = chunkSize + 2;
     for (int y = 0; y < chunkSize; y++) {
         for (int x = 0; x < chunkSize; x++) {
