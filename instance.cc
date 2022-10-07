@@ -1940,43 +1940,6 @@ void generatePoiInstances(
 
 //
 
-/* void generateBarrierGeometry(
-    const vm::ivec2 &worldPosition,
-    int lod,
-    int chunkSize,
-    OctreeContext &octreeContext,
-    BarrierGeometry &geometry
-) {
-    generateBarrierMesh(worldPosition, lod, chunkSize, octreeContext, geometry);
-    // offsetGeometry(geometry, worldPosition);
-    // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
-} */
-
-//
-
-/* uint8_t getMostCommonBiome(const std::vector<Heightfield> &heightfields) {
-    std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
-    for (const auto &hf : heightfields) {
-        biomeCounts[hf.biomesVectorField[0]]++;
-    }
-
-    std::vector<unsigned char> seenBiomes;
-    for (auto kv : biomeCounts)
-    {
-        unsigned char b = kv.first;
-        seenBiomes.push_back(b);
-    }
-    
-    // sort by increasing occurence count of the biome
-    auto iter = std::max_element(
-        seenBiomes.begin(),
-        seenBiomes.end(),
-        [&](unsigned char b1, unsigned char b2) -> bool {
-            return biomeCounts[b1] > biomeCounts[b2];
-        }
-    );
-    return *iter;
-} */
 inline int getLodInt(int lod) {
     return 1 << (lod - 1);
 }
@@ -1990,17 +1953,8 @@ OctreeContext PGInstance::getChunkSeedOctree(
     int maxLod, // we will sample a 3x3 of this lod
     int chunkSize
 ) {
-    // constexpr int minLod = 1;
-    // constexpr int maxLod = 6; // we will sample a 3x3 of this lod
-
     const int maxLodInt = getLodInt(maxLod);
     const int maxLodRange = getLodRange(maxLod, chunkSize);
-    /* const int maxLodP1 = maxLod + 1;
-    const int maxLodP1Range = (1 << (maxLodP1 - 1)) * chunkSize;
-    vm::ivec2 maxLodP1Center{
-        (int)std::floor((float)worldPosition.x / (float)maxLodRange) * maxLodRange,
-        (int)std::floor((float)worldPosition.y / (float)maxLodRange) * maxLodRange
-    }; */
 
     constexpr int maxNumSplits = 3;
 
@@ -2064,40 +2018,6 @@ OctreeContext PGInstance::getChunkSeedOctree(
             );
         }
     }
-
-    /* {
-        float splitsLodNoise = (float)noises.numSplitsNoise.in2D(maxLodCenter.x, maxLodCenter.y);
-        for (uint32_t i = 0; i < numSplitsHash; i++) {
-            uint32_t splitLodDX;
-            MurmurHash3_x86_32(&splitsLodNoise, sizeof(splitsLodNoise), 0, &splitLodDX);
-            splitLodDX = (uint32_t)((float)splitLodDX * (float)maxLodRange / (float)0xFFFFFFFFu);
-            splitsLodNoise++;
-
-            uint32_t splitLodDZ;
-            MurmurHash3_x86_32(&splitsLodNoise, sizeof(splitsLodNoise), 1, &splitLodDZ);
-            splitLodDZ = (uint32_t)((float)splitLodDZ * (float)maxLodRange / (float)0xFFFFFFFFu);
-            splitsLodNoise++;
-
-            uint32_t splitLod;
-            MurmurHash3_x86_32(&splitsLodNoise, sizeof(splitsLodNoise), 1, &splitLod);
-            splitLod = (uint32_t)((float)minLod + (float)splitLod * (float)(maxLod - minLod) / (float)0xFFFFFFFFu);
-            splitsLodNoise++;
-
-            int splitLodDXInt = maxLodCenter.x + (int)splitLodDX;
-            int splitLodDZInt = maxLodCenter.y + (int)splitLodDZ;
-            int splitLodInt = 1 << ((int)splitLod - 1);
-
-            lodSplits.push_back(
-                std::make_pair(
-                    vm::ivec2{
-                        splitLodDXInt,
-                        splitLodDZInt
-                    },
-                    splitLodInt
-                )
-            );
-        }
-    } */
 
     OctreeContext octreeContext;
     constructSeedTree(
