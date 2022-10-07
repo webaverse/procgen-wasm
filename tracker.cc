@@ -493,7 +493,11 @@ bool removeNode(OctreeContext &octreeContext, OctreeNodePtr node) {
     // }
   }
 } */
-void splitPointToLod(OctreeContext &octreeContext, const vm::ivec2 &absolutePosition, int targetLod) {
+void splitPointToLod(
+  OctreeContext &octreeContext,
+  const vm::ivec2 &absolutePosition,
+  int targetLod
+) {
   auto &nodeMap = octreeContext.nodeMap;
 
   for (;;) {
@@ -563,7 +567,13 @@ void initializeLodArrays(OctreeContext &octreeContext) {
     node->lodArray[1] = rightNodeIter != nodeMap.end() ? rightNodeIter->second->lod : (lod * 2);
   }
 }
-void constructLodTree(OctreeContext &octreeContext, const vm::ivec2 &currentCoord, int lod1Range, int minLod, int maxLod) {
+void constructLodTree(
+  OctreeContext &octreeContext,
+  const vm::ivec2 &currentCoord,
+  int lod1Range,
+  int minLod,
+  int maxLod
+) {
   auto &nodeMap = octreeContext.nodeMap;
 
   // initialize max lod
@@ -629,7 +639,12 @@ void constructSeedTree(
     splitPointToLod(octreeContext, splitPosition, lod);
   }
 }
-std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec2 &currentCoord, int lod1Range, int minLod, int maxLod) {
+std::vector<OctreeNodePtr> constructOctreeForLeaf(
+  const vm::ivec2 &currentCoord,
+  int lod1Range,
+  int minLod,
+  int maxLod
+) {
   OctreeContext octreeContext;
 
   constructLodTree(
