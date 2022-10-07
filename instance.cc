@@ -2143,7 +2143,6 @@ enum GenerateFlags {
     GF_NONE = 0,
     GF_TERRAIN = 1 << 0,
     GF_WATER = 1 << 1,
-    // GF_BARRIER = 1 << 2,
     GF_VEGETATION = 1 << 2,
     GF_GRASS = 1 << 3,
     GF_POI = 1 << 4
