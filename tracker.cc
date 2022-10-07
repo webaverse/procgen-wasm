@@ -1023,7 +1023,7 @@ DataRequestUpdate Tracker::updateDataRequests(
 TrackerUpdate Tracker::update(const vm::vec3 &position) {
   // new octrees
   int chunkSize = this->inst->chunkSize;
-  vm::ivec2 currentCoord = getCurrentCoord(position, chunkSize);
+  vm::ivec2 currentCoord = getCurrentCoord(position, chunkSize); // in chunk space
   int lod = 1 << (this->lods - 1);
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(
     currentCoord,
