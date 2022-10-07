@@ -2146,16 +2146,16 @@ void generateGridHeightfield(
 ) {
     heightfieldGeometry.heightfieldImage.resize(chunkSize * chunkSize);
 
+    int dstIndex = 0;
     const int chunkSizeP2 = chunkSize + 2;
     for (int y = 0; y < chunkSize; y++) {
         for (int x = 0; x < chunkSize; x++) {
             int dx = x + 1;
             int dy = y + 1;
-            const int index = dx + dy * chunkSizeP2;
+            const int srcIndex = dx + dy * chunkSizeP2;
+            const Heightfield &heightfield = heightfields[srcIndex];
 
-            const Heightfield &heightfield = heightfields[index];
-
-            heightfieldGeometry.heightfieldImage[index] = vm::vec4{
+            heightfieldGeometry.heightfieldImage[dstIndex++] = vm::vec4{
                 heightfield.heightField,
                 heightfield.waterFactor,
                 0,
