@@ -8,7 +8,7 @@ void TerrainGeometry::pushPointMetadata(const Heightfield &fieldValue) {
 }
 uint8_t *TerrainGeometry::getBuffer() const {
   // calculate size
-  size_t neededSize = 
+  size_t neededSize =
     // positions
     sizeof(uint32_t) +
     positions.size() * sizeof(positions[0]) +
@@ -325,13 +325,19 @@ uint8_t *BarrierGeometry::getBuffer() const {
 
 uint8_t *HeightfieldGeometry::getBuffer() const {
   // calculate size
-  size_t neededSize = heightfieldImage.size() * sizeof(heightfieldImage[0]);
+  size_t neededSize = 
+    sizeof(uint32_t) + // numPixels
+    heightfieldImage.size() * sizeof(heightfieldImage[0]); // pixels
 
   // allocate buffer
   uint8_t *buffer = (uint8_t *)malloc(neededSize);
   int index = 0;
 
-  // heightfieldImage
+  // numPixels
+  *((uint32_t *)(buffer + index)) = heightfieldImage.size();
+  index += sizeof(uint32_t);
+
+  // pixels
   std::memcpy(buffer + index, heightfieldImage.data(), heightfieldImage.size() * sizeof(heightfieldImage[0]));
   index += heightfieldImage.size() * sizeof(heightfieldImage[0]);
 
