@@ -1993,6 +1993,7 @@ OctreeContext PGInstance::getChunkSeedOctree(
     // constexpr int minLod = 1;
     // constexpr int maxLod = 6; // we will sample a 3x3 of this lod
 
+    const int maxLodInt = getLodInt(maxLod);
     const int maxLodRange = getLodRange(maxLod, chunkSize);
     /* const int maxLodP1 = maxLod + 1;
     const int maxLodP1Range = (1 << (maxLodP1 - 1)) * chunkSize;
@@ -2009,10 +2010,10 @@ OctreeContext PGInstance::getChunkSeedOctree(
             vm::ivec2 baseNode{
                 (int)std::floor(
                     (float)(((float)worldPosition.x) / (float)maxLodRange) + (float)dx
-                ) * maxLodRange,
+                ) * maxLodInt,
                 (int)std::floor(
                     (float)(((float)worldPosition.y) / (float)maxLodRange) + (float)dz
-                ) * maxLodRange
+                ) * maxLodInt
             };
 
             // insert the node if it does not exist
@@ -2044,13 +2045,13 @@ OctreeContext PGInstance::getChunkSeedOctree(
 
         uint32_t numSplits = (uint32_t)(dis(rng) * (float)maxNumSplits);
         for (uint32_t i = 0; i < numSplits; i++) {
-            uint32_t splitLodDX = (uint32_t)(dis(rng) * (float)maxLodRange);
-            uint32_t splitLodDZ = (uint32_t)(dis(rng) * (float)maxLodRange);
+            uint32_t splitLodDX = (uint32_t)(dis(rng) * (float)maxLodInt);
+            uint32_t splitLodDZ = (uint32_t)(dis(rng) * (float)maxLodInt);
             uint32_t splitLod = (uint32_t)(dis(rng) * (float)(maxLod - minLod) + minLod);
 
             int splitLodDXInt = baseNode.x + (int)splitLodDX;
             int splitLodDZInt = baseNode.y + (int)splitLodDZ;
-            int splitLodInt = 1 << ((int)splitLod - 1);
+            int splitLodInt = getLodInt(splitLod);
 
             lodSplits.push_back(
                 std::make_pair(
@@ -2102,7 +2103,7 @@ OctreeContext PGInstance::getChunkSeedOctree(
     constructSeedTree(
         octreeContext,
         maxLodChunkPositions,
-        maxLodRange,
+        maxLodInt,
         lodSplits
     );
     return octreeContext;
