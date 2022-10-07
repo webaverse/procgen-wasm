@@ -320,3 +320,20 @@ uint8_t *BarrierGeometry::getBuffer() const {
 
   return buffer;
 }
+
+//
+
+uint8_t *HeightfieldGeometry::getBuffer() const {
+  // calculate size
+  size_t neededSize = heightfieldImage.size() * sizeof(heightfieldImage[0]);
+
+  // allocate buffer
+  uint8_t *buffer = (uint8_t *)malloc(neededSize);
+  int index = 0;
+
+  // heightfieldImage
+  std::memcpy(buffer + index, heightfieldImage.data(), heightfieldImage.size() * sizeof(heightfieldImage[0]));
+  index += heightfieldImage.size() * sizeof(heightfieldImage[0]);
+
+  return buffer;
+}

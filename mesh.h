@@ -131,4 +131,13 @@ public:
     uint8_t *getBuffer() const;
 };
 
+//
+
+class HeightfieldGeometry {
+public:
+    std::vector<vm::vec4> heightfieldImage;
+
+    uint8_t *getBuffer() const;
+};
+
 #endif // MESH_H

@@ -32,6 +32,7 @@ public:
     uint8_t *vegetationInstancesBuffer;
     uint8_t *grassInstancesBuffer;
     uint8_t *poiInstancesBuffer;
+    uint8_t *heightfieldsBuffer;
 
     void free() {
         std::free(terrainMeshBuffer);
@@ -39,6 +40,7 @@ public:
         std::free(vegetationInstancesBuffer);
         std::free(grassInstancesBuffer);
         std::free(poiInstancesBuffer);
+        std::free(heightfieldsBuffer);
         std::free(this);
     }
 };

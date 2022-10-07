@@ -2139,13 +2139,37 @@ std::vector<Heightfield> PGInstance::getHeightfields(
 
     return heightfields;
 }
+void generateGridHeightfield(
+    const std::vector<Heightfield> &heightfields,
+    HeightfieldGeometry &heightfieldGeometry,
+    int chunkSize
+) {
+    const int chunkSizeP2 = chunkSize + 2;
+    for (int y = 0; y < chunkSize; y++) {
+        for (int x = 0; x < chunkSize; x++) {
+            int dx = x + 1;
+            int dy = y + 1;
+            const int index = dx + dy * chunkSizeP2;
+
+            const Heightfield &heightfield = heightfields[index];
+
+            heightfieldGeometry.heightfieldImage[index] = vm::vec4{
+                heightfield.heightField,
+                heightfield.waterFactor,
+                0,
+                0
+            };
+        }
+    }
+}
 enum GenerateFlags {
     GF_NONE = 0,
     GF_TERRAIN = 1 << 0,
     GF_WATER = 1 << 1,
     GF_VEGETATION = 1 << 2,
     GF_GRASS = 1 << 3,
-    GF_POI = 1 << 4
+    GF_POI = 1 << 4,
+    GF_HEIGHTFIELD = 1 << 5
 };
 ChunkResult *PGInstance::createChunkMesh(
     const vm::ivec2 &worldPosition,
@@ -2165,7 +2189,8 @@ ChunkResult *PGInstance::createChunkMesh(
         (generateFlags & GF_WATER) |
         (generateFlags & GF_VEGETATION) |
         (generateFlags & GF_GRASS) |
-        (generateFlags & GF_POI)
+        (generateFlags & GF_POI) |
+        (generateFlags & GF_HEIGHTFIELD)
     ) {
         heightfields = getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
     }
@@ -2258,6 +2283,20 @@ ChunkResult *PGInstance::createChunkMesh(
         result->poiInstancesBuffer = poiGeometry.getBuffer();
     } else {
         result->poiInstancesBuffer = nullptr;
+    }
+
+    // poi
+    if (generateFlags & GF_HEIGHTFIELD) {
+        HeightfieldGeometry heightfieldGeometry;
+
+        generateGridHeightfield(
+            heightfields,
+            heightfieldGeometry,
+            chunkSize
+        );
+        result->heightfieldsBuffer = heightfieldGeometry.getBuffer();
+    } else {
+        result->heightfieldsBuffer = nullptr;
     }
 
     return result;
