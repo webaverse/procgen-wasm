@@ -1977,8 +1977,11 @@ void generatePoiInstances(
     );
     return *iter;
 } */
+inline int getLodInt(int lod) {
+    return 1 << (lod - 1);
+}
 inline int getLodRange(int lod, int chunkSize) {
-    return (1 << (lod - 1)) * chunkSize;
+    return getLodInt(lod) * chunkSize;
 }
 OctreeContext PGInstance::getChunkSeedOctree(
     const vm::ivec2 &worldPosition,
