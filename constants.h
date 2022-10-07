@@ -6,7 +6,7 @@ constexpr int numThreads = NUM_THREADS;
 constexpr int WORLD_BASE_HEIGHT = 64;
 
 constexpr int MIN_WORLD_HEIGHT = 0;
-constexpr int MAX_WORLD_HEIGHT = 128;
+constexpr int MAX_WORLD_HEIGHT = 512;
 
 constexpr float BIOME_DEBUG_MESH_BASE_HEIGHT = 0.1;
 

@@ -3509,7 +3509,7 @@ void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::vector
         {
         // TODO : Define a different set of material rules for each biome, for now we're using these rules as default
         default:
-            const float materialNoise = vm::clamp(noises.grassMaterialNoise.in2DWarp(worldPosition.x, worldPosition.y) + 0.3f, 0.f, 1.f);
+            const float materialNoise = noises.grassMaterialNoise.in2DWarp(worldPosition.x, worldPosition.y);
 
             const float grassWeight = (1.f - materialNoise) * bw;
             const float dirtWeight = (materialNoise) * bw;

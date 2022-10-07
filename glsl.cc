@@ -1,4 +1,5 @@
 #include "glsl.h"
+#include "constants.h"
 
 using namespace GLSL;
 
@@ -6,6 +7,9 @@ using namespace GLSL;
 
 // * START GLSL ---------------------
 
+const float MAX_TERRAIN_HEIGHT = float(MAX_WORLD_HEIGHT);
+const float MIN_TERRAIN_HEIGHT = float(MIN_WORLD_HEIGHT);
+const float TERRAIN_BASE_HEIGHT = float(WORLD_BASE_HEIGHT);
 const float NOISE_SCALE = 512.f;
 
 // ? Simplex noise implementation from : https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83
@@ -88,34 +92,48 @@ float FBM_2(vec2 position)
 float warpNoise2D(vec2 position)
 {
     vec2 q = vec2(FBM_4(position + vec2(0.0f, 0.0f)), FBM_4(position + vec2(7.4f, 30.2f)));
-    return FBM_4(position + q * NOISE_SCALE * 2.f);
+    float noise = FBM_4(position + q * NOISE_SCALE * 2.f);
+    return clamp(noise + 0.5f, 0.f, 1.f);
 }
 
 float terrainNoise(vec2 position)
 {
+    // defining terrain height parameters
+    const float highMountainsHeight = MAX_TERRAIN_HEIGHT;
+    const float lowMountainsHeight = (MAX_TERRAIN_HEIGHT/2.f);
+
+    // calculating noises
     float fbm2 = FBM_2(position);
+
     float fbm2d2 = FBM_2(position/2.f);
+
     float fbm2d3 = FBM_2(position/3.f);
+    float fbm2d3clamped = clamp(fbm2d3, 0.f, 1.f);
+
     float fbm2d5 = FBM_2(position/5.f);
 
     float fbm4 = FBM_4(position);
+    float fbm4clamped = clamp(fbm4 , 0.f, 1.f);
 
-    float noiseArea = clamp(fbm2d2 * 5.f, 0.f, 1.f);
-    float noise2D = clamp(fbm2d3, 0.f, 1.f);
-    float bigMountains = clamp(fbm4 , 0.f, 1.f);
-    float detailedNoise = clamp(fbm2 *2.f - bigMountains/5.f + 0.7f, 0.f, 1.f);
-    float cliffNoise = clamp(fbm2 *3.f - bigMountains/ 2.f + 0.6f, 0.f, 1.f);
-    float smallHills = detailedNoise * (1.f - noiseArea) * 50.f;
-    float mountains = (fbm2d3 * 300.f) * noiseArea ;
+    // layering noises
+    float smallHillsMountainsBlender = clamp(fbm2d2 * 5.f, 0.f, 1.f);
 
-    float terrainBlend = clamp(fbm2d3 * 2.f, 0.f, 1.f);
-    float terrainFlatter = clamp(fbm2d5 * 5.f, 0.2f + clamp(fbm2/5.f, 0.f, 1.f), 1.f);
+    float detailedNoise = clamp(fbm2 *2.f - fbm4clamped/5.f + 0.7f, 0.f, 1.f);
 
-    float terrain1 = (smallHills + mountains) * terrainBlend;
-    // terrain1 = 0.f;
-    float terrain2 = (cliffNoise + fbm2d2 * 500.f) * (1.f - terrainBlend);
-    // terrain2 = 0.f;
-    return (terrain1 + terrain2) * terrainFlatter;
+    float smallHills = detailedNoise * (1.f - smallHillsMountainsBlender) * 50.f;
+    float lowMountains = (fbm2d3 * lowMountainsHeight) * smallHillsMountainsBlender ;
+    float highMountains = fbm2d2;
+
+    float terrainFlattener = clamp(fbm2d5, 0.f, 0.5f) * 2.f;
+
+    float lowAndHighMountainsBlender = fbm2d3clamped ;
+
+    float lowMountainsWithDetail = (smallHills + lowMountains) * lowAndHighMountainsBlender;
+    float highMountainsWithDetail = (highMountains * highMountainsHeight) * (1.f - lowAndHighMountainsBlender);
+
+    float finalHeight = TERRAIN_BASE_HEIGHT + (highMountainsWithDetail + lowMountainsWithDetail) * terrainFlattener;
+
+    return clamp(finalHeight, MIN_TERRAIN_HEIGHT, MAX_TERRAIN_HEIGHT);
 }
 
 // * END GLSL ---------------------
