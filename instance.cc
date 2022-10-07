@@ -1602,7 +1602,7 @@ void generateBarrierGeometry(
         };
         for (size_t i = 0; i < seedLeafNodes.size(); i++) {
             OctreeNodePtr node = seedLeafNodes[i];
-            vm::ivec2 nodeChunkPosition = node->min / chunkSize; // in chunks space
+            vm::ivec2 nodeChunkPosition = node->min; // in chunks space
             const int &nodeLod = node->lod;
 
             int minX = nodeChunkPosition.x;
@@ -1624,7 +1624,7 @@ void generateBarrierGeometry(
 
         for (size_t i = 0; i < seedLeafNodes.size(); i++) {
             OctreeNodePtr node = seedLeafNodes[i];
-            vm::ivec2 nodeChunkPosition = node->min / chunkSize; // in chunks space
+            vm::ivec2 nodeChunkPosition = node->min; // in chunks space
             const int &nodeLod = node->lod;
 
             int minX = nodeChunkPosition.x;
