@@ -612,13 +612,6 @@ void constructSeedTree(
 ) {
   auto &nodeMap = octreeContext.nodeMap;
 
-  /* // initialize max lod
-  OctreeNodePtr childNode = getOrCreateNode(
-    octreeContext,
-    maxLodCenter,
-    maxLod
-  ); */
-
   // initialize base lods
   for (size_t i = 0; i < maxLodChunkPositions.size(); i++) {
     const vm::ivec2 &nodePos = maxLodChunkPositions[i];
@@ -647,65 +640,8 @@ std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec2 &currentCoord,
     maxLod
   );
 
-  /* std::vector<OctreeNodePtr> lod1Nodes;
-  for (const auto &iter : nodeMap) {
-    auto node = iter.second;
-    if (node->lod == 1) {
-      lod1Nodes.push_back(node);
-    }
-  } */
-
   // collect all nodes in the nodeMap
   std::vector<OctreeNodePtr> leafNodes = octreeContext.getLeafNodes();
-
-  /* // sanity check lod1Nodes for duplicates
-  {
-    std::unordered_map<uint64_t, OctreeNodePtr> lod1NodeMap;
-    for (auto node : lod1Nodes) {
-      uint64_t hash = hashOctreeMinLod(node->min, node->lod);
-      if (lod1NodeMap.find(hash) != lod1NodeMap.end()) {
-        // throw new Error(`Duplicate lod1 node: ${hash}`);
-        EM_ASM({
-            console.log('Duplicate lod1 node:', $0);
-        }, hash);
-        abort();
-      }
-      lod1NodeMap[hash] = node;
-    }
-  } */
-
-  // sanity check that no leaf node contains another leaf node
-  /* for (auto leafNode : leafNodes) {
-    for (auto leafNode2 : leafNodes) {
-      if (leafNode != leafNode2 && containsNode(*leafNode, *leafNode2)) {
-        EM_ASM(
-          {
-              console.log('Leaf node contains another leaf node:', $0, $1, $2, $3, $4, $5);
-          },
-          leafNode->min.x, leafNode->min.y, leafNode->lod,
-          leafNode2->min.x, leafNode2->min.y, leafNode2->lod
-        );
-      }
-    }
-  } */
-
-  /* // assign lodArray for each node based on the minimum lod of the target point in the world
-  for (const auto &iter : nodeMap) {
-    auto node = iter.second;
-
-    for (int i = 0; i < 8; i++) {
-      const vm::ivec3 &offset = lodOffsets[i];
-      int &lod = node->lodArray[i]; // output
-      
-      const vm::ivec3 &p = node->min + offset * node->size;
-      OctreeNodePtr containingLeafNode = getLeafNodeFromPoint(leafNodes, p);
-      if (containingLeafNode) {
-        lod = containingLeafNode->size;
-      } else {
-        lod = node->size;
-      }
-    }
-  } */
 
   // return
   return leafNodes;
