@@ -3478,18 +3478,34 @@ float PGInstance::signedDistanceToSphere(float cx, float cy, float cz, float r, 
 } */
 
 // biomes
-float PGInstance::getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition) {
-    const Biome &biome = BIOMES[b];
+float PGInstance::getComputedBiomeHeight(uint8_t b, const vm::vec2 &worldPosition)
+{
     const float &ax = worldPosition.x;
     const float &az = worldPosition.y;
 
-    // float biomeHeight = biome.baseHeight +
-    //     noises.elevationNoise1.in2DWarp(ax * biome.amps[0][0], az * biome.amps[0][0]) * biome.amps[0][1] +
-    //     noises.elevationNoise2.in2DWarp(ax * biome.amps[1][0], az * biome.amps[1][0]) * biome.amps[1][1] +
-    //     noises.elevationNoise3.in2DWarp(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1];
-    float biomeHeight = noises.elevationNoise1.in2DTerrain(ax, az);
+    if(isWaterBiome(b))
+    {
+        return 0.f;
+    }
 
-    return biomeHeight;
+    switch (b)
+    {
+
+    default:
+
+        // ? water biomes -> use 2 layer domain warping and make sure it's smooth
+        // return noises.uberNoise.elevationNoise(ax, az);
+
+        // ? sand biomes / desert -> use voronoi
+        return noises.uberNoise.elevationNoise(ax, az);
+
+        // ? rolling hills -> voronoi
+
+        // ? snow -> reverse noise
+
+        // ? mountains and hills
+        // return noises.uberNoise.elevationNoise(ax, az);
+    }
 }
 
 // materials
@@ -3509,7 +3525,7 @@ void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::vector
         {
         // TODO : Define a different set of material rules for each biome, for now we're using these rules as default
         default:
-            const float materialNoise = noises.grassMaterialNoise.in2DWarp(worldPosition.x, worldPosition.y);
+            const float materialNoise = noises.uberNoise.humidityNoise(worldPosition.x, worldPosition.y);
 
             const float grassWeight = (1.f - materialNoise) * bw;
             const float dirtWeight = (materialNoise) * bw;

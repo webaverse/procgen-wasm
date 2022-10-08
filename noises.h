@@ -8,18 +8,14 @@ class Noises {
 public:
   int seed;
   std::mt19937 rng;
-  
-  UberNoise elevationNoise1;
-  UberNoise elevationNoise2;
-  UberNoise elevationNoise3;
+
+  UberNoise uberNoise;
 
   Noise temperatureNoise;
   Noise humidityNoise;
   Noise oceanNoise;
   Noise riverNoise;
   Noise lavaNoise;
-  
-  UberNoise grassMaterialNoise;
 
   Noise grassSeedNoise;
   Noise grassNoise;

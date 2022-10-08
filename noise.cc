@@ -35,11 +35,11 @@ double Noise::in3DBidirectional(double x, double y, double z) {
 UberNoise::UberNoise(){};
 UberNoise::~UberNoise() {};
 
-float UberNoise::in2DWarp(float x, float z)
+float UberNoise::humidityNoise(float x, float z)
 {
   return GLSL::in2DWarp(vm::vec2(x, z));
 }
-float UberNoise::in2DTerrain(float x, float z)
+float UberNoise::elevationNoise(float x, float z)
 {
   return GLSL::in2DTerrain(vm::vec2(x, z));
 }

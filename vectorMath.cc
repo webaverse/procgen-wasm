@@ -1,5 +1,10 @@
 #include "vectorMath.h"
 
+float vm::min(const float &v1, const float &v2)
+{
+    return std::min(v1, v2);
+};
+
 vm::vec2 vm::min(const vm::vec2 &v1, const vm::vec2 &v2)
 {
     return vm::vec2{std::min(v1.x, v2.x), std::min(v1.y, v2.y)};

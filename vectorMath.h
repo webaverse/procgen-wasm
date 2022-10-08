@@ -114,6 +114,7 @@ namespace vm
         vec3 max;
     };
 
+    float min(const float &v1, const float &v2);
     vec2 min(const vec2 &v1, const vec2 &v2);
     vec3 min(const vec3 &v1, const vec3 &v2);
     vec4 min(const vec4 &v1, const vec4 &v2);

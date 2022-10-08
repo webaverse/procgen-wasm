@@ -30,8 +30,10 @@ public:
   UberNoise();
   ~UberNoise();
 
-  float in2DWarp(float x, float z);
-  float in2DTerrain(float x, float z);
+  float humidity;
+
+  float humidityNoise(float x, float z);
+  float elevationNoise(float x, float z);
 };
 
 #endif
