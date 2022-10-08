@@ -958,8 +958,8 @@ DataRequestUpdate Tracker::updateDataRequests(
   // add new data requests
   for (auto chunk : leafNodes) {
     uint64_t hash = hashOctreeMinLod(chunk->min, chunk->lod);
-    auto dataRequestIter = dataRequests.find(hash);
-    if (dataRequestIter == dataRequests.end()) {
+    auto dataRequestIter = dataRequestUpdate.dataRequests.find(hash);
+    if (dataRequestIter == dataRequestUpdate.dataRequests.end()) {
       DataRequestPtr dataRequest(new DataRequest{chunk});
 
       dataRequestUpdate.newDataRequests.push_back(dataRequest);
