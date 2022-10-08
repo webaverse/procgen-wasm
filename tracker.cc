@@ -815,12 +815,12 @@ std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTaskPtr> &tasks, 
 //
 
 Tracker::Tracker(PGInstance *inst) :
-  inst(inst),
+  inst(inst)
   /* lastCoord{
     INT32_MAX,
     INT32_MAX
   }, */
-  lastEpoch(0)
+  // lastEpoch(0)
 {}
 // static methods
 vm::ivec2 getCurrentCoord(const vm::vec3 &position, int chunkSize) {
@@ -1020,20 +1020,9 @@ DataRequestUpdate Tracker::updateDataRequests(
   }
   return dominators;
 } */
-TrackerUpdate Tracker::update(const vm::vec3 &position, int lods, int lod1Range, int currentEpoch) {
+TrackerUpdate Tracker::update(const vm::vec3 &position, int lods, int lod1Range) {
   std::lock_guard<std::mutex> lock(mutex);
   
-  TrackerUpdate result;
-
-  const bool epochChanged = currentEpoch != lastEpoch;
-  if (epochChanged) {
-    for (auto &dataRequest : dataRequests) {
-      result.cancelDataRequests.push_back(dataRequest.second);
-    }
-    dataRequests.clear();
-    lastEpoch = currentEpoch;
-  }
-
   // new octrees
   int chunkSize = this->inst->chunkSize;
   vm::ivec2 currentCoord = getCurrentCoord(position, chunkSize); // in chunk space
@@ -1067,16 +1056,12 @@ TrackerUpdate Tracker::update(const vm::vec3 &position, int lods, int lod1Range,
 
   //
 
+  TrackerUpdate result;
+
   result.leafNodes = std::move(octreeLeafNodes);
   result.newDataRequests = std::move(dataRequestUpdate.newDataRequests);
   result.keepDataRequests = std::move(dataRequestUpdate.keepDataRequests);
-  if (epochChanged) {
-    for (auto &dataRequest : result.cancelDataRequests) {
-      result.cancelDataRequests.push_back(dataRequest);
-    }
-  } else {
-    result.cancelDataRequests = std::move(dataRequestUpdate.cancelDataRequests);
-  }
+  result.cancelDataRequests = std::move(dataRequestUpdate.cancelDataRequests);
 
   //
 

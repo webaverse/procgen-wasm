@@ -211,7 +211,6 @@ EMSCRIPTEN_KEEPALIVE void trackerUpdateAsync(
     float *position,
     int lods,
     int lod1Range,
-    int currentEpoch,
     int priority
 ) {
     vm::vec3 worldPosition{
@@ -219,7 +218,7 @@ EMSCRIPTEN_KEEPALIVE void trackerUpdateAsync(
         position[1],
         position[2],
     };
-    inst->trackerUpdateAsync(taskId, tracker, worldPosition, lods, lod1Range, currentEpoch, priority);
+    inst->trackerUpdateAsync(taskId, tracker, worldPosition, lods, lod1Range, priority);
 }
 
 EMSCRIPTEN_KEEPALIVE void destroyTracker(PGInstance *inst, Tracker *tracker) {
