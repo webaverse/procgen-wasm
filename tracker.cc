@@ -820,7 +820,7 @@ Tracker::Tracker(PGInstance *inst) :
     INT32_MAX,
     INT32_MAX
   }, */
-  epoch(0)
+  lastEpoch(0)
 {}
 // static methods
 vm::ivec2 getCurrentCoord(const vm::vec3 &position, int chunkSize) {
@@ -1020,11 +1020,18 @@ DataRequestUpdate Tracker::updateDataRequests(
   }
   return dominators;
 } */
-TrackerUpdate Tracker::update(const vm::vec3 &position, int lods, int lod1Range) {
-  int oldEpoch;
-  {
-    std::lock_guard<std::mutex> lock(mutex);
-    oldEpoch = epoch;
+TrackerUpdate Tracker::update(const vm::vec3 &position, int lods, int lod1Range, int currentEpoch) {
+  std::lock_guard<std::mutex> lock(mutex);
+  
+  TrackerUpdate result;
+
+  const bool epochChanged = currentEpoch != lastEpoch;
+  if (epochChanged) {
+    for (auto &dataRequest : dataRequests) {
+      result.cancelDataRequests.push_back(dataRequest.second);
+    }
+    dataRequests.clear();
+    lastEpoch = currentEpoch;
   }
 
   // new octrees
@@ -1056,32 +1063,22 @@ TrackerUpdate Tracker::update(const vm::vec3 &position, int lods, int lod1Range)
 
   //
 
-  {
-    std::lock_guard<std::mutex> lock(mutex);
-  
-    int currentEpoch = epoch;
-    if (currentEpoch == oldEpoch) {
-      dataRequests = std::move(dataRequestUpdate.dataRequests);
-    }
-  }
+  dataRequests = std::move(dataRequestUpdate.dataRequests);
 
   //
 
-  TrackerUpdate result;
-
   result.leafNodes = std::move(octreeLeafNodes);
-
   result.newDataRequests = std::move(dataRequestUpdate.newDataRequests);
   result.keepDataRequests = std::move(dataRequestUpdate.keepDataRequests);
-  result.cancelDataRequests = std::move(dataRequestUpdate.cancelDataRequests);
-  // result.chunkPosition = node->min / chunkSize;
+  if (epochChanged) {
+    for (auto &dataRequest : result.cancelDataRequests) {
+      result.cancelDataRequests.push_back(dataRequest);
+    }
+  } else {
+    result.cancelDataRequests = std::move(dataRequestUpdate.cancelDataRequests);
+  }
 
   //
 
   return result;
 }
-/* TrackerUpdate Tracker::update(const vm::vec3 &position) {
-  const vm::ivec2 &currentCoord = getCurrentCoord(position);
-  TrackerUpdate trackerUpdate = updateCoord(currentCoord);
-  return trackerUpdate;
-} */

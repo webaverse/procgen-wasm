@@ -252,6 +252,7 @@ public:
         const vm::vec3 &position,
         int lods,
         int lod1Range,
+        int currentEpoch,
         int priority
     );
 };

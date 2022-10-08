@@ -157,7 +157,7 @@ public:
   
   // vm::ivec2 lastCoord;
   std::unordered_map<uint64_t, DataRequestPtr> dataRequests;
-  int epoch;
+  int lastEpoch;
   std::mutex mutex;
 
   //
@@ -175,7 +175,7 @@ public:
     const std::vector<OctreeNodePtr> &oldRenderedChunks,
     std::unordered_map<uint64_t, DataRequestPtr> &dataRequests
   ); */
-  TrackerUpdate update(const vm::vec3 &position, int lods, int lod1Range);
+  TrackerUpdate update(const vm::vec3 &position, int lods, int lod1Range, int currentEpoch);
 };
 
 #endif // _TRACKER_H_

@@ -3503,6 +3503,7 @@ void PGInstance::trackerUpdateAsync(
     const vm::vec3 &position,
     int lods,
     int lod1Range,
+    int currentEpoch,
     int priority
 ) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
@@ -3515,9 +3516,10 @@ void PGInstance::trackerUpdateAsync(
         tracker,
         position,
         lods,
-        lod1Range
+        lod1Range,
+        currentEpoch
     ]() -> void {
-        const TrackerUpdate &trackerUpdate = tracker->update(position, lods, lod1Range);
+        const TrackerUpdate &trackerUpdate = tracker->update(position, lods, lod1Range, currentEpoch);
         uint8_t *buffer = trackerUpdate.getBuffer();
         // std::cout << "trakcer update buffer address" << (void *)buffer << std::endl;
         if (!promise->resolve(buffer)) {
