@@ -3501,7 +3501,8 @@ void PGInstance::trackerUpdateAsync(
     uint32_t id,
     Tracker *tracker,
     const vm::vec3 &position,
-    int lods,
+    int minLod,
+    int maxLod,
     int lod1Range,
     int priority
 ) {
@@ -3514,10 +3515,11 @@ void PGInstance::trackerUpdateAsync(
         promise,
         tracker,
         position,
-        lods,
+        minLod,
+        maxLod,
         lod1Range
     ]() -> void {
-        const TrackerUpdate &trackerUpdate = tracker->update(position, lods, lod1Range);
+        const TrackerUpdate &trackerUpdate = tracker->update(position, minLod, maxLod, lod1Range);
         uint8_t *buffer = trackerUpdate.getBuffer();
         // std::cout << "trakcer update buffer address" << (void *)buffer << std::endl;
         if (!promise->resolve(buffer)) {

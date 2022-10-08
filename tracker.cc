@@ -1020,18 +1020,19 @@ DataRequestUpdate Tracker::updateDataRequests(
   }
   return dominators;
 } */
-TrackerUpdate Tracker::update(const vm::vec3 &position, int lods, int lod1Range) {
+TrackerUpdate Tracker::update(const vm::vec3 &position, int minLod, int maxLod, int lod1Range) {
   std::lock_guard<std::mutex> lock(mutex);
   
   // new octrees
   int chunkSize = this->inst->chunkSize;
   vm::ivec2 currentCoord = getCurrentCoord(position, chunkSize); // in chunk space
-  int lod = 1 << (lods - 1);
+  int minLodInt = 1 << (minLod - 1);
+  int maxLodInt = 1 << (maxLod - 1);
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(
     currentCoord,
     lod1Range,
-    1,
-    lod
+    minLodInt,
+    maxLodInt
   );
   sortNodes(octreeLeafNodes);
 

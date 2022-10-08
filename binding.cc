@@ -209,7 +209,8 @@ EMSCRIPTEN_KEEPALIVE void trackerUpdateAsync(
     uint32_t taskId,
     Tracker *tracker,
     float *position,
-    int lods,
+    int minLod,
+    int maxLod,
     int lod1Range,
     int priority
 ) {
@@ -218,7 +219,7 @@ EMSCRIPTEN_KEEPALIVE void trackerUpdateAsync(
         position[1],
         position[2],
     };
-    inst->trackerUpdateAsync(taskId, tracker, worldPosition, lods, lod1Range, priority);
+    inst->trackerUpdateAsync(taskId, tracker, worldPosition, minLod, maxLod, lod1Range, priority);
 }
 
 EMSCRIPTEN_KEEPALIVE void destroyTracker(PGInstance *inst, Tracker *tracker) {

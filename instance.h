@@ -250,7 +250,8 @@ public:
         uint32_t id,
         Tracker *tracker,
         const vm::vec3 &position,
-        int lods,
+        int minLod,
+        int maxLod,
         int lod1Range,
         int priority
     );

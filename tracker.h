@@ -175,7 +175,7 @@ public:
     const std::vector<OctreeNodePtr> &oldRenderedChunks,
     std::unordered_map<uint64_t, DataRequestPtr> &dataRequests
   ); */
-  TrackerUpdate update(const vm::vec3 &position, int lods, int lod1Range);
+  TrackerUpdate update(const vm::vec3 &position, int minLod, int maxLod, int lod1Range);
 };
 
 #endif // _TRACKER_H_
