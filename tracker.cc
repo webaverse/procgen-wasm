@@ -599,18 +599,20 @@ void constructLodTree(
   }
 
   // initialize other lods
-  for (int lod = minLodInt; lod <= maxLodInt; lod *= 2) {
-    for (int dx = -lod1Range * lod; dx <= lod1Range * lod; dx += lod) {
-      for (int dz = -lod1Range * lod; dz <= lod1Range * lod; dz += lod) {
-        vm::ivec2 currentCoordSnappedToLod{
-          (int)std::floor((float)currentCoord.x / (float)lod) * lod,
-          (int)std::floor((float)currentCoord.y / (float)lod) * lod
-        };
-        vm::ivec2 splitPosition{
-          currentCoordSnappedToLod.x + dx,
-          currentCoordSnappedToLod.y + dz
-        };
-        splitPointToLod(octreeContext, splitPosition, lod);
+  if (minLod != maxLod) {
+    for (int lod = minLodInt; lod <= maxLodInt; lod *= 2) {
+      for (int dx = -lod1Range * lod; dx <= lod1Range * lod; dx += lod) {
+        for (int dz = -lod1Range * lod; dz <= lod1Range * lod; dz += lod) {
+          vm::ivec2 currentCoordSnappedToLod{
+            (int)std::floor((float)currentCoord.x / (float)lod) * lod,
+            (int)std::floor((float)currentCoord.y / (float)lod) * lod
+          };
+          vm::ivec2 splitPosition{
+            currentCoordSnappedToLod.x + dx,
+            currentCoordSnappedToLod.y + dz
+          };
+          splitPointToLod(octreeContext, splitPosition, lod);
+        }
       }
     }
   }
