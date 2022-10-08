@@ -576,13 +576,16 @@ void constructLodTree(
 ) {
   auto &nodeMap = octreeContext.nodeMap;
 
+  int minLodInt = 1 << (minLod - 1);
+  int maxLodInt = 1 << (maxLod - 1);
+
   // initialize max lod
   vm::ivec2 maxLodCenter{
-    (int)std::floor((float)currentCoord.x / (float)maxLod) * maxLod,
-    (int)std::floor((float)currentCoord.y / (float)maxLod) * maxLod
+    (int)std::floor((float)currentCoord.x / (float)maxLodInt) * maxLodInt,
+    (int)std::floor((float)currentCoord.y / (float)maxLodInt) * maxLodInt
   };
-  for (int dx = -lod1Range * maxLod; dx <= lod1Range * maxLod; dx += maxLod) {
-    for (int dy = -lod1Range * maxLod; dy <= lod1Range * maxLod; dy += maxLod) {
+  for (int dx = -lod1Range * maxLodInt; dx <= lod1Range * maxLodInt; dx += maxLodInt) {
+    for (int dy = -lod1Range * maxLodInt; dy <= lod1Range * maxLodInt; dy += maxLodInt) {
       vm::ivec2 childPosition{
         maxLodCenter.x + dx,
         maxLodCenter.y + dy
@@ -590,13 +593,13 @@ void constructLodTree(
       OctreeNodePtr childNode = getOrCreateNode(
         octreeContext,
         childPosition,
-        maxLod
+        maxLodInt
       );
     }
   }
 
   // initialize other lods
-  for (int lod = minLod; lod <= maxLod; lod *= 2) {
+  for (int lod = minLodInt; lod <= maxLodInt; lod *= 2) {
     for (int dx = -lod1Range * lod; dx <= lod1Range * lod; dx += lod) {
       for (int dz = -lod1Range * lod; dz <= lod1Range * lod; dz += lod) {
         vm::ivec2 currentCoordSnappedToLod{
@@ -1027,12 +1030,12 @@ TrackerUpdate Tracker::update(const vm::vec3 &position, int minLod, int maxLod, 
   int chunkSize = this->inst->chunkSize;
   vm::ivec2 currentCoord = getCurrentCoord(position, chunkSize); // in chunk space
   // int minLodInt = 1 << (minLod - 1);
-  int maxLodInt = 1 << (maxLod - 1);
+  // int maxLodInt = 1 << (maxLod - 1);
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(
     currentCoord,
     lod1Range,
     minLod,
-    maxLodInt
+    maxLod
   );
   sortNodes(octreeLeafNodes);
 
