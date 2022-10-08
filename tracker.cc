@@ -1061,7 +1061,6 @@ TrackerUpdate Tracker::update(const vm::vec3 &position, int lods, int lod1Range)
   
     int currentEpoch = epoch;
     if (currentEpoch == oldEpoch) {
-      epoch++;
       dataRequests = std::move(dataRequestUpdate.dataRequests);
     }
   }
