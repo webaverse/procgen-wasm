@@ -1026,12 +1026,12 @@ TrackerUpdate Tracker::update(const vm::vec3 &position, int minLod, int maxLod, 
   // new octrees
   int chunkSize = this->inst->chunkSize;
   vm::ivec2 currentCoord = getCurrentCoord(position, chunkSize); // in chunk space
-  int minLodInt = 1 << (minLod - 1);
+  // int minLodInt = 1 << (minLod - 1);
   int maxLodInt = 1 << (maxLod - 1);
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(
     currentCoord,
     lod1Range,
-    minLodInt,
+    minLod,
     maxLodInt
   );
   sortNodes(octreeLeafNodes);
