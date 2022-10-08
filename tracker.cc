@@ -1080,19 +1080,6 @@ TrackerUpdate Tracker::update(const vm::vec3 &position, int lods, int lod1Range)
 
   return result;
 }
-void Tracker::reset() {
-  {
-    std::lock_guard<std::mutex> lock(mutex);
-
-    /* lastCoord = {
-      INT_MAX,
-      INT_MAX
-    }; */
-    dataRequests.clear();
-
-    epoch++;
-  }
-}
 /* TrackerUpdate Tracker::update(const vm::vec3 &position) {
   const vm::ivec2 &currentCoord = getCurrentCoord(position);
   TrackerUpdate trackerUpdate = updateCoord(currentCoord);

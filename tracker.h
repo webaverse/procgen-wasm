@@ -176,7 +176,6 @@ public:
     std::unordered_map<uint64_t, DataRequestPtr> &dataRequests
   ); */
   TrackerUpdate update(const vm::vec3 &position, int lods, int lod1Range);
-  void reset();
 };
 
 #endif // _TRACKER_H_
