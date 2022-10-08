@@ -816,10 +816,11 @@ std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTaskPtr> &tasks, 
 
 Tracker::Tracker(PGInstance *inst) :
   inst(inst),
-  lastCoord{
+  /* lastCoord{
     INT32_MAX,
     INT32_MAX
-  }
+  }, */
+  epoch(0)
 {}
 // static methods
 vm::ivec2 getCurrentCoord(const vm::vec3 &position, int chunkSize) {
@@ -919,13 +920,14 @@ void Tracker::sortNodes(std::vector<OctreeNodePtr> &nodes) {
 } */
 
 DataRequestUpdate Tracker::updateDataRequests(
-  std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
+  const std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
   const std::vector<OctreeNodePtr> &leafNodes
 ) {
   DataRequestUpdate dataRequestUpdate;
+  dataRequestUpdate.dataRequests = dataRequests;
 
   // cancel old data requests
-  for (auto iter = dataRequests.begin(); iter != dataRequests.end();) {
+  for (auto iter = dataRequestUpdate.dataRequests.begin(); iter != dataRequestUpdate.dataRequests.end();) {
     const uint64_t &hash = iter->first;
     const DataRequestPtr &oldDataRequest = iter->second;
 
@@ -948,7 +950,7 @@ DataRequestUpdate Tracker::updateDataRequests(
       auto currentIter = iter;
       auto nextIter = iter;
       nextIter++;
-      dataRequests.erase(currentIter);
+      dataRequestUpdate.dataRequests.erase(currentIter);
       iter = nextIter;
     }
   }
@@ -962,7 +964,7 @@ DataRequestUpdate Tracker::updateDataRequests(
 
       dataRequestUpdate.newDataRequests.push_back(dataRequest);
 
-      dataRequests.emplace(
+      dataRequestUpdate.dataRequests.emplace(
         std::piecewise_construct,
         std::forward_as_tuple(hash),
         std::forward_as_tuple(dataRequest)
@@ -1019,6 +1021,12 @@ DataRequestUpdate Tracker::updateDataRequests(
   return dominators;
 } */
 TrackerUpdate Tracker::update(const vm::vec3 &position, int lods, int lod1Range) {
+  int oldEpoch;
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    oldEpoch = epoch;
+  }
+
   // new octrees
   int chunkSize = this->inst->chunkSize;
   vm::ivec2 currentCoord = getCurrentCoord(position, chunkSize); // in chunk space
@@ -1048,20 +1056,15 @@ TrackerUpdate Tracker::update(const vm::vec3 &position, int lods, int lod1Range)
 
   //
 
-  /* vm::ivec2 worldPosition{
-    currentCoord.x * chunkSize,
-    currentCoord.y * chunkSize
-  };
-  int lodRange = lod * chunkSize;
-  OctreeContext octreeContext = inst->getChunkSeedOctree(worldPosition, lodRange, chunkSize);
-  auto nodeIter = findNodeIterAtPoint(octreeContext, worldPosition);
-  OctreeNodePtr node;
-  if (nodeIter != octreeContext.nodeMap.end()) {
-      node = nodeIter->second;
-  } else {
-      std::cerr << "could not find node at point " << worldPosition.x << " " << worldPosition.y << std::endl;
-      abort();
-  } */
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+  
+    int currentEpoch = epoch;
+    if (currentEpoch == oldEpoch) {
+      epoch++;
+      dataRequests = std::move(dataRequestUpdate.dataRequests);
+    }
+  }
 
   //
 
@@ -1079,12 +1082,17 @@ TrackerUpdate Tracker::update(const vm::vec3 &position, int lods, int lod1Range)
   return result;
 }
 void Tracker::reset() {
-  lastCoord = {
-    INT_MAX,
-    INT_MAX
-  };
-  leafNodes.clear();
-  dataRequests.clear();
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+
+    /* lastCoord = {
+      INT_MAX,
+      INT_MAX
+    }; */
+    dataRequests.clear();
+
+    epoch++;
+  }
 }
 /* TrackerUpdate Tracker::update(const vm::vec3 &position) {
   const vm::ivec2 &currentCoord = getCurrentCoord(position);

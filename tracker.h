@@ -43,6 +43,7 @@ typedef std::shared_ptr<DataRequest> DataRequestPtr;
 
 class DataRequestUpdate {
 public:
+  std::unordered_map<uint64_t, DataRequestPtr> dataRequests;
   std::vector<DataRequestPtr> newDataRequests;
   std::vector<DataRequestPtr> keepDataRequests;
   std::vector<DataRequestPtr> cancelDataRequests;
@@ -154,9 +155,10 @@ class Tracker {
 public:
   PGInstance *inst;
   
-  vm::ivec2 lastCoord;
-  std::vector<OctreeNodePtr> leafNodes;
+  // vm::ivec2 lastCoord;
   std::unordered_map<uint64_t, DataRequestPtr> dataRequests;
+  int epoch;
+  std::mutex mutex;
 
   //
 
@@ -166,7 +168,7 @@ public:
 
   void sortNodes(std::vector<OctreeNodePtr> &nodes);
   DataRequestUpdate updateDataRequests(
-    std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
+    const std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
     const std::vector<OctreeNodePtr> &leafNodes
   );
   /* std::unordered_map<uint64_t, Dominator> updateDominators(
