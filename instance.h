@@ -246,7 +246,14 @@ public:
     
     //
     
-    void trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec3 &position, int priority);
+    void trackerUpdateAsync(
+        uint32_t id,
+        Tracker *tracker,
+        const vm::vec3 &position,
+        int lods,
+        int lod1Range,
+        int priority
+    );
 };
 
 #endif // _INSTANCE_H_

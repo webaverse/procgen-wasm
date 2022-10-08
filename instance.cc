@@ -3497,7 +3497,14 @@ void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::vector
     }
 }
 
-void PGInstance::trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec3 &position, int priority) {
+void PGInstance::trackerUpdateAsync(
+    uint32_t id,
+    Tracker *tracker,
+    const vm::vec3 &position,
+    int lods,
+    int lod1Range,
+    int priority
+) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
     // std::cout << "tracker update async " << priority << std::endl;
@@ -3506,9 +3513,11 @@ void PGInstance::trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec
         this,
         promise,
         tracker,
-        position
+        position,
+        lods,
+        lod1Range
     ]() -> void {
-        const TrackerUpdate &trackerUpdate = tracker->update(position);
+        const TrackerUpdate &trackerUpdate = tracker->update(position, lods, lod1Range);
         uint8_t *buffer = trackerUpdate.getBuffer();
         // std::cout << "trakcer update buffer address" << (void *)buffer << std::endl;
         if (!promise->resolve(buffer)) {

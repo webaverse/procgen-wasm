@@ -814,10 +814,8 @@ std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTaskPtr> &tasks, 
 
 //
 
-Tracker::Tracker(PGInstance *inst, int lods, int lod1Range) :
+Tracker::Tracker(PGInstance *inst) :
   inst(inst),
-  lods(lods),
-  lod1Range(lod1Range),
   lastCoord{
     INT32_MAX,
     INT32_MAX
@@ -1020,14 +1018,14 @@ DataRequestUpdate Tracker::updateDataRequests(
   }
   return dominators;
 } */
-TrackerUpdate Tracker::update(const vm::vec3 &position) {
+TrackerUpdate Tracker::update(const vm::vec3 &position, int lods, int lod1Range) {
   // new octrees
   int chunkSize = this->inst->chunkSize;
   vm::ivec2 currentCoord = getCurrentCoord(position, chunkSize); // in chunk space
-  int lod = 1 << (this->lods - 1);
+  int lod = 1 << (lods - 1);
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(
     currentCoord,
-    this->lod1Range,
+    lod1Range,
     1,
     lod
   );

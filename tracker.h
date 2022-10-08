@@ -153,8 +153,6 @@ OctreeNodePtr getMaxLodNode(const std::vector<OctreeNodePtr> &newLeafNodes, cons
 class Tracker {
 public:
   PGInstance *inst;
-  int lods;
-  int lod1Range;
   
   vm::ivec2 lastCoord;
   std::vector<OctreeNodePtr> leafNodes;
@@ -162,7 +160,7 @@ public:
 
   //
 
-  Tracker(PGInstance *inst, int lods, int lod1Range);
+  Tracker(PGInstance *inst);
 
   // dynamic methods
 
@@ -175,7 +173,7 @@ public:
     const std::vector<OctreeNodePtr> &oldRenderedChunks,
     std::unordered_map<uint64_t, DataRequestPtr> &dataRequests
   ); */
-  TrackerUpdate update(const vm::vec3 &position);
+  TrackerUpdate update(const vm::vec3 &position, int lods, int lod1Range);
 };
 
 #endif // _TRACKER_H_

@@ -195,20 +195,30 @@ EMSCRIPTEN_KEEPALIVE void setCamera(PGInstance *inst, float *worldPosition, floa
 
 //
 
-EMSCRIPTEN_KEEPALIVE Tracker *createTracker(PGInstance *inst, int lods, int lod1Range) {
+EMSCRIPTEN_KEEPALIVE Tracker *createTracker(
+    PGInstance *inst
+) {
     // std::cout << "create tracker 1 " << (void *)inst << " " << lods << " " << lod1Range << std::endl;
-    Tracker *tracker = new Tracker(inst, lods, lod1Range);
+    Tracker *tracker = new Tracker(inst);
     // std::cout << "create tracker 2 " << (void *)inst << " " << lods << " " << lod1Range << std::endl;
     return tracker;
 }
 
-EMSCRIPTEN_KEEPALIVE void trackerUpdateAsync(PGInstance *inst, uint32_t taskId, Tracker *tracker, float *position, int priority) {
+EMSCRIPTEN_KEEPALIVE void trackerUpdateAsync(
+    PGInstance *inst,
+    uint32_t taskId,
+    Tracker *tracker,
+    float *position,
+    int lods,
+    int lod1Range,
+    int priority
+) {
     vm::vec3 worldPosition{
         position[0],
         position[1],
         position[2],
     };
-    inst->trackerUpdateAsync(taskId, tracker, worldPosition, priority);
+    inst->trackerUpdateAsync(taskId, tracker, worldPosition, lods, lod1Range, priority);
 }
 
 EMSCRIPTEN_KEEPALIVE void destroyTracker(PGInstance *inst, Tracker *tracker) {
