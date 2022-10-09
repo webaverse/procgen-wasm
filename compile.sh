@@ -31,7 +31,7 @@ emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=104857600 -
 
   #sed -Ei 's/var Module=typeof Module!="undefined"\?Module:\{\};/var Module = globalThis.Module??{};/g' bin/pg.js
   # sed -Ei 's/var asm=createWasm\(\);/asmLibraryArg.__cxa_atexit=()=>{};var asm=createWasm();/g' bin/pg.js
-  sed -Ei 's/importScripts\(e.data.urlOrBlob\)/importScripts(e.data.urlOrBlob.replace("pg-worker.js", "pg.js"))/g' bin/pg.worker.js
+  sed -Ei 's/importScripts\(e.data.urlOrBlob\)/importScripts(e.data.urlOrBlob.replace(\/pg-worker\\.js.*$\/, "pg.js"))/g' bin/pg.worker.js
   echo 'let accept, reject;const p = new Promise((a, r) => {accept = a;  reject = r;});Module.postRun = () => {accept();};Module.waitForLoad = () => p;' >> bin/pg.js
   cp bin/pg.js bin/pg.module.js
   echo 'export default Module;' >>bin/pg.module.js
