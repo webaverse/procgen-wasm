@@ -2820,16 +2820,9 @@ void PGInstance::getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, in
 
 NoiseField PGInstance::getNoise(float bx, float bz) {
     float tNoise = (float)noises.temperatureNoise.in2D(bx, bz);
-    // noiseField.temperature[index] = tNoise;
-
     float hNoise = (float)noises.humidityNoise.in2D(bx, bz);
-    // noiseField.humidity[index] = hNoise;
-
-    float oNoise = (float)noises.oceanNoise.in2D(bx, bz);
-    // noiseField.ocean[index] = oNoise;
-
+    float oNoise = (float)noises.uberNoise.oceanNoise(bx, bz);
     float rNoise = (float)noises.riverNoise.in2D(bx, bz);
-    // noiseField.river[index] = rNoise;
 
     return NoiseField{
         tNoise,
@@ -2847,29 +2840,32 @@ uint8_t PGInstance::getBiome(float bx, float bz) {
     float oceanNoise = noise.ocean;
     float riverNoise = noise.river;
 
-    if (oceanNoise < (80.0f / 255.0f))
+    if (oceanNoise > OCEAN_THRESHOLD)
     {
         biome = (unsigned char)BIOME::biOcean;
     }
-    if (biome == 0xFF)
-    {
-        const float range = 0.022f;
-        if (riverNoise > 0.5f - range && riverNoise < 0.5f + range)
-        {
-            biome = (unsigned char)BIOME::biRiver;
-        }
-    }
-    if (std::pow(temperatureNoise, 1.3f) < ((4.0f * 16.0f) / 255.0f))
-    {
-        if (biome == (unsigned char)BIOME::biOcean)
-        {
-            biome = (unsigned char)BIOME::biFrozenOcean;
-        }
-        else if (biome == (unsigned char)BIOME::biRiver)
-        {
-            biome = (unsigned char)BIOME::biFrozenRiver;
-        }
-    }
+
+    // if (biome == 0xFF)
+    // {
+    //     const float range = 0.022f;
+    //     if (riverNoise > 0.5f - range && riverNoise < 0.5f + range)
+    //     {
+    //         biome = (unsigned char)BIOME::biRiver;
+    //     }
+    // }
+
+    // if (std::pow(temperatureNoise, 1.3f) < ((4.0f * 16.0f) / 255.0f))
+    // {
+    //     if (biome == (unsigned char)BIOME::biOcean)
+    //     {
+    //         biome = (unsigned char)BIOME::biFrozenOcean;
+    //     }
+    //     else if (biome == (unsigned char)BIOME::biRiver)
+    //     {
+    //         biome = (unsigned char)BIOME::biFrozenRiver;
+    //     }
+    // }
+
     if (biome == 0xFF)
     {
         float temperatureNoise2 = vm::clamp(std::pow(temperatureNoise, 1.3f), 0.f, 1.f);
@@ -2877,8 +2873,10 @@ uint8_t PGInstance::getBiome(float bx, float bz) {
 
         int t = (int)std::floor(temperatureNoise2 * 16.0f);
         int h = (int)std::floor(humidityNoise2 * 16.0f);
+
         biome = (unsigned char)BIOMES_TEMPERATURE_HUMIDITY[t + 16 * h];
     }
+
     return biome;
 }
 
@@ -3483,28 +3481,16 @@ float PGInstance::getComputedBiomeHeight(uint8_t b, const vm::vec2 &worldPositio
     const float &ax = worldPosition.x;
     const float &az = worldPosition.y;
 
-    if(isWaterBiome(b))
-    {
-        return 0.f;
-    }
-
     switch (b)
     {
-
+    // case (int)BIOME::biDesert: 
+    //     return noises.uberNoise.desertNoise(ax, az);
+    // case (int)BIOME::biMegaTaigaHills:
+    //     return noises.uberNoise.mountainNoise(ax, az);
+    // case (int)BIOME::biIceMountains:
+    //     return noises.uberNoise.iceMountainNoise(ax, az);
     default:
-
-        // ? water biomes -> use 2 layer domain warping and make sure it's smooth
-        // return noises.uberNoise.elevationNoise(ax, az);
-
-        // ? sand biomes / desert -> use voronoi
-        return noises.uberNoise.elevationNoise(ax, az);
-
-        // ? rolling hills -> voronoi
-
-        // ? snow -> reverse noise
-
-        // ? mountains and hills
-        // return noises.uberNoise.elevationNoise(ax, az);
+        return noises.uberNoise.mountainNoise(ax, az);
     }
 }
 

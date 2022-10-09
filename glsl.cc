@@ -1,18 +1,44 @@
 #include "glsl.h"
 #include "constants.h"
+#include "noises.h"
 
 using namespace GLSL;
 
-// ! constants
+// ! GLSL INPUTS
 
 const float MAX_TERRAIN_HEIGHT = float(MAX_WORLD_HEIGHT);
 const float MIN_TERRAIN_HEIGHT = float(MIN_WORLD_HEIGHT);
-const float TERRAIN_BASE_HEIGHT = float(WORLD_BASE_HEIGHT);
+const float TERRAIN_BASE_HEIGHT = float(WORLD_BASE_HEIGHT + 5); // moving the terrain 5 meters up ( to make it go above the water )
+const float TERRAIN_OCEAN_THRESHOLD = OCEAN_THRESHOLD;
 
 // ----------------------------------
 
 // * START GLSL ---------------------
+
+// constants
 const float NOISE_SCALE = 512.f;
+
+
+// util functions
+
+// ? smooth and soft clamp implementation from : https://www.shadertoy.com/view/Ws3Xzr
+
+// reaches the limit inside the domain bounds, but has slope 2 at the midpoint
+float smoothClamp(float x, float a, float b)
+{
+    float t = clamp(x, a, b);
+    return t != x ? t : b + (a - b)/(1. + exp((b - a)*(2.*x - a - b)/((x - a)*(b - x))));
+}
+
+// approaches the limit more slowly with slope <= 1 everywhere
+float softClamp(float x, float a, float b)
+{
+ 	float mid = (a + b)*0.5;
+    return mid + smoothClamp((x - mid)*0.5, a - mid, b - mid);
+}
+
+
+// noise functions
 
 // ? Simplex noise implementation from : https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83
 vec3 permute(vec3 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
@@ -42,27 +68,28 @@ float snoise(vec2 v)
     return 135.f * dot(m, g);
 }
 
-vec2 rand2(vec2 p)	{
-	return fract(vec2(sin(p.x * 591.32f + p.y * 154.077f), cos(p.x * 391.32f + p.y * 49.077f)));
+vec2 rand2(vec2 p)
+{
+    return fract(vec2(sin(p.x * 591.32f + p.y * 154.077f), cos(p.x * 391.32f + p.y * 49.077f)));
 }
 
-float voronoi(vec2 x){
-		vec2 p = floor(x);
-		vec2 f = fract(x);
-		float res=8.0;
-		for (int j=-1;j<=1;j++) {
-			for (int i=-1;i<=1;i++){
-				vec2 b = vec2(float(i),float(j));
-				vec2 r = b-f+rand2(p+(b));
-				//float d = max(abs(r.x),abs( r.y));
-				//float d = pow(r.x*r.x*r.x*r.x+r.y*r.y*r.y*r.y,0.25);
-				float d = (r.x*r.x+r.y*r.y);
-				res = min(res, d);
-			}
-		}
-		return (res);
-		
-	}
+float voronoi(vec2 x)
+{
+    vec2 p = floor(x);
+    vec2 f = fract(x);
+    float res = 8.0;
+    for (int j = -1; j <= 1; j++)
+    {
+        for (int i = -1; i <= 1; i++)
+        {
+            vec2 b = vec2(float(i), float(j));
+            vec2 r = b - f + rand2(p + (b));
+            float d = (r.x * r.x + r.y * r.y);
+            res = min(res, d);
+        }
+    }
+    return (res);
+}
 
 float FBM_8(vec2 position)
 {
@@ -136,21 +163,37 @@ float FBM_2(vec2 position)
     return (noise + 0.5f) * 0.5f;
 }
 
+// custom noise functions
+
 // ? Domain Warping : https://www.shadertoy.com/view/4s23zz
-float warpNoise1Layer(vec2 position)
+float warpNoise1Layer_2(vec2 position)
+{
+    vec2 q = vec2(FBM_2(position + vec2(0.0f, 0.0f)), 
+                  FBM_2(position + vec2(7.4f, 30.2f)));
+
+    return FBM_2(position + q * NOISE_SCALE * 2.f);
+}
+
+float warpNoise1Layer_4(vec2 position)
 {
     vec2 q = vec2(FBM_4(position + vec2(0.0f, 0.0f)), 
                   FBM_4(position + vec2(7.4f, 30.2f)));
 
     return FBM_4(position + q * NOISE_SCALE * 2.f);
 }
-float humidityNoise(vec2 position)
+
+float warpNoise2Layer_2(vec2 position)
 {
-    float noise = warpNoise1Layer(position);
-    return clamp(noise + 0.65f, 0.f, 1.f);
+    vec2 q = vec2(FBM_2(position + vec2(0.0f, 0.0f)), 
+                  FBM_2(position + vec2(7.4f, 30.2f)));
+
+    vec2 r = vec2(FBM_2(position + q * NOISE_SCALE * 2.f + vec2(1.7,9.2)),
+                  FBM_2(position + q * NOISE_SCALE * 2.f + vec2(8.3,2.8)));
+
+    return FBM_2(position + r * NOISE_SCALE * 2.f);
 }
 
-float warpNoise2Layer(vec2 position)
+float warpNoise2Layer_4(vec2 position)
 {
     vec2 q = vec2(FBM_4(position + vec2(0.0f, 0.0f)), 
                   FBM_4(position + vec2(7.4f, 30.2f)));
@@ -161,14 +204,21 @@ float warpNoise2Layer(vec2 position)
     return FBM_4(position + r * NOISE_SCALE * 2.f);
 }
 
-float waterNoise(vec2 position)
+float wetnessNoise(vec2 position)
 {
-    float noise = warpNoise2Layer(position);
-    return clamp(1.f - noise, 0.f, 1.f) * (MAX_TERRAIN_HEIGHT / 100.f);
+    float noise = warpNoise1Layer_4(position);
+    return clamp(noise + 0.65f, 0.f, 1.f);
 }
 
-float desertNoise(vec2 position)
+float waterNoise(vec2 position)
 {
+    float noise = FBM_2(position/40.f);
+    return clamp(1.f - noise, 0.f, 1.f);
+}
+
+float sandMountainNoise(vec2 position)
+{
+    const float desertMountainHeight = MAX_TERRAIN_HEIGHT / 20.f;
     // calculating noises
     float fbm2 = FBM_2(position / 2.f);
 
@@ -179,13 +229,14 @@ float desertNoise(vec2 position)
 
     // layering noises
     float detailedNoise = clamp(fbm2 * 2.f - fbm4clamped / 4.f + 0.6f, 0.f, 1.f);
-    float finalHeight = (detailedNoise - fbm8) * MAX_TERRAIN_HEIGHT / 5.f;
+    float finalHeight = (detailedNoise - fbm8) * desertMountainHeight;
     
     return clamp(finalHeight, MIN_TERRAIN_HEIGHT, MAX_TERRAIN_HEIGHT);
 }
 
 float snowNoise(vec2 position)
 {
+    const float iceMountainHeight = MAX_TERRAIN_HEIGHT / 20.f;
     // calculating noises
     float fbm2d2 = FBM_4(position);
     float fbm8d2 = FBM_8(position / 2.f);
@@ -196,7 +247,7 @@ float snowNoise(vec2 position)
     // layering noises
     float snowMountains = (2.f - (fbm2d2 + fbm8d2 + fbm8d4)*2.f) + vord300;
 
-    float finalHeight = snowMountains * (MAX_TERRAIN_HEIGHT/5.f);
+    float finalHeight = snowMountains * iceMountainHeight;
 
     return clamp(finalHeight, MIN_TERRAIN_HEIGHT, MAX_TERRAIN_HEIGHT);
 }
@@ -218,46 +269,61 @@ float valleyNoise(vec2 position)
     return clamp(finalHeight, MIN_TERRAIN_HEIGHT, MAX_TERRAIN_HEIGHT);
 }
 
+float flattenerNoise(vec2 position){
+    float fbm2d5 = FBM_2(position/5.f);
+    float terrainFlattener = clamp(fbm2d5, 0.f, 0.5f) * 2.f;
+    return terrainFlattener;
+}
+
 float terrainNoise(vec2 position)
 {
     // defining terrain height parameters
     const float highMountainsHeight = MAX_TERRAIN_HEIGHT;
-    const float lowMountainsHeight = (MAX_TERRAIN_HEIGHT / 2.f);
+    const float lowMountainsHeight = MAX_TERRAIN_HEIGHT / 2.f;
+    const float smallHillsHeight = MAX_TERRAIN_HEIGHT / 10.f;
+    const float oceanDepth = MAX_TERRAIN_HEIGHT / 15.f;
 
     // calculating noises
-    float fbm2 = FBM_2(position);
+    float fbm2 = FBM_2(position/2.f);
 
-    float fbm2d2 = FBM_2(position/2.f);
+    float fbm2d2 = FBM_2(position/4.f);
 
-    float fbm2d3 = FBM_2(position/3.f);
+    float fbm2d3 = FBM_2(position/6.f);
     float fbm2d3clamped = clamp(fbm2d3, 0.f, 1.f);
 
-    float fbm2d5 = FBM_2(position/5.f);
 
-    float fbm4 = FBM_4(position);
+    float fbm4 = FBM_4(position/2.f);
     float fbm4clamped = clamp(fbm4 , 0.f, 1.f);
 
-    float fbm8 = FBM_8(position);
+    float fbm8 = FBM_8(position/2.f);
+
+    float warp2d2 = warpNoise1Layer_2(position/4.f);
 
     // layering noises
 
-    float smallHillsDetails = clamp(fbm2 * 2.f - fbm4clamped / 5.f + 0.7f, 0.f, 1.f);
-    float smallHills = smallHillsDetails * (MAX_TERRAIN_HEIGHT / 10.f);
-    float lowMountains = fbm2d3 * lowMountainsHeight;
+    float smallHills = clamp(fbm2 * 2.f - fbm4clamped / 5.f + 0.7f, 0.f, 1.f);
+    float smallHillsLayer = smallHills * smallHillsHeight;
+    float lowMountains = (fbm2d3 + warp2d2 / 8.f) * lowMountainsHeight;
 
     float smallHillsMountainsBlender = clamp(fbm2d2 * 5.f, 0.f, 1.f);
-    float lowMountainsWithDetail = mix(smallHills, lowMountains, smallHillsMountainsBlender);
+    float lowMountainsLayer = mix(smallHillsLayer, lowMountains, smallHillsMountainsBlender);
 
     float flatAreaSmallHills = clamp(fbm8, 0.f, 0.4f);
-    float flatAreaDetails = flatAreaSmallHills * (lowMountainsHeight / 2.f);
+    float flatAreaLayer = flatAreaSmallHills * (lowMountainsHeight / 2.f);
 
     float lowAndHighMountainsBlender = fbm2d3clamped ;
-    float highMountains = fbm2d2 * highMountainsHeight;
-    float highAreasHeight = mix(highMountains, lowMountainsWithDetail, lowAndHighMountainsBlender);
-    float highAreaDetails = TERRAIN_BASE_HEIGHT + highAreasHeight;
+    float highMountainsLayer = fbm2d2 * highMountainsHeight;
+    float highAreasHeight = mix(highMountainsLayer, lowMountainsLayer, lowAndHighMountainsBlender);
+    float highAreaLayer = highAreasHeight;
 
-    float terrainFlattener = clamp(fbm2d5, 0.f, 0.5f) * 2.f;
-    float finalHeight = mix(flatAreaDetails, highAreaDetails, terrainFlattener);
+    float terrainFlattener = flattenerNoise(position);
+    float terrainHeight = clamp(mix(flatAreaLayer, highAreaLayer, terrainFlattener), MIN_TERRAIN_HEIGHT, MAX_TERRAIN_HEIGHT);
+
+    float oceanNoise = waterNoise(position) * (1.f - terrainFlattener);
+    float ocean = (softClamp(oceanNoise, TERRAIN_OCEAN_THRESHOLD - 0.1f, 1.f) - TERRAIN_OCEAN_THRESHOLD) * (1.f / (1.f - TERRAIN_OCEAN_THRESHOLD));
+    float oceanLayer = ocean * oceanDepth;
+
+    float finalHeight = TERRAIN_BASE_HEIGHT + terrainHeight - oceanLayer;
 
     return clamp(finalHeight, MIN_TERRAIN_HEIGHT, MAX_TERRAIN_HEIGHT);
 }
@@ -271,12 +337,31 @@ float GLSL::simplex2D(const vec2 &position)
     return glslNoise.in2D((double)position.x, (double)position.y);
 }
 
-float GLSL::in2DWarp(const vec2 &position)
+// ! The name of the c++ functions should be different than the name of the glsl functions
+
+float GLSL::humidityNoise(const vec2 &position)
 {
-    return warpNoise1Layer(position);
+    return wetnessNoise(position);
 }
 
-float GLSL::in2DTerrain(const vec2 &position)
+float GLSL::desertNoise(const vec2 &position)
+{
+    return sandMountainNoise(position);
+}
+
+float GLSL::mountainNoise(const vec2 &position)
 {
     return terrainNoise(position);
+}
+
+float GLSL::iceMountainNoise(const vec2 &position)
+{
+    return snowNoise(position);
+}
+
+float GLSL::oceanNoise(const vec2 &position)
+{
+    float terrainFlattener = flattenerNoise(position);
+    float oceanNoise = waterNoise(position) * (1.f - terrainFlattener);
+    return oceanNoise;
 }

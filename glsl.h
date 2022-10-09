@@ -16,8 +16,11 @@ namespace GLSL
     #define vec4(a, b, c, d) vec4{a, b, c, d}
 
     float simplex2D(const vec2 &position);
-    float in2DWarp(const vec2 &position);
-    float in2DTerrain(const vec2 &position);
+    float humidityNoise(const vec2 &position);
+    float desertNoise(const vec2 &position);
+    float mountainNoise(const vec2 &position);
+    float iceMountainNoise(const vec2 &position);
+    float oceanNoise(const vec2 &position);
 };
 
 #endif // GLSL_H

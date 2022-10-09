@@ -9,6 +9,8 @@ public:
   int seed;
   std::mt19937 rng;
 
+  // Noises
+
   UberNoise uberNoise;
 
   Noise temperatureNoise;

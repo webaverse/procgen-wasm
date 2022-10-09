@@ -37,9 +37,21 @@ UberNoise::~UberNoise() {};
 
 float UberNoise::humidityNoise(float x, float z)
 {
-  return GLSL::in2DWarp(vm::vec2(x, z));
+  return GLSL::humidityNoise(vm::vec2(x, z));
 }
-float UberNoise::elevationNoise(float x, float z)
+float UberNoise::desertNoise(float x, float z)
 {
-  return GLSL::in2DTerrain(vm::vec2(x, z));
+  return GLSL::desertNoise(vm::vec2(x, z));
+}
+float UberNoise::mountainNoise(float x, float z)
+{
+  return GLSL::mountainNoise(vm::vec2(x, z));
+}
+float UberNoise::iceMountainNoise(float x, float z)
+{
+  return GLSL::iceMountainNoise(vm::vec2(x, z));
+}
+float UberNoise::oceanNoise(float x, float z)
+{
+  return GLSL::oceanNoise(vm::vec2(x, z));
 }
