@@ -157,6 +157,15 @@ namespace vm
     ivec3 normalize(const ivec3 &v);
     ivec4 normalize(const ivec4 &v);
 
+    float step(float edge, float x);
+    vec2 step(vec2 edge, vec2 x);
+    vec3 step(vec3 edge, vec3 x);
+    vec4 step(vec4 edge, vec4 x);
+
+    vec2 step(float edge, vec2 x);
+    vec3 step(float edge, vec3 x);
+    vec4 step(float edge, vec4 x);
+
     float length(const vec2 v);
     float length(const vec3 v);
     float length(const vec4 v);

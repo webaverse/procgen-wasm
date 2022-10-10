@@ -2788,8 +2788,8 @@ void PGInstance::getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, in
 // 2d caches
 
 NoiseField PGInstance::getNoise(float bx, float bz) {
-    float tNoise = (float)noises.temperatureNoise.in2D(bx, bz);
-    float hNoise = (float)noises.humidityNoise.in2D(bx, bz);
+    float tNoise = (float)noises.uberNoise.temperatureNoise(bx, bz);
+    float hNoise = (float)noises.uberNoise.humidityNoise(bx, bz);
     float oNoise = (float)noises.uberNoise.oceanNoise(bx, bz);
     float rNoise = (float)noises.riverNoise.in2D(bx, bz);
 
@@ -3452,12 +3452,30 @@ float PGInstance::getComputedBiomeHeight(uint8_t b, const vm::vec2 &worldPositio
 
     switch (b)
     {
-    // case (int)BIOME::biDesert: 
-    //     return noises.uberNoise.desertNoise(ax, az);
-    // case (int)BIOME::biMegaTaigaHills:
-    //     return noises.uberNoise.mountainNoise(ax, az);
-    // case (int)BIOME::biIceMountains:
-    //     return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biDesert: 
+        return noises.uberNoise.desertNoise(ax, az);
+    case (int)BIOME::biDesertHills: 
+        return noises.uberNoise.desertNoise(ax, az);
+    case (int)BIOME::biDesertM: 
+        return noises.uberNoise.desertNoise(ax, az);
+    case (int)BIOME::biColdBeach:
+        return noises.uberNoise.desertNoise(ax, az);
+    case (int)BIOME::biMegaTaigaHills:
+        return noises.uberNoise.mountainNoise(ax, az);
+    case (int)BIOME::biForestHills:
+        return noises.uberNoise.mountainNoise(ax, az);
+    case (int)BIOME::biJungleHills:
+        return noises.uberNoise.mountainNoise(ax, az);
+    case (int)BIOME::biIceMountains:
+        return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biIcePlainsSpikes:
+        return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biColdTaigaHills:
+        return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biColdTaigaM:
+        return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biColdTaiga:
+        return noises.uberNoise.iceMountainNoise(ax, az);
     default:
         return noises.uberNoise.mountainNoise(ax, az);
     }
@@ -3480,7 +3498,7 @@ void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::vector
         {
         // TODO : Define a different set of material rules for each biome, for now we're using these rules as default
         default:
-            const float materialNoise = noises.uberNoise.humidityNoise(worldPosition.x, worldPosition.y);
+            const float materialNoise = noises.uberNoise.wetnessNoise(worldPosition.x, worldPosition.y);
 
             const float grassWeight = (1.f - materialNoise) * bw;
             const float dirtWeight = (materialNoise) * bw;

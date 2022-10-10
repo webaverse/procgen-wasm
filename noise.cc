@@ -39,6 +39,14 @@ float UberNoise::humidityNoise(float x, float z)
 {
   return GLSL::humidityNoise(vm::vec2(x, z));
 }
+float UberNoise::temperatureNoise(float x, float z)
+{
+  return GLSL::temperatureNoise(vm::vec2(x, z));
+}
+float UberNoise::wetnessNoise(float x, float z)
+{
+  return GLSL::wetnessNoise(vm::vec2(x, z));
+}
 float UberNoise::desertNoise(float x, float z)
 {
   return GLSL::desertNoise(vm::vec2(x, z));

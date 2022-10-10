@@ -13,9 +13,9 @@ public:
 
   UberNoise uberNoise;
 
-  Noise temperatureNoise;
-  Noise humidityNoise;
-  Noise oceanNoise;
+  // Noise temperatureNoise;
+  // Noise humidityNoise;
+  // Noise oceanNoise;
   Noise riverNoise;
   Noise lavaNoise;
 
@@ -46,9 +46,9 @@ public:
     // elevationNoise1(rng(), 2, 1),
     // elevationNoise2(rng(), 2, 1),
     // elevationNoise3(rng(), 2, 1),
-    temperatureNoise(rng(), 0.001, 4),
-    humidityNoise(rng(), 0.001, 4),
-    oceanNoise(rng(), 0.001, 4),
+    // temperatureNoise(rng(), 0.001, 4),
+    // humidityNoise(rng(), 0.001, 4),
+    // oceanNoise(rng(), 0.001, 4),
     riverNoise(rng(), 0.001, 4),
     lavaNoise(rng(), 0.01, 4),
     grassSeedNoise(rng(), 0.01, 4),

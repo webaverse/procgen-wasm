@@ -10,6 +10,7 @@ constexpr int MAX_WORLD_HEIGHT = 2048;
 
 // * Terrain parameters
 constexpr float OCEAN_THRESHOLD = 0.85f;
+constexpr int WATER_BASE_HEIGHT = WORLD_BASE_HEIGHT;
 
 //
 
