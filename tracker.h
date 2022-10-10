@@ -43,6 +43,7 @@ typedef std::shared_ptr<DataRequest> DataRequestPtr;
 
 class DataRequestUpdate {
 public:
+  std::unordered_map<uint64_t, DataRequestPtr> dataRequests;
   std::vector<DataRequestPtr> newDataRequests;
   std::vector<DataRequestPtr> keepDataRequests;
   std::vector<DataRequestPtr> cancelDataRequests;
@@ -153,29 +154,28 @@ OctreeNodePtr getMaxLodNode(const std::vector<OctreeNodePtr> &newLeafNodes, cons
 class Tracker {
 public:
   PGInstance *inst;
-  int lods;
-  int lod1Range;
   
-  vm::ivec2 lastCoord;
-  std::vector<OctreeNodePtr> leafNodes;
+  // vm::ivec2 lastCoord;
   std::unordered_map<uint64_t, DataRequestPtr> dataRequests;
+  // int lastEpoch;
+  std::mutex mutex;
 
   //
 
-  Tracker(PGInstance *inst, int lods, int lod1Range);
+  Tracker(PGInstance *inst);
 
   // dynamic methods
 
   void sortNodes(std::vector<OctreeNodePtr> &nodes);
   DataRequestUpdate updateDataRequests(
-    std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
+    const std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
     const std::vector<OctreeNodePtr> &leafNodes
   );
   /* std::unordered_map<uint64_t, Dominator> updateDominators(
     const std::vector<OctreeNodePtr> &oldRenderedChunks,
     std::unordered_map<uint64_t, DataRequestPtr> &dataRequests
   ); */
-  TrackerUpdate update(const vm::vec3 &position);
+  TrackerUpdate update(const vm::vec3 &position, int minLod, int maxLod, int lod1Range);
 };
 
 #endif // _TRACKER_H_
