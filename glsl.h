@@ -12,7 +12,6 @@ namespace GLSL
     #define vec3(a, b, c) vec3{a, b, c}
     #define vec4(a, b, c, d) vec4{a, b, c, d}
 
-    float simplex2D(const vec2 &position);
     float humidityNoise(const vec2 &position);
     float temperatureNoise(const vec2 &position);
     float wetnessNoise(const vec2 &position);
