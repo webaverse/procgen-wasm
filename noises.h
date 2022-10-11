@@ -16,8 +16,8 @@ public:
   // Noise temperatureNoise;
   // Noise humidityNoise;
   // Noise oceanNoise;
-  Noise riverNoise;
-  Noise lavaNoise;
+  // Noise riverNoise;
+  // Noise lavaNoise;
 
   Noise grassSeedNoise;
   Noise grassNoise;
@@ -49,8 +49,8 @@ public:
     // temperatureNoise(rng(), 0.001, 4),
     // humidityNoise(rng(), 0.001, 4),
     // oceanNoise(rng(), 0.001, 4),
-    riverNoise(rng(), 0.001, 4),
-    lavaNoise(rng(), 0.01, 4),
+    // riverNoise(rng(), 0.001, 4),
+    // lavaNoise(rng(), 0.01, 4),
     grassSeedNoise(rng(), 0.01, 4),
     grassNoise(rng(), 0.01, 4),
     vegetationSeedNoise(rng(), 0.1, 4),

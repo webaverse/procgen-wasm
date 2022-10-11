@@ -2791,13 +2791,13 @@ NoiseField PGInstance::getNoise(float bx, float bz) {
     float tNoise = (float)noises.uberNoise.temperatureNoise(bx, bz);
     float hNoise = (float)noises.uberNoise.humidityNoise(bx, bz);
     float oNoise = (float)noises.uberNoise.oceanNoise(bx, bz);
-    float rNoise = (float)noises.riverNoise.in2D(bx, bz);
+    // float rNoise = (float)noises.riverNoise.in2D(bx, bz);
 
     return NoiseField{
         tNoise,
         hNoise,
-        oNoise,
-        rNoise
+        oNoise
+        // rNoise
     };
 }
 uint8_t PGInstance::getBiome(float bx, float bz) {
@@ -2807,12 +2807,14 @@ uint8_t PGInstance::getBiome(float bx, float bz) {
     float temperatureNoise = noise.temperature;
     float humidityNoise = noise.humidity;
     float oceanNoise = noise.ocean;
-    float riverNoise = noise.river;
+    // float riverNoise = noise.river;
 
     if (oceanNoise > OCEAN_THRESHOLD)
     {
         biome = (unsigned char)BIOME::biOcean;
     }
+
+    // TODO : the biome picker logic needs rethinking ?
 
     // if (biome == 0xFF)
     // {
