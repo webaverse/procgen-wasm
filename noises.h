@@ -19,6 +19,7 @@ public:
   // Noise riverNoise;
   // Noise lavaNoise;
 
+  // TODO : use the wetnessNoise for grass placement
   Noise grassSeedNoise;
   Noise grassNoise;
   Noise poiSeedNoise;

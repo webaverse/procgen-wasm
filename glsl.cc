@@ -365,12 +365,12 @@ float terrainNoise(vec2 position)
     float highAreaLayer = highAreasHeight;
 
     float terrainFlattener = flattenerNoise(position);
-    float terrainHeight = clamp(mix(flatAreaLayer, highAreaLayer, terrainFlattener), TERRAIN_BASE_HEIGHT, MAX_TERRAIN_HEIGHT);
+    float terrainHeight = clamp(TERRAIN_BASE_HEIGHT + mix(flatAreaLayer, highAreaLayer, terrainFlattener), TERRAIN_BASE_HEIGHT, MAX_TERRAIN_HEIGHT);
 
     float ocean = softWater(position, terrainFlattener);
     float oceanLayer = ocean * oceanDepth;
 
-    float finalHeight = TERRAIN_BASE_HEIGHT + terrainHeight - oceanLayer;
+    float finalHeight = terrainHeight - oceanLayer;
 
     return clamp(finalHeight, MIN_TERRAIN_HEIGHT, MAX_TERRAIN_HEIGHT);
 }
