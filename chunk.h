@@ -20,7 +20,6 @@
 
 //
 
-constexpr float MAX_HEIGHT = 20.f;
 constexpr int numBiomes = (int)BIOME::NUM_BIOMES;
 constexpr int numMaterials = (int)MATERIAL::NUM_MATERIALS;
 

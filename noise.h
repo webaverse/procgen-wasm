@@ -30,7 +30,13 @@ public:
   UberNoise();
   ~UberNoise();
 
-  float in2DWarp(const vec2 &position);
+  float humidityNoise(float x, float z);
+  float temperatureNoise(float x, float z);
+  float wetnessNoise(float x, float z);
+  float desertNoise(float x, float z);
+  float mountainNoise(float x, float z);
+  float iceMountainNoise(float x, float z);
+  float oceanNoise(float x, float z);
 };
 
 #endif

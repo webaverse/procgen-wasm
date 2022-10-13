@@ -2788,23 +2788,16 @@ void PGInstance::getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, in
 // 2d caches
 
 NoiseField PGInstance::getNoise(float bx, float bz) {
-    float tNoise = (float)noises.temperatureNoise.in2D(bx, bz);
-    // noiseField.temperature[index] = tNoise;
-
-    float hNoise = (float)noises.humidityNoise.in2D(bx, bz);
-    // noiseField.humidity[index] = hNoise;
-
-    float oNoise = (float)noises.oceanNoise.in2D(bx, bz);
-    // noiseField.ocean[index] = oNoise;
-
-    float rNoise = (float)noises.riverNoise.in2D(bx, bz);
-    // noiseField.river[index] = rNoise;
+    float tNoise = (float)noises.uberNoise.temperatureNoise(bx, bz);
+    float hNoise = (float)noises.uberNoise.humidityNoise(bx, bz);
+    float oNoise = (float)noises.uberNoise.oceanNoise(bx, bz);
+    // float rNoise = (float)noises.riverNoise.in2D(bx, bz);
 
     return NoiseField{
         tNoise,
         hNoise,
-        oNoise,
-        rNoise
+        oNoise
+        // rNoise
     };
 }
 uint8_t PGInstance::getBiome(float bx, float bz) {
@@ -2814,31 +2807,36 @@ uint8_t PGInstance::getBiome(float bx, float bz) {
     float temperatureNoise = noise.temperature;
     float humidityNoise = noise.humidity;
     float oceanNoise = noise.ocean;
-    float riverNoise = noise.river;
+    // float riverNoise = noise.river;
 
-    if (oceanNoise < (80.0f / 255.0f))
+    if (oceanNoise > OCEAN_THRESHOLD)
     {
         biome = (unsigned char)BIOME::biOcean;
     }
-    if (biome == 0xFF)
-    {
-        const float range = 0.022f;
-        if (riverNoise > 0.5f - range && riverNoise < 0.5f + range)
-        {
-            biome = (unsigned char)BIOME::biRiver;
-        }
-    }
-    if (std::pow(temperatureNoise, 1.3f) < ((4.0f * 16.0f) / 255.0f))
-    {
-        if (biome == (unsigned char)BIOME::biOcean)
-        {
-            biome = (unsigned char)BIOME::biFrozenOcean;
-        }
-        else if (biome == (unsigned char)BIOME::biRiver)
-        {
-            biome = (unsigned char)BIOME::biFrozenRiver;
-        }
-    }
+
+    // TODO : the biome picker logic needs rethinking ?
+
+    // if (biome == 0xFF)
+    // {
+    //     const float range = 0.022f;
+    //     if (riverNoise > 0.5f - range && riverNoise < 0.5f + range)
+    //     {
+    //         biome = (unsigned char)BIOME::biRiver;
+    //     }
+    // }
+
+    // if (std::pow(temperatureNoise, 1.3f) < ((4.0f * 16.0f) / 255.0f))
+    // {
+    //     if (biome == (unsigned char)BIOME::biOcean)
+    //     {
+    //         biome = (unsigned char)BIOME::biFrozenOcean;
+    //     }
+    //     else if (biome == (unsigned char)BIOME::biRiver)
+    //     {
+    //         biome = (unsigned char)BIOME::biFrozenRiver;
+    //     }
+    // }
+
     if (biome == 0xFF)
     {
         float temperatureNoise2 = vm::clamp(std::pow(temperatureNoise, 1.3f), 0.f, 1.f);
@@ -2846,8 +2844,10 @@ uint8_t PGInstance::getBiome(float bx, float bz) {
 
         int t = (int)std::floor(temperatureNoise2 * 16.0f);
         int h = (int)std::floor(humidityNoise2 * 16.0f);
+
         biome = (unsigned char)BIOMES_TEMPERATURE_HUMIDITY[t + 16 * h];
     }
+
     return biome;
 }
 
@@ -2969,9 +2969,7 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
                 }
 
                 float waterFactor = 1.f - (distance / maxWaterDistance);
-                waterFactor =
-                    baseWaterFactor +
-                    (1.f - baseWaterFactor) * waterFactor;
+                waterFactor = baseWaterFactor + (1.f - baseWaterFactor) * waterFactor;
 
                 if (isWaterBiome(b)) {
                     sumWaterFactor += waterFactor;
@@ -3449,16 +3447,40 @@ float PGInstance::signedDistanceToSphere(float cx, float cy, float cz, float r, 
 } */
 
 // biomes
-float PGInstance::getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition) {
-    const Biome &biome = BIOMES[b];
+float PGInstance::getComputedBiomeHeight(uint8_t b, const vm::vec2 &worldPosition)
+{
     const float &ax = worldPosition.x;
     const float &az = worldPosition.y;
 
-    float biomeHeight = biome.baseHeight +
-        noises.elevationNoise1.in2D(ax * biome.amps[0][0], az * biome.amps[0][0]) * biome.amps[0][1] +
-        noises.elevationNoise2.in2D(ax * biome.amps[1][0], az * biome.amps[1][0]) * biome.amps[1][1] +
-        noises.elevationNoise3.in2D(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1];
-    return biomeHeight;
+    switch (b)
+    {
+    case (int)BIOME::biDesert: 
+        return noises.uberNoise.desertNoise(ax, az);
+    case (int)BIOME::biDesertHills: 
+        return noises.uberNoise.desertNoise(ax, az);
+    case (int)BIOME::biDesertM: 
+        return noises.uberNoise.desertNoise(ax, az);
+    case (int)BIOME::biColdBeach:
+        return noises.uberNoise.desertNoise(ax, az);
+    case (int)BIOME::biMegaTaigaHills:
+        return noises.uberNoise.mountainNoise(ax, az);
+    case (int)BIOME::biForestHills:
+        return noises.uberNoise.mountainNoise(ax, az);
+    case (int)BIOME::biJungleHills:
+        return noises.uberNoise.mountainNoise(ax, az);
+    case (int)BIOME::biIceMountains:
+        return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biIcePlainsSpikes:
+        return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biColdTaigaHills:
+        return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biColdTaigaM:
+        return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biColdTaiga:
+        return noises.uberNoise.iceMountainNoise(ax, az);
+    default:
+        return noises.uberNoise.mountainNoise(ax, az);
+    }
 }
 
 // materials
@@ -3478,7 +3500,7 @@ void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::vector
         {
         // TODO : Define a different set of material rules for each biome, for now we're using these rules as default
         default:
-            const float materialNoise = vm::clamp(noises.grassMaterialNoise.in2DWarp(worldPosition), 0.f, 1.f);
+            const float materialNoise = noises.uberNoise.wetnessNoise(worldPosition.x, worldPosition.y);
 
             const float grassWeight = (1.f - materialNoise) * bw;
             const float dirtWeight = (materialNoise) * bw;

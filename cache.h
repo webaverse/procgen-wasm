@@ -74,7 +74,7 @@ public:
 class Waterfield : public Heightfield {
 public:
     float getHeight() const {
-      return WORLD_BASE_HEIGHT;
+      return WATER_BASE_HEIGHT;
     }
     bool acceptIndex() const {
       return waterFactor > 0;

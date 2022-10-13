@@ -8,18 +8,18 @@ class Noises {
 public:
   int seed;
   std::mt19937 rng;
-  
-  Noise elevationNoise1;
-  Noise elevationNoise2;
-  Noise elevationNoise3;
-  Noise temperatureNoise;
-  Noise humidityNoise;
-  Noise oceanNoise;
-  Noise riverNoise;
-  Noise lavaNoise;
-  
-  UberNoise grassMaterialNoise;
 
+  // Noises
+
+  UberNoise uberNoise;
+
+  // Noise temperatureNoise;
+  // Noise humidityNoise;
+  // Noise oceanNoise;
+  // Noise riverNoise;
+  // Noise lavaNoise;
+
+  // TODO : use the wetnessNoise for grass placement
   Noise grassSeedNoise;
   Noise grassNoise;
   Noise poiSeedNoise;
@@ -44,14 +44,14 @@ public:
   Noises(int seed) :
     seed(seed),
     rng(seed),
-    elevationNoise1(rng(), 2, 1),
-    elevationNoise2(rng(), 2, 1),
-    elevationNoise3(rng(), 2, 1),
-    temperatureNoise(rng(), 0.001, 4),
-    humidityNoise(rng(), 0.001, 4),
-    oceanNoise(rng(), 0.001, 4),
-    riverNoise(rng(), 0.001, 4),
-    lavaNoise(rng(), 0.01, 4),
+    // elevationNoise1(rng(), 2, 1),
+    // elevationNoise2(rng(), 2, 1),
+    // elevationNoise3(rng(), 2, 1),
+    // temperatureNoise(rng(), 0.001, 4),
+    // humidityNoise(rng(), 0.001, 4),
+    // oceanNoise(rng(), 0.001, 4),
+    // riverNoise(rng(), 0.001, 4),
+    // lavaNoise(rng(), 0.01, 4),
     grassSeedNoise(rng(), 0.01, 4),
     grassNoise(rng(), 0.01, 4),
     vegetationSeedNoise(rng(), 0.1, 4),

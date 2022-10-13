@@ -1,5 +1,10 @@
 #include "vectorMath.h"
 
+float vm::min(const float &v1, const float &v2)
+{
+    return std::min(v1, v2);
+};
+
 vm::vec2 vm::min(const vm::vec2 &v1, const vm::vec2 &v2)
 {
     return vm::vec2{std::min(v1.x, v2.x), std::min(v1.y, v2.y)};
@@ -155,6 +160,36 @@ vm::ivec4 vm::normalize(const vm::ivec4 &v)
     float length_of_v = std::sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z) + (v.w * v.w));
     return vm::ivec4{(int)(v.x / length_of_v), (int)(v.y / length_of_v), (int)(v.z / length_of_v), (int)(v.w / length_of_v)};
 }
+
+float vm::step(float edge, float x)
+{
+    return x < edge ? 0.0f : 1.0f;
+};
+vm::vec2 step(vm::vec2 edge, vm::vec2 x)
+{
+    return vm::vec2{vm::step(edge.x, x.x), vm::step(edge.y, x.y)};
+};
+vm::vec3 step(vm::vec3 edge, vm::vec3 x)
+{
+    return vm::vec3{vm::step(edge.x, x.x), vm::step(edge.y, x.y), vm::step(edge.z, x.z)};
+};
+vm::vec4 step(vm::vec4 edge, vm::vec4 x)
+{
+    return vm::vec4{vm::step(edge.x, x.x), vm::step(edge.y, x.y), vm::step(edge.z, x.z), vm::step(edge.w, x.w)};
+};
+
+vm::vec2 step(float edge, vm::vec2 x)
+{
+    return vm::vec2{vm::step(edge, x.x), vm::step(edge, x.y)};
+};
+vm::vec3 step(float edge, vm::vec3 x)
+{
+    return vm::vec3{vm::step(edge, x.x), vm::step(edge, x.y), vm::step(edge, x.z)};
+};
+vm::vec4 step(float edge, vm::vec4 x)
+{
+    return vm::vec4{vm::step(edge, x.x), vm::step(edge, x.y), vm::step(edge, x.z), vm::step(edge, x.w)};
+};
 
 float vm::length(const vm::vec2 v)
 {

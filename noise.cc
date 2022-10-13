@@ -35,7 +35,31 @@ double Noise::in3DBidirectional(double x, double y, double z) {
 UberNoise::UberNoise(){};
 UberNoise::~UberNoise() {};
 
-float UberNoise::in2DWarp(const vec2 &position)
+float UberNoise::humidityNoise(float x, float z)
 {
-  return GLSL::in2DWarp(position);
+  return GLSL::humidityNoise(vm::vec2(x, z));
+}
+float UberNoise::temperatureNoise(float x, float z)
+{
+  return GLSL::temperatureNoise(vm::vec2(x, z));
+}
+float UberNoise::wetnessNoise(float x, float z)
+{
+  return GLSL::wetnessNoise(vm::vec2(x, z));
+}
+float UberNoise::desertNoise(float x, float z)
+{
+  return GLSL::desertNoise(vm::vec2(x, z));
+}
+float UberNoise::mountainNoise(float x, float z)
+{
+  return GLSL::mountainNoise(vm::vec2(x, z));
+}
+float UberNoise::iceMountainNoise(float x, float z)
+{
+  return GLSL::iceMountainNoise(vm::vec2(x, z));
+}
+float UberNoise::oceanNoise(float x, float z)
+{
+  return GLSL::oceanNoise(vm::vec2(x, z));
 }
