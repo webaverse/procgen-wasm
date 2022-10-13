@@ -20,30 +20,6 @@ inline int modulo(int x, int N){
 
 //
 
-class MaterialWeightAccumulator {
-public:
-  MaterialWeightAccumulator() : seen(false), weight(0.f) {};
-
-  void addWeight(const float &w){
-    // seen
-    seen = true;
-    // add weight
-    weight += w;
-  }
-
-  bool getSeen(){
-    return seen;
-  }
-
-  float getWeight(){
-    return weight;
-  }
-
-private:
-  bool seen;
-  float weight;
-};
-
 typedef std::array<uint8_t, 4> MaterialsArray;
 typedef std::array<float, 4> MaterialsWeightsArray;
 
@@ -55,6 +31,8 @@ public:
     std::array<unsigned char, 4> biomesWeightsVectorField;
 
     float waterFactor;
+
+    vm::vec3 normal;
 
     MaterialsArray materials;
     MaterialsWeightsArray materialsWeights;
@@ -94,6 +72,32 @@ public:
     float humidity;
     float ocean;
     float river;
+};
+
+//
+
+class MaterialWeightAccumulator {
+public:
+  MaterialWeightAccumulator() : seen(false), weight(0.f) {};
+
+  void addWeight(const float &w){
+    // seen
+    seen = true;
+    // add weight
+    weight += w;
+  }
+
+  bool getSeen(){
+    return seen;
+  }
+
+  float getWeight(){
+    return weight;
+  }
+
+private:
+  bool seen;
+  float weight;
 };
 
 //
