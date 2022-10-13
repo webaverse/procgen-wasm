@@ -303,33 +303,13 @@ void normalizeNormals(std::vector<vm::vec3> &normals) {
         normals[i].z = vec.z;
     }
 }
-void computeVertexNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3> &normals, std::vector<uint32_t> &indices) {
-    // const index = this.index;
-    // const positionAttribute = this.getAttribute( 'position' );
-
-    // reset existing normals to zero
-    // for ( let i = 0, il = normalAttribute.count; i < il; i ++ ) {
-    //   normalAttribute.setXYZ( i, 0, 0, 0 );
-    // }
-    // std::fill(normals.begin(), normals.end(), 0);
-
-    // const pA = new Vector3(), pB = new Vector3(), pC = new Vector3();
-    // const nA = new Vector3(), nB = new Vector3(), nC = new Vector3();
-    // const cb = new Vector3(), ab = new Vector3();
-
+void computeFaceNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3> &normals, std::vector<uint32_t> &indices) {
     // indexed elements
     for (size_t i = 0, il = indices.size(); i < il; i += 3) {
-        // const uint32_t vA = index.getX(i + 0);
-        // const uint32_t vB = index.getX(i + 1);
-        // const uint32_t vC = index.getX(i + 2);
-
         const uint32_t &vA = indices[i];
         const uint32_t &vB = indices[i + 1];
         const uint32_t &vC = indices[i + 2];
 
-        // pA.fromBufferAttribute( positionAttribute, vA );
-        // pB.fromBufferAttribute( positionAttribute, vB );
-        // pC.fromBufferAttribute( positionAttribute, vC );
         Vec pA{
             positions[vA].x,
             positions[vA].y,
@@ -346,17 +326,10 @@ void computeVertexNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3
             positions[vC].z
         };
 
-        // cb.subVectors( pC, pB );
-        // ab.subVectors( pA, pB );
-        // cb.cross( ab );
         Vec cb = pC - pB;
         Vec ab = pA - pB;
-        // cb.cross(ab);
         cb ^= ab;
 
-        // nA.fromBufferAttribute( normalAttribute, vA );
-        // nB.fromBufferAttribute( normalAttribute, vB );
-        // nC.fromBufferAttribute( normalAttribute, vC );
         Vec nA{
             normals[vA].x,
             normals[vA].y,
@@ -373,16 +346,10 @@ void computeVertexNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3
             normals[vC].z
         };
 
-        // nA.add( cb );
-        // nB.add( cb );
-        // nC.add( cb );
         nA += cb;
         nB += cb;
         nC += cb;
 
-        // normalAttribute.setXYZ( vA, nA.x, nA.y, nA.z );
-        // normalAttribute.setXYZ( vB, nB.x, nB.y, nB.z );
-        // normalAttribute.setXYZ( vC, nC.x, nC.y, nC.z );
         normals[vA].x = nA.x;
         normals[vA].y = nA.y;
         normals[vA].z = nA.z;
@@ -395,6 +362,38 @@ void computeVertexNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3
     }
 
     normalizeNormals(normals);
+}
+
+template<typename T>
+vm::vec3 calculateCenterNormals(const int &x, const int &y, const std::vector<T> &heightfields, const int &rowSize)
+{
+    const int Lx = (x - 1) + 1;
+    const int Ly = y + 1;
+    const int Lindex = Lx + Ly * rowSize;
+    const float Lheight = heightfields[Lindex].getHeight();
+
+    const int Rx = (x + 1) + 1;
+    const int Ry = y + 1;
+    const int Rindex = Rx + Ry * rowSize;
+    const float Rheight = heightfields[Rindex].getHeight();
+
+    const int Ux = x + 1;
+    const int Uy = (y - 1) + 1;
+    const int Uindex = Ux + Uy * rowSize;
+    const float Uheight = heightfields[Uindex].getHeight();
+
+    const int Dx = x + 1;
+    const int Dy = (y + 1) + 1;
+    const int Dindex = Dx + Dy * rowSize;
+    const float Dheight = heightfields[Dindex].getHeight();
+
+    return vm::normalize(vm::vec3{Lheight - Rheight, 2.0f, Uheight - Dheight});
+}
+
+template<typename T>
+vm::vec3 calculateSeamNormals(const int &x, const int &y, const std::vector<T> &heightfields, const int &rowSize)
+{
+
 }
 /* void fillVec3(std::vector<vm::vec3> &array, const vm::vec3 &v) {
     for (size_t i = 0, il = array.size(); i < il; i++) {
@@ -475,42 +474,7 @@ void createPlaneGeometry(
         });
 
         // normal
-        vm::vec3 normal;
-        if (computeNormals == ComputeNormals::YES) {
-            const int Lx = (x - 1) + 1;
-            const int Ly = y + 1;
-            const int Lindex = Lx + Ly * rowSize;
-            const float Lheight = heightfields[Lindex].getHeight();
-
-            const int Rx = (x + 1) + 1;
-            const int Ry = y + 1;
-            const int Rindex = Rx + Ry * rowSize;
-            const float Rheight = heightfields[Rindex].getHeight();
-
-            const int Ux = x + 1;
-            const int Uy = (y - 1) + 1;
-            const int Uindex = Ux + Uy * rowSize;
-            const float Uheight = heightfields[Uindex].getHeight();
-
-            const int Dx = x + 1;
-            const int Dy = (y + 1) + 1;
-            const int Dindex = Dx + Dy * rowSize;
-            const float Dheight = heightfields[Dindex].getHeight();
-
-            normal = vm::normalize(
-                vm::vec3{
-                    Lheight - Rheight,
-                    2.0f,
-                    Uheight - Dheight
-                }
-            );
-        } else {
-            normal = vm::vec3{
-                0,
-                1,
-                0
-            };
-        }
+        vm::vec3 normal = calculateCenterNormals<T>(x, y, heightfields, rowSize);
         geometry.normals.push_back(normal);
         
         // metadata
@@ -2115,6 +2079,7 @@ ChunkResult *PGInstance::createChunkMesh(
         (generateFlags & GF_HEIGHTFIELD)
     ) {
         heightfields = getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
+        // calculateSurfaceNormal();
     }
 
     // terrain
