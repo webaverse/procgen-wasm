@@ -1496,8 +1496,8 @@ const UV BIOME_UVS[] {
 enum class MATERIAL : uint8_t {
   GRASS = 0,
   DIRT = 1,
-  STONE = 2,
-  ROCK = 3,
+  ROCK = 2,
+  STONE = 3,
 
   NUM_MATERIALS = 4,
 };

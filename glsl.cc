@@ -40,31 +40,31 @@ float softClamp(float x, float a, float b)
 // noise functions
 
 // ? Simplex noise implementation from : https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83
-vec3 permute(vec3 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
+vec3 permute(vec3 x) { return mod(((x * 34.f) + 1.f) * x, 289.f); }
 float snoise(vec2 v)
 {
     const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
     vec2 i = floor(v + dot(v, vec2(C.y, C.y)));
     vec2 x0 = v - i + dot(i, vec2(C.x, C.x));
-    vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+    vec2 i1 = (x0.x > x0.y) ? vec2(1.f, 0.f) : vec2(0.f, 1.f);
     vec4 x12 = vec4(x0.x, x0.y, x0.x, x0.y) + vec4(C.x, C.x, C.z, C.z) - vec4(i1.x, i1.y, 0.f, 0.f);
     i = mod(i, 289.0);
-    vec3 p = permute(permute(vec3(0.0, i1.y, 1.0) + i.y) + i.x + vec3(0.0, i1.x, 1.0));
+    vec3 p = permute(permute(vec3(0.f, i1.y, 1.f) + i.y) + i.x + vec3(0.f, i1.x, 1.f));
     vec3 m = max(vec3(0.5f, 0.5f, 0.5f) -
                      vec3(dot(x0, x0), dot(vec2(x12.x, x12.y), vec2(x12.x, x12.y)), dot(vec2(x12.z, x12.w), vec2(x12.z, x12.w))),
-                 0.0);
+                 0.f);
     m = m * m;
     m = m * m;
-    vec3 x = fract(p * vec3(C.w, C.w, C.w)) * 2.f - 1.0;
-    vec3 h = abs(x) - 0.5;
-    vec3 ox = floor(x + 0.5);
+    vec3 x = fract(p * vec3(C.w, C.w, C.w)) * 2.f - 1.f;
+    p = abs(x) - 0.5f;
+    vec3 ox = floor(x + 0.5f);
     vec3 a0 = x - ox;
-    const float ff = 1.79284291400159;
-    const float fd = 0.85373472095314;
-    m *= vec3(ff, ff, ff) - (a0 * a0 + h * h) * fd;
-    vec2 gf = vec2(a0.y, a0.z) * vec2(x12.x, x12.z) + vec2(h.y, h.z) * vec2(x12.y, x12.w);
-    vec3 g = vec3(a0.x * x0.x + h.x * x0.y, gf.x, gf.y);
-    return 135.f * dot(m, g);
+    const float ff = 1.79284291400159f;
+    const float fd = 0.85373472095314f;
+    m *= vec3(ff, ff, ff) - (a0 * a0 + p * p) * fd;
+    i1 = vec2(a0.y, a0.z) * vec2(x12.x, x12.z) + vec2(p.y, p.z) * vec2(x12.y, x12.w);
+    p = vec3(a0.x * x0.x + p.x * x0.y, i1.x, i1.y);
+    return 135.f * dot(m, p);
 }
 
 vec2 rand2(vec2 p)

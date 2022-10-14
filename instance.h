@@ -99,14 +99,14 @@ public:
     uint8_t getBiome(float bx, float bz);
     // SeedNoise getSeedNoise(int bx, int bz);
 
-    void getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfield);
+    void getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfields);
     void getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, int rowSize, std::vector<Heightfield> &heightfieldSeams);
     Heightfield getHeightField(float bx, float bz);
     float getHeight(float bx, float bz);
     
-    void getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfield);
-    void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, int rowSize, std::vector<Waterfield> &waterfieldSeams);
-    Waterfield getWaterField(int bx, int bz, int lod);
+    // void getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfields);
+    // void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, int rowSize, std::vector<Waterfield> &waterfieldSeams);
+    // Waterfield getWaterField(int bx, int bz, int lod);
 
     // void getCaveFieldCenter(int bx, int bz, int lod, std::vector<Cavefield> &cavefields);
     // void getCaveFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Cavefield> &cavefields);
@@ -117,6 +117,12 @@ public:
     // float getSeed(int bx, int bz);
 
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
+
+    // materials
+    void setHeightfieldMaterial(Heightfield &localHeightfield, const vm::vec2 &position);
+    void applyCenterMaterials(const int &bx, const int &bz, const int &lod, std::vector<Heightfield> &heightfields);
+    void applySeamMaterials(const int &bx, const int &bz, const int &lod, const std::array<int, 2> &lodArray, const int &rowSize, std::vector<Heightfield> &heightfieldSeams);
+    void applyMaterials(const int &x, const int &z, const int &lod, const std::array<int, 2> &lodArray, std::vector<Heightfield> &heightfields);
     void getComputedMaterials(Heightfield &localHeightfield, std::vector<MaterialWeightAccumulator> &materialsCounts, float &totalMaterialFactors, const vm::vec2 &worldPosition);
 
     //
