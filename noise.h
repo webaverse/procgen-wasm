@@ -33,6 +33,7 @@ public:
   float humidityNoise(float x, float z);
   float temperatureNoise(float x, float z);
   float wetnessNoise(float x, float z);
+  float stiffnessNoise(float x, float z);
   float desertNoise(float x, float z);
   float mountainNoise(float x, float z);
   float iceMountainNoise(float x, float z);

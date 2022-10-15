@@ -47,6 +47,10 @@ float UberNoise::wetnessNoise(float x, float z)
 {
   return GLSL::wetnessNoise(vm::vec2(x, z));
 }
+float UberNoise::stiffnessNoise(float x, float z)
+{
+  return GLSL::stiffnessNoise(vm::vec2(x, z));  
+}
 float UberNoise::desertNoise(float x, float z)
 {
   return GLSL::desertNoise(vm::vec2(x, z));

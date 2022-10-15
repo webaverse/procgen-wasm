@@ -15,6 +15,7 @@ namespace GLSL
     float humidityNoise(const vec2 &position);
     float temperatureNoise(const vec2 &position);
     float wetnessNoise(const vec2 &position);
+    float stiffnessNoise(const vec2 &position);
     float desertNoise(const vec2 &position);
     float mountainNoise(const vec2 &position);
     float iceMountainNoise(const vec2 &position);
