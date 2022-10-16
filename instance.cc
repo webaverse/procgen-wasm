@@ -2922,8 +2922,8 @@ uint8_t PGInstance::getBiome(float bx, float bz) {
 
     if (biome == 0xFF)
     {
-        float temperatureNoise2 = vm::clamp(std::pow(temperatureNoise, 1.3f), 0.f, 1.f);
-        float humidityNoise2 = vm::clamp(std::pow(humidityNoise, 1.3f), 0.f, 1.f);
+        float temperatureNoise2 = vm::clamp(temperatureNoise, 0.f, 1.f);
+        float humidityNoise2 = vm::clamp(humidityNoise, 0.f, 1.f);
 
         int t = (int)std::floor(temperatureNoise2 * 16.0f);
         int h = (int)std::floor(humidityNoise2 * 16.0f);
@@ -3497,30 +3497,30 @@ float PGInstance::getComputedBiomeHeight(uint8_t b, const vm::vec2 &worldPositio
 
     switch (b)
     {
-    // case (int)BIOME::biDesert: 
-    //     return noises.uberNoise.desertNoise(ax, az);
-    // case (int)BIOME::biDesertHills: 
-    //     return noises.uberNoise.desertNoise(ax, az);
-    // case (int)BIOME::biDesertM: 
-    //     return noises.uberNoise.desertNoise(ax, az);
-    // case (int)BIOME::biColdBeach:
-    //     return noises.uberNoise.desertNoise(ax, az);
-    // case (int)BIOME::biMegaTaigaHills:
-    //     return noises.uberNoise.mountainNoise(ax, az);
-    // case (int)BIOME::biForestHills:
-    //     return noises.uberNoise.mountainNoise(ax, az);
-    // case (int)BIOME::biJungleHills:
-    //     return noises.uberNoise.mountainNoise(ax, az);
-    // case (int)BIOME::biIceMountains:
-    //     return noises.uberNoise.iceMountainNoise(ax, az);
-    // case (int)BIOME::biIcePlainsSpikes:
-    //     return noises.uberNoise.iceMountainNoise(ax, az);
-    // case (int)BIOME::biColdTaigaHills:
-    //     return noises.uberNoise.iceMountainNoise(ax, az);
-    // case (int)BIOME::biColdTaigaM:
-    //     return noises.uberNoise.iceMountainNoise(ax, az);
-    // case (int)BIOME::biColdTaiga:
-    //     return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biDesert: 
+        return noises.uberNoise.desertNoise(ax, az);
+    case (int)BIOME::biDesertHills: 
+        return noises.uberNoise.desertNoise(ax, az);
+    case (int)BIOME::biDesertM: 
+        return noises.uberNoise.desertNoise(ax, az);
+    case (int)BIOME::biColdBeach:
+        return noises.uberNoise.desertNoise(ax, az);
+    case (int)BIOME::biMegaTaigaHills:
+        return noises.uberNoise.mountainNoise(ax, az);
+    case (int)BIOME::biForestHills:
+        return noises.uberNoise.mountainNoise(ax, az);
+    case (int)BIOME::biJungleHills:
+        return noises.uberNoise.mountainNoise(ax, az);
+    case (int)BIOME::biIceMountains:
+        return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biIcePlainsSpikes:
+        return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biColdTaigaHills:
+        return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biColdTaigaM:
+        return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biColdTaiga:
+        return noises.uberNoise.iceMountainNoise(ax, az);
     default:
         return noises.uberNoise.mountainNoise(ax, az);
     }
