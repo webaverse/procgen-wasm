@@ -2889,10 +2889,10 @@ uint8_t PGInstance::getBiome(float bx, float bz) {
     const auto &noise = getNoise(bx, bz);
     float temperatureNoise = noise.temperature;
     float humidityNoise = noise.humidity;
-    float oceanNoise = noise.ocean;
+    int oceanNoise = std::round(noise.ocean);
     // float riverNoise = noise.river;
 
-    if (oceanNoise > OCEAN_THRESHOLD)
+    if (oceanNoise == 1)
     {
         biome = (unsigned char)BIOME::biOcean;
     }
