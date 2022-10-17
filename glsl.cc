@@ -267,8 +267,8 @@ float wetNoise(vec2 position)
 
 float stiffNoise(vec2 position)
 {
-    float noise = simplexNoise(position * 50.f);
-    return clamp(noise + 0.2f, 0.f, 1.f);
+    float noise = simplexNoise(position * 4.f);
+    return clamp(noise + 0.7f, 0.f, 1.f);
 }
 
 float humNoise(vec2 position)
