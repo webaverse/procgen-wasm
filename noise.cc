@@ -43,9 +43,17 @@ float UberNoise::temperatureNoise(float x, float z)
 {
   return GLSL::temperatureNoise(vm::vec2(x, z));
 }
-float UberNoise::wetnessNoise(float x, float z)
+float UberNoise::grassMaterialNoise(float x, float z)
 {
-  return GLSL::wetnessNoise(vm::vec2(x, z));
+  return GLSL::grassMaterialNoise(vm::vec2(x, z));
+}
+float UberNoise::grassObjectNoise(float x, float z)
+{
+  return GLSL::grassObjectNoise(vm::vec2(x, z));
+}
+float UberNoise::treeObjectNoise(float x, float z)
+{
+  return GLSL::treeObjectNoise(vm::vec2(x, z));
 }
 float UberNoise::stiffnessNoise(float x, float z)
 {

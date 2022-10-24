@@ -1782,6 +1782,66 @@ public:
 
 //
 
+void pushTreeInstances(const float &ax, const float &az, const float &rot, VegetationGeometry &treeGeometry, const int &instanceId, HeightfieldSampler &heightfieldSampler)
+{
+    auto iterPair = treeGeometry.instances.emplace(std::make_pair(instanceId, SplatInstance{}));
+    auto iter = iterPair.first;
+    const bool &inserted = iterPair.second;
+    SplatInstance &instance = iter->second;
+    if (inserted)
+    {
+        instance.instanceId = instanceId;
+    }
+
+    const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
+
+    instance.ps.push_back(ax);
+    instance.ps.push_back(height);
+    instance.ps.push_back(az);
+
+    Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
+    instance.qs.push_back(q.x);
+    instance.qs.push_back(q.y);
+    instance.qs.push_back(q.z);
+    instance.qs.push_back(q.w);
+}
+
+void pushBushInstances(const float &ax, const float &az, const float &rot, VegetationGeometry &bushGeometry, const int &instanceId, HeightfieldSampler &heightfieldSampler, std::mt19937 &rng, std::uniform_real_distribution<float> &dis)
+{
+    for (int i = 0; i < NUM_BUSHES_AROUND_TREE; i++)
+    {
+        const float offsetX = dis(rng) * 2.f - 1.f;
+        const float offsetZ = dis(rng) * 2.f - 1.f;
+
+        const float signX = signbit(offsetX) ? -1.f : 1.f;
+        const float signZ = signbit(offsetZ) ? -1.f : 1.f;
+
+        const float newX = (BUSH_AROUND_TREE_BASE_OFFSET * signX) + ax + offsetX * BUSH_AROUND_TREE_OFFSET_RANGE;
+        const float newZ = (BUSH_AROUND_TREE_BASE_OFFSET * signZ) + az + offsetZ * BUSH_AROUND_TREE_OFFSET_RANGE;
+
+        auto iterPair = bushGeometry.instances.emplace(std::make_pair(instanceId, SplatInstance{}));
+        auto iter = iterPair.first;
+        const bool &inserted = iterPair.second;
+        SplatInstance &instance = iter->second;
+        if (inserted)
+        {
+            instance.instanceId = instanceId;
+        }
+
+        const float height = heightfieldSampler.getHeight(newX, newZ) - (float)WORLD_BASE_HEIGHT;
+
+        instance.ps.push_back(newX);
+        instance.ps.push_back(height);
+        instance.ps.push_back(newZ);
+
+        Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
+        instance.qs.push_back(q.x);
+        instance.qs.push_back(q.y);
+        instance.qs.push_back(q.z);
+        instance.qs.push_back(q.w);
+    }
+}
+
 void generateVegetationInstances(
     const vm::ivec2 &worldPositionXZ,
     const int lod,
@@ -1789,13 +1849,12 @@ void generateVegetationInstances(
     const int numVegetationInstances,
     const std::vector<Heightfield> &heightfields,
     Noises &noises,
-    VegetationGeometry &vegetationGeometry)
+    VegetationGeometry &treeGeometry,
+    VegetationGeometry &bushGeometry)
 {
-    constexpr int maxNumVeggiesPerChunk = 8;
-    constexpr float maxVeggieRate = 0.35;
-    // const float veggieRate = maxVeggieRate / (float)(lod * lod);
-    const float veggieRate = maxVeggieRate / (float)lod;
-    // const float veggieRate = maxVeggieRate;
+    // const float veggieRate = MAX_VEGGIE_RATE / (float)(lod * lod);
+    const float veggieRate = VEGGIE_THRESHOLD / (float)lod;
+    // const float veggieRate = MAX_VEGGIE_RATE;
 
     int baseMinX = worldPositionXZ.x;
     int baseMinZ = worldPositionXZ.y;
@@ -1816,14 +1875,13 @@ void generateVegetationInstances(
             int chunkMinX = baseMinX + dx * chunkSize;
             int chunkMinZ = baseMinZ + dz * chunkSize;
 
-            float chunkSeed = noises.vegetationSeedNoise.in2D(chunkMinX, chunkMinZ);
+            float chunkSeed = noises.uberNoise.treeObjectNoise(chunkMinX, chunkMinZ);
             unsigned int seedInt = *(unsigned int *)&chunkSeed;
             std::mt19937 rng(seedInt);
             std::uniform_real_distribution<float> dis(0.f, 1.f);
 
-            for (int i = 0; i < maxNumVeggiesPerChunk; i++)
+            for (int i = 0; i < MAX_NUM_VEGGIES_PER_CHUNK; i++)
             {
-                float noiseValue = dis(rng);
                 float chunkOffsetX = dis(rng) * (float)chunkSize;
                 float chunkOffsetZ = dis(rng) * (float)chunkSize;
                 float rot = dis(rng) * 2.0f * M_PI;
@@ -1831,35 +1889,18 @@ void generateVegetationInstances(
 
                 float ax = (float)chunkMinX + chunkOffsetX;
                 float az = (float)chunkMinZ + chunkOffsetZ;
+
                 const vm::vec3 &normal = heightfieldSampler.getNormal(ax, az);
 
                 float slope = std::max(0.f, 1.f - normal.y);
 
                 if (slope < 0.1f)
                 {
-                    if (noiseValue < veggieRate)
+                    float noiseValue = noises.uberNoise.treeObjectNoise(ax, az);
+                    if (noiseValue > VEGGIE_THRESHOLD)
                     {
-                        auto iterPair = vegetationGeometry.instances.emplace(
-                            std::make_pair(instanceId, SplatInstance{}));
-                        auto iter = iterPair.first;
-                        const bool &inserted = iterPair.second;
-                        SplatInstance &instance = iter->second;
-                        if (inserted)
-                        {
-                            instance.instanceId = instanceId;
-                        }
-
-                        const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
-
-                        instance.ps.push_back(ax);
-                        instance.ps.push_back(height);
-                        instance.ps.push_back(az);
-
-                        Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
-                        instance.qs.push_back(q.x);
-                        instance.qs.push_back(q.y);
-                        instance.qs.push_back(q.z);
-                        instance.qs.push_back(q.w);
+                        pushTreeInstances(ax, az, rot, treeGeometry, instanceId, heightfieldSampler);
+                        pushBushInstances(ax, az, rot, bushGeometry, instanceId, heightfieldSampler, rng, dis);
                     }
                 }
             }
@@ -1878,11 +1919,9 @@ void generateGrassInstances(
     Noises &noises,
     GrassGeometry &grassGeometry)
 {
-    constexpr int maxNumGrassesPerChunk = 2048;
-    constexpr float grassRate = 0.5;
-    // const float grassRate = maxGrassRate / (float)(lod * lod);
+    // const float GRASS_THRESHOLD = maxGrassRate / (float)(lod * lod);
     const float grassThrowRate = 1.f / (float)lod;
-    // const float grassRate = maxGrassRate;
+    // const float GRASS_THRESHOLD = maxGrassRate;
 
     int baseMinX = worldPositionXZ.x;
     int baseMinZ = worldPositionXZ.y;
@@ -1903,52 +1942,56 @@ void generateGrassInstances(
             int chunkMinX = baseMinX + dx * chunkSize;
             int chunkMinZ = baseMinZ + dz * chunkSize;
 
-            float chunkSeed = noises.grassSeedNoise.in2D(chunkMinX, chunkMinZ);
+            float chunkSeed = noises.uberNoise.grassObjectNoise(chunkMinX, chunkMinZ);
             unsigned int seedInt = *(unsigned int *)&chunkSeed;
             std::mt19937 rng(seedInt);
             std::uniform_real_distribution<float> dis(0.f, 1.f);
 
-            for (int i = 0; i < maxNumGrassesPerChunk; i++)
+            for (int i = 0; i < MAX_NUM_GRASSES_PER_CHUNK; i++)
             {
-                float chunkOffsetX = dis(rng) * (float)chunkSize;
-                float chunkOffsetZ = dis(rng) * (float)chunkSize;
-                float rot = dis(rng) * 2.0f * M_PI;
-                int instanceId = (int)std::round(dis(rng) * (float)(numGrassInstances - 1));
                 float throwNoise = dis(rng);
-
-                float ax = (float)chunkMinX + chunkOffsetX;
-                float az = (float)chunkMinZ + chunkOffsetZ;
-                float noiseValue = noises.grassNoise.in2D(ax, az);
-
-                const vm::vec3 &normal = heightfieldSampler.getNormal(ax, az);
-
-                float slope = std::max(0.f, 1.f - normal.y);
-
-                if (slope < 0.1f)
+                if (throwNoise <= grassThrowRate)
                 {
-                    if (noiseValue < grassRate && throwNoise <= grassThrowRate)
+
+                    float chunkOffsetX = dis(rng) * (float)chunkSize;
+                    float chunkOffsetZ = dis(rng) * (float)chunkSize;
+                    float rot = dis(rng) * 2.0f * M_PI;
+                    int instanceId = (int)std::round(dis(rng) * (float)(numGrassInstances - 1));
+
+                    float ax = (float)chunkMinX + chunkOffsetX;
+                    float az = (float)chunkMinZ + chunkOffsetZ;
+
+                    const vm::vec3 &normal = heightfieldSampler.getNormal(ax, az);
+
+                    float slope = std::max(0.f, 1.f - normal.y);
+
+                    if (slope < 0.1f)
                     {
-                        auto iterPair = grassGeometry.instances.emplace(
-                            std::make_pair(instanceId, SplatInstance{}));
-                        auto iter = iterPair.first;
-                        const bool &inserted = iterPair.second;
-                        SplatInstance &instance = iter->second;
-                        if (inserted)
+                        float noiseValue = noises.uberNoise.grassObjectNoise(ax, az);
+                        if (noiseValue > GRASS_THRESHOLD)
                         {
-                            instance.instanceId = instanceId;
+                            auto iterPair = grassGeometry.instances.emplace(
+                                std::make_pair(instanceId, SplatInstance{}));
+                            auto iter = iterPair.first;
+                            const bool &inserted = iterPair.second;
+                            SplatInstance &instance = iter->second;
+                            if (inserted)
+                            {
+                                instance.instanceId = instanceId;
+                            }
+
+                            const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
+
+                            instance.ps.push_back(ax);
+                            instance.ps.push_back(height);
+                            instance.ps.push_back(az);
+
+                            Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
+                            instance.qs.push_back(q.x);
+                            instance.qs.push_back(q.y);
+                            instance.qs.push_back(q.z);
+                            instance.qs.push_back(q.w);
                         }
-
-                        const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
-
-                        instance.ps.push_back(ax);
-                        instance.ps.push_back(height);
-                        instance.ps.push_back(az);
-
-                        Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
-                        instance.qs.push_back(q.x);
-                        instance.qs.push_back(q.y);
-                        instance.qs.push_back(q.z);
-                        instance.qs.push_back(q.w);
                     }
                 }
             }
@@ -2238,7 +2281,8 @@ ChunkResult *PGInstance::createChunkMesh(
 
     // vegetation
     if (generateFlags & GF_VEGETATION) {
-        VegetationGeometry vegetationGeometry;
+        VegetationGeometry treeGeometry;
+        VegetationGeometry bushGeometry;
 
         generateVegetationInstances(
             worldPosition,
@@ -2247,11 +2291,15 @@ ChunkResult *PGInstance::createChunkMesh(
             numVegetationInstances,
             heightfields,
             noises,
-            vegetationGeometry
+            treeGeometry,
+            bushGeometry
         );
-        result->vegetationInstancesBuffer = vegetationGeometry.getBuffer();
+
+        result->treeInstancesBuffer = treeGeometry.getBuffer();
+        result->bushInstancesBuffer = bushGeometry.getBuffer();
     } else {
-        result->vegetationInstancesBuffer = nullptr;
+        result->treeInstancesBuffer = nullptr;
+        result->bushInstancesBuffer = nullptr;
     }
 
     // grass
@@ -3682,16 +3730,17 @@ void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::vector
         {
         // TODO : Define a different set of material rules for each biome, for now we're using these rules as default
         default:
-            const float wetness = noises.uberNoise.wetnessNoise(worldPosition.x, worldPosition.y);
+            const float wetness = noises.uberNoise.grassMaterialNoise(worldPosition.x, worldPosition.y);
             const float stiffness = noises.uberNoise.stiffnessNoise(worldPosition.x, worldPosition.y);
 
-            float slope = std::max(0.f, 1.f - localHeightfield.normal.y);
-            float blend = vm::clamp(slope, 0.f, 1.f);
+            const float slope = std::max(0.f, 1.f - localHeightfield.normal.y);
+            const float mountainAndGroundBlend = vm::clamp(slope * 2.f, 0.f, 1.f);
 
-            const float grassWeight = (1.f - wetness) * bw * (1.f - blend);
-            const float dirtWeight = (wetness) * bw * (1.f - blend);
-            const float rockWeight = (1.f - stiffness) * blend * bw;
-            const float stoneWeight = (stiffness) * blend * bw;
+            const float grassWeight = (wetness) * bw * (1.f - mountainAndGroundBlend);
+            const float dirtWeight = (1.f - wetness) * bw * (1.f - mountainAndGroundBlend);
+
+            const float stoneWeight = (stiffness) * mountainAndGroundBlend * bw;
+            const float rockWeight = (1.f - stiffness) * mountainAndGroundBlend * bw;
 
 
             MaterialWeightAccumulator &grassWeightAcc = materialWeightAccumulators[GRASS];

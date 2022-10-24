@@ -176,12 +176,19 @@ namespace vm
     float lengthSq(const ivec3 &v);
     float lengthSq(const vec3 &v);
 
-    float distance(const vm::vec2 &v, const vm::vec2 &o);
-    float distance(const vm::vec2 &v, const vm::ivec2 &o);
-    float distance(const vm::ivec2 &v, const vm::ivec2 &o);
+    float distance(const vec2 &v, const vec2 &o);
+    float distance(const vec2 &v, const ivec2 &o);
+    float distance(const ivec2 &v, const ivec2 &o);
 
-    float dot(const vm::vec2 &v, const vm::vec2 &o);
-    float dot(const vm::vec3 &v, const vm::vec3 &o);
+    float dot(const vec2 &v, const vec2 &o);
+    float dot(const vec3 &v, const vec3 &o);
+
+    vec2 sin(const vec2 &v);
+    vec3 sin(const vec3 &v);
+    vec4 sin(const vec4 &v);
+    vec2 sin(const ivec2 &v);
+    vec3 sin(const ivec3 &v);
+    vec4 sin(const ivec4 &v);
 
     vec2 mod(const vec2 v, const float m);
     vec3 mod(const vec3 v, const float m);

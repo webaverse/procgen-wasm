@@ -10,10 +10,10 @@ const float MAX_TERRAIN_HEIGHT = float(MAX_WORLD_HEIGHT);
 const float MIN_TERRAIN_HEIGHT = float(MIN_WORLD_HEIGHT);
 const float TERRAIN_WATER_HEIGHT = float(WATER_BASE_HEIGHT);
 const float WATER_SURROUNDING_HEIGHT = float(WORLD_BASE_HEIGHT / 4);
-const float TERRAIN_WATER_DEPTH = float(WATER_BASE_HEIGHT * 4);
+const float TERRAIN_WATER_DEPTH = float(WATER_BASE_HEIGHT * 8);
 // ? making sure the terrain surface is above water before water depth subtraction
 const float TERRAIN_BASE_HEIGHT = float(WATER_SURROUNDING_HEIGHT + WATER_BASE_HEIGHT); 
-const float TERRAIN_FLATTENER_DEPTH = float(WATER_BASE_HEIGHT);
+const float TERRAIN_FLATTENER_DEPTH = float(WATER_BASE_HEIGHT * 2);
 const float TERRAIN_OCEAN_THRESHOLD = OCEAN_THRESHOLD;
 
 // ----------------------------------
@@ -44,36 +44,64 @@ float softClamp(float x, float a, float b)
 // noise functions
 
 // ? Simplex noise implementation from : https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83
-vec3 permute(vec3 x) { return mod(((x * 34.f) + 1.f) * x, 289.f); }
-#define ffSNOISE 1.79284291400159f
-#define fdSNOISE 0.85373472095314f
+
+// (sqrt(3)-1)/2, (3-sqrt(3))/6
 const vec4 C = vec4(0.211324865405187f, 0.366025403784439f, -0.577350269189626f, 0.024390243902439f);
-float snoise(vec2 v)
+
+// ! The simplex noise function below is slower than the one being used (Based on profiling)
+
+// #define ffSNOISE 1.79284291400159f
+// #define fdSNOISE 0.85373472095314f
+
+// vec3 permute(vec3 x) { return mod(((x * 34.f) + 1.f) * x, 289.f); }
+
+// float snoise(vec2 v)
+// {
+//     vec2 i = floor(v + dot(v, vec2(C.y, C.y)));
+//     vec2 x0 = v - i + dot(i, vec2(C.x, C.x));
+//     vec2 i1 = (x0.x > x0.y) ? vec2(1.f, 0.f) : vec2(0.f, 1.f);
+//     vec4 x12 = vec4(x0.x, x0.y, x0.x, x0.y) + vec4(C.x, C.x, C.z, C.z) - vec4(i1.x, i1.y, 0.f, 0.f);
+//     i = mod(i, 289.f);
+//     vec3 p = permute(permute(vec3(0.f, i1.y, 1.f) + i.y) + i.x + vec3(0.f, i1.x, 1.f));
+//     vec3 m = max(vec3(0.5f, 0.5f, 0.5f) -
+//                      vec3(dot(x0, x0), dot(vec2(x12.x, x12.y), vec2(x12.x, x12.y)), dot(vec2(x12.z, x12.w), vec2(x12.z, x12.w))),
+//                  0.f);
+//     m = m * m;
+//     m = m * m;
+//     vec3 x = fract(p * vec3(C.w, C.w, C.w)) * 2.f - 1.f;
+//     p = abs(x) - 0.5f;
+//     vec3 ox = floor(x + 0.5f);
+//     vec3 a0 = x - ox;
+//     m *= vec3(ffSNOISE, ffSNOISE, ffSNOISE) - (a0 * a0 + p * p) * fdSNOISE;
+//     i1 = vec2(a0.y, a0.z) * vec2(x12.x, x12.z) + vec2(p.y, p.z) * vec2(x12.y, x12.w);
+//     p = vec3(a0.x * x0.x + p.x * x0.y, i1.x, i1.y);
+//     return 135.f * dot(m, p);
+// }
+
+vec2 hash( vec2 p ) // replace this by something better
 {
-    vec2 i = floor(v + dot(v, vec2(C.y, C.y)));
-    vec2 x0 = v - i + dot(i, vec2(C.x, C.x));
-    vec2 i1 = (x0.x > x0.y) ? vec2(1.f, 0.f) : vec2(0.f, 1.f);
-    vec4 x12 = vec4(x0.x, x0.y, x0.x, x0.y) + vec4(C.x, C.x, C.z, C.z) - vec4(i1.x, i1.y, 0.f, 0.f);
-    i = mod(i, 289.f);
-    vec3 p = permute(permute(vec3(0.f, i1.y, 1.f) + i.y) + i.x + vec3(0.f, i1.x, 1.f));
-    vec3 m = max(vec3(0.5f, 0.5f, 0.5f) -
-                     vec3(dot(x0, x0), dot(vec2(x12.x, x12.y), vec2(x12.x, x12.y)), dot(vec2(x12.z, x12.w), vec2(x12.z, x12.w))),
-                 0.f);
-    m = m * m;
-    m = m * m;
-    vec3 x = fract(p * vec3(C.w, C.w, C.w)) * 2.f - 1.f;
-    p = abs(x) - 0.5f;
-    vec3 ox = floor(x + 0.5f);
-    vec3 a0 = x - ox;
-    m *= vec3(ffSNOISE, ffSNOISE, ffSNOISE) - (a0 * a0 + p * p) * fdSNOISE;
-    i1 = vec2(a0.y, a0.z) * vec2(x12.x, x12.z) + vec2(p.y, p.z) * vec2(x12.y, x12.w);
-    p = vec3(a0.x * x0.x + p.x * x0.y, i1.x, i1.y);
-    return 135.f * dot(m, p);
+	p = vec2( dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)) );
+	return vec2(-1.f, -1.f) + fract(sin(p)*43758.5453123f) * 2.f;
 }
+
+float snoise(vec2 p)
+{
+	vec2  i = floor(p + (p.x+p.y)*C.y);
+    vec2  a = p - i + (i.x+i.y)*C.x;
+    float m = step(a.y,a.x); 
+    vec2  o = vec2(m,1.f - m);
+    vec2  b = a - o + C.x;
+	vec2  c = a - 1.0 + 2.0*C.x;
+    vec3  h = max(vec3(-dot(a,a), -dot(b,b), -dot(c,c)) + 0.5f, 0.f);
+	vec3  n = h*h*h*h*vec3( dot(a,hash(i+0.f)), dot(b,hash(i+o)), dot(c,hash(i+1.f)));
+    return clamp(dot(n, vec3(70.f, 70.f, 70.f)), 0.f, 1.f);
+}
+
 float simplexNoise(vec2 position)
 {
+    const float frequency = 0.74f;
     const float SCALE = 1.f / NOISE_SCALE;
-    vec2 p = position * SCALE;
+    vec2 p = position * SCALE * frequency;
     return snoise(p);
 }
 vec2 rand2(vec2 p)
@@ -108,10 +136,10 @@ float voronoiNoise(vec2 position)
 
 float FBM_8(vec2 position)
 {
-    int octaves = 8;
-    float frequency = 0.6f;
-    float lacunarity = 3.f;
-    float persistence = 0.3f;
+    const int octaves = 8;
+    const float frequency = 0.6f;
+    const float lacunarity = 3.f;
+    const float persistence = 0.3f;
 
     const float SCALE = 1.f / NOISE_SCALE;
 
@@ -133,10 +161,10 @@ float FBM_8(vec2 position)
 
 float FBM_4(vec2 position)
 {
-    int octaves = 4;
-    float frequency = 0.8f;
-    float lacunarity = 3.f;
-    float persistence = 0.3f;
+    const int octaves = 4;
+    const float frequency = 0.8f;
+    const float lacunarity = 3.f;
+    const float persistence = 0.3f;
 
     const float SCALE = 1.f / NOISE_SCALE;
 
@@ -158,10 +186,10 @@ float FBM_4(vec2 position)
 
 float FBM_2(vec2 position)
 {
-    int octaves = 2;
-    float frequency = 0.74f;
-    float lacunarity = 3.f;
-    float persistence = 0.5f;
+    const int octaves = 2;
+    const float frequency = 0.74f;
+    const float lacunarity = 3.f;
+    const float persistence = 0.5f;
     
     const float SCALE = 1.f / NOISE_SCALE;
 
@@ -184,6 +212,14 @@ float FBM_2(vec2 position)
 // custom noise functions
 
 // ? Domain Warping : https://www.shadertoy.com/view/4s23zz
+float warpNoise1Layer_1(vec2 position)
+{
+    vec2 q = vec2(simplexNoise(position + vec2(0.0f, 0.0f)), 
+                  simplexNoise(position + vec2(7.4f, 30.2f)));
+
+    return simplexNoise(position + q * NOISE_SCALE * 2.f);
+}
+
 float warpNoise1Layer_2(vec2 position)
 {
     vec2 q = vec2(FBM_2(position + vec2(0.0f, 0.0f)), 
@@ -231,7 +267,7 @@ float flattenerNoise(vec2 position)
 }
 float waterNoise(vec2 position)
 {
-    float noise = clamp(simplexNoise(position / 10.f), 0.f, 1.f);
+    float noise = clamp(simplexNoise(position / 8.f) * 2.f, 0.f, 1.f);
     return noise;
 }
 
@@ -261,14 +297,32 @@ float waterPitNoise(vec2 position){
 
 float wetNoise(vec2 position)
 {
-    float noise = warpNoise1Layer_4(position);
-    return clamp(noise + 0.7f, 0.f, 1.f);
+    return clamp(simplexNoise(position / 2.f) * 2.f, 0.f, 1.f);
+}
+
+float grassObjNoise(vec2 position)
+{
+    float wetness = wetNoise(position);
+    return clamp(simplexNoise(position * 40.f) * wetness, 0.f, 1.f);
+}
+
+float treeObjNoise(vec2 position)
+{
+    float wetness = wetNoise(position);
+    return clamp(simplexNoise(position * 20.f) * wetness, 0.f, 1.f);
+}
+
+float grassMatNoise(vec2 position)
+{
+    float wetness = wetNoise(position) + 0.25f;
+    float noise = warpNoise1Layer_4(position) * wetness;
+    return clamp(noise * 4.f - 1.5f, 0.f, 1.f);
 }
 
 float stiffNoise(vec2 position)
 {
-    float noise = simplexNoise(position * 4.f);
-    return clamp(noise + 0.7f, 0.f, 1.f);
+    float noise = warpNoise1Layer_2(position * 2.f);
+    return clamp(noise + 0.1f, 0.f, 1.f);
 }
 
 float humNoise(vec2 position)
@@ -279,8 +333,7 @@ float humNoise(vec2 position)
 
 float heatNoise(vec2 position)
 {
-    float noise = simplexNoise(position/30.f);
-    return clamp(noise, 0.f, 1.f);
+    return simplexNoise(position/30.f);
 }
 
 // terrain height noises
@@ -401,9 +454,20 @@ float GLSL::humidityNoise(const vec2 &position)
     return humNoise(position);
 }
 
-float GLSL::wetnessNoise(const vec2 &position)
+float GLSL::grassMaterialNoise(const vec2 &position)
 {
-    return wetNoise(position);
+    return grassMatNoise(position);
+    // return wetNoise(position);
+}
+
+float GLSL::grassObjectNoise(const vec2 &position)
+{
+    return grassObjNoise(position);
+}
+
+float GLSL::treeObjectNoise(const vec2 &position)
+{
+    return treeObjNoise(position);
 }
 
 float GLSL::stiffnessNoise(const vec2 &position)
@@ -435,3 +499,9 @@ float GLSL::oceanNoise(const vec2 &position)
 {
     return getWaterVisibility(position);
 }
+
+// float GLSL::snoise(vec2 position)
+// {
+//     const vec2 p = position * NOISE_SCALE / 4.f;
+//     return glslNoise.in2DRaw(p.x, p.y);
+// }

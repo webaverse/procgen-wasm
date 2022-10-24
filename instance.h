@@ -29,7 +29,8 @@ class ChunkResult {
 public:
     uint8_t *terrainMeshBuffer;
     uint8_t *waterMeshBuffer;
-    uint8_t *vegetationInstancesBuffer;
+    uint8_t *treeInstancesBuffer;
+    uint8_t *bushInstancesBuffer;
     uint8_t *grassInstancesBuffer;
     uint8_t *poiInstancesBuffer;
     uint8_t *heightfieldsBuffer;
@@ -37,7 +38,8 @@ public:
     void free() {
         std::free(terrainMeshBuffer);
         std::free(waterMeshBuffer);
-        std::free(vegetationInstancesBuffer);
+        std::free(treeInstancesBuffer);
+        std::free(bushInstancesBuffer);
         std::free(grassInstancesBuffer);
         std::free(poiInstancesBuffer);
         std::free(heightfieldsBuffer);
