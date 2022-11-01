@@ -337,6 +337,9 @@ vm::vec4 vm::floor(const vm::vec4 v){
     return vm::vec4{std::floor(v.x), std::floor(v.y), std::floor(v.z), std::floor(v.w)};
 };
 
+float vm::fract(const float v){
+    return v - std::floor(v);
+};
 vm::vec2 vm::fract(const vm::vec2 v){
     return vm::vec2{v.x - std::floor(v.x), v.y - std::floor(v.y)};
 };

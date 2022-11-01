@@ -26,6 +26,7 @@ typedef std::vector<vm::ivec4> BiomesBuffer;
 typedef std::vector<vm::vec4> BiomesWeightBuffer;
 typedef std::vector<vm::ivec4> MaterialsBuffer;
 typedef std::vector<vm::vec4> MaterialsWeightBuffer;
+typedef std::vector<vm::vec4> MaterialsSplatBuffer;
 typedef std::vector<std::array<UV, 2>> BiomesUvsBuffer;
 typedef std::vector<uint32_t> IndexBuffer;
 typedef std::vector<int> BiomeBuffer;
@@ -95,14 +96,44 @@ public:
 
     uint8_t *getBuffer() const;
 };
-class GrassGeometry : public SplatInstanceGeometry {
-    // nothing
-};
+
 class VegetationGeometry : public SplatInstanceGeometry {
     // nothing
 };
 
+class RockGeometry : public SplatInstanceGeometry {
+    // nothing
+};
 //
+
+class MaterialAwareSplatInstance {
+public:
+    int instanceId;
+    std::vector<float> ps;
+    std::vector<float> qs;
+    // terrain materials
+    MaterialsSplatBuffer materials; 
+    MaterialsSplatBuffer materialsWeights; 
+};
+
+class GrassSplatInstance : public MaterialAwareSplatInstance {
+public:
+    MaterialsSplatBuffer grassProps; 
+};
+
+class MaterialAwareSplatInstanceGeometry {
+public:
+    std::map<int, MaterialAwareSplatInstance> instances;
+
+    uint8_t *getBuffer() const;
+};
+
+class GrassGeometry {
+public:
+    std::map<int, GrassSplatInstance> instances;
+
+    uint8_t *getBuffer() const;
+};
 
 class PoiGeometry {
 public:

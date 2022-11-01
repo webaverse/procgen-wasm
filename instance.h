@@ -31,6 +31,8 @@ public:
     uint8_t *waterMeshBuffer;
     uint8_t *treeInstancesBuffer;
     uint8_t *bushInstancesBuffer;
+    uint8_t *rockInstancesBuffer;
+    uint8_t *stoneInstancesBuffer;
     uint8_t *grassInstancesBuffer;
     uint8_t *poiInstancesBuffer;
     uint8_t *heightfieldsBuffer;
@@ -40,6 +42,8 @@ public:
         std::free(waterMeshBuffer);
         std::free(treeInstancesBuffer);
         std::free(bushInstancesBuffer);
+        std::free(rockInstancesBuffer);
+        std::free(stoneInstancesBuffer);
         std::free(grassInstancesBuffer);
         std::free(poiInstancesBuffer);
         std::free(heightfieldsBuffer);
@@ -125,6 +129,7 @@ public:
     void applyCenterMaterials(const int &bx, const int &bz, const int &lod, std::vector<Heightfield> &heightfields);
     void applySeamMaterials(const int &bx, const int &bz, const int &lod, const std::array<int, 2> &lodArray, const int &rowSize, std::vector<Heightfield> &heightfieldSeams);
     void applyMaterials(const int &x, const int &z, const int &lod, const std::array<int, 2> &lodArray, std::vector<Heightfield> &heightfields);
+    // void getTerrainMaterialBuffer(std::vector<Heightfield> &heightfields);
     void getComputedMaterials(Heightfield &localHeightfield, std::vector<MaterialWeightAccumulator> &materialsCounts, float &totalMaterialFactors, const vm::vec2 &worldPosition);
 
     //
@@ -174,6 +179,7 @@ public:
         const std::array<int, 2> &lodArray,
         int generateFlags,
         int numVegetationInstances,
+        int numRockInstances,
         int numGrassInstances,
         int numPoiInstances
     );
@@ -217,6 +223,7 @@ public:
         const std::array<int, 2> &lodArray,
         int generateFlags,
         int numVegetationInstances,
+        int numRockInstances,
         int numGrassInstances,
         int numPoiInstances
     );

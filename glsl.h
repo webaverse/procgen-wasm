@@ -25,7 +25,10 @@ namespace GLSL
     float desertNoise(const vec2 &position);
     float mountainNoise(const vec2 &position);
     float iceMountainNoise(const vec2 &position);
-    float oceanNoise(const vec2 &position);
+    float hashNoise(const vec2 &position);
+    float simplexNoise(const vec2 &position);
+    bool oceanNoise(const vec2 &position);
+    bool stoneNoise(const vec2 &position);
 };
 
 #endif // GLSL_H

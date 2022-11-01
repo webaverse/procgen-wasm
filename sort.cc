@@ -65,9 +65,9 @@ void Task::cancel() {
 
 TaskQueue::TaskQueue() {}
 TaskQueue::~TaskQueue() {
-  EM_ASM({
-    console.log('task queue destructor');
-  });
+  // EM_ASM({
+  //   console.log('task queue destructor');
+  // });
   abort();
 }
 

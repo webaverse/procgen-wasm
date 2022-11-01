@@ -71,7 +71,19 @@ float UberNoise::iceMountainNoise(float x, float z)
 {
   return GLSL::iceMountainNoise(vm::vec2(x, z));
 }
-float UberNoise::oceanNoise(float x, float z)
+float UberNoise::hashNoise(float x, float z)
+{
+  return GLSL::hashNoise(vm::vec2(x, z));
+}
+float UberNoise::simplexNoise(float x, float z)
+{
+  return GLSL::simplexNoise(vm::vec2(x, z));
+}
+bool UberNoise::oceanNoise(float x, float z)
 {
   return GLSL::oceanNoise(vm::vec2(x, z));
+}
+bool UberNoise::stoneNoise(float x, float z)
+{
+  return GLSL::stoneNoise(vm::vec2(x, z));
 }

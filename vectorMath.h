@@ -91,25 +91,31 @@ namespace vm
         int z;
         int w;
     };
+    struct uvec2
+    {
+        uint8_t x;
+        uint8_t y;
+    };
+    struct uvec3
+    {
+        uint8_t x;
+        uint8_t y;
+        uint8_t z;
+    };
+    struct uvec4
+    {
+        uint8_t x;
+        uint8_t y;
+        uint8_t z;
+        uint8_t w;
+    };
     struct ibox3
     {
-        // ibox3()
-        // {
-        //     min = ivec3(0);
-        //     max = ivec3(0);
-        // }
-        // ibox3(const ivec3 &_min, const ivec3 &_max) : min(_min), max(_max) {}
         ivec3 min;
         ivec3 max;
     };
     struct box3
     {
-        // box3()
-        // {
-        //     min = vec3(0);
-        //     max = vec3(0);
-        // }
-        // box3(const vec3 &_min, const vec3 &_max) : min(_min), max(_max) {}
         vec3 min;
         vec3 max;
     };
@@ -209,6 +215,7 @@ namespace vm
     vec3 floor(const vec3 v);
     vec4 floor(const vec4 v);
 
+    float fract(const float v);
     vec2 fract(const vec2 v);
     vec3 fract(const vec3 v);
     vec4 fract(const vec4 v);

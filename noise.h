@@ -39,7 +39,10 @@ public:
   float desertNoise(float x, float z);
   float mountainNoise(float x, float z);
   float iceMountainNoise(float x, float z);
-  float oceanNoise(float x, float z);
+  float hashNoise(float x, float z);
+  float simplexNoise(float x, float z);
+  bool oceanNoise(float x, float z);
+  bool stoneNoise(float x, float z);
 };
 
 #endif

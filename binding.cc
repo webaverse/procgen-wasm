@@ -54,6 +54,7 @@ EMSCRIPTEN_KEEPALIVE void createChunkMeshAsync(
     int *lodArray,
     int generateFlags,
     int numVegetationInstances,
+    int numRockInstances,
     int numGrassInstances,
     int numPoiInstances
 ) {
@@ -69,6 +70,7 @@ EMSCRIPTEN_KEEPALIVE void createChunkMeshAsync(
         lodArray2,
         generateFlags,
         numVegetationInstances,
+        numRockInstances,
         numGrassInstances,
         numPoiInstances
     );
