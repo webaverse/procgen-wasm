@@ -18,6 +18,7 @@
 #include <set>
 // #include "density.h"
 #include <emscripten.h>
+#include "mem.h"
 
 #define M_PI 3.14159265358979323846
 
@@ -85,9 +86,10 @@ public:
             boxMin + Vec{(float)lod, height, (float)lod}
         );
     }
-    uint8_t *getBuffer() const {
+    /*uint8_t *getBuffer() const {
         constexpr size_t size = sizeof(min) + sizeof(lod);
         uint8_t *buffer = (uint8_t *)malloc(size);
+        // memoryManager->allocate(buffer, size);
         int index = 0;
         memcpy(buffer + index, &min, sizeof(min));
         index += sizeof(min);
@@ -97,7 +99,7 @@ public:
         // std::cout << "output node " << min.x << " " << min.y << " : " << lod << std::endl;
 
         return buffer;
-    }
+    }*/
 };
 // class OctreeNode;
 typedef std::shared_ptr<OctreeNode> OctreeNodePtr;

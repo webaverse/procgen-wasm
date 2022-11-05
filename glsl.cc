@@ -15,7 +15,7 @@ const float TERRAIN_WATER_DEPTH = float(WATER_BASE_HEIGHT * 8);
 const float TERRAIN_BASE_HEIGHT = float(WATER_SURROUNDING_HEIGHT + WATER_BASE_HEIGHT); 
 const float TERRAIN_FLATTENER_DEPTH = float(WATER_BASE_HEIGHT * 2);
 const float TERRAIN_OCEAN_THRESHOLD = OCEAN_THRESHOLD;
-const float TERRAIN_STONE_THRESHOLD = STONE_THRESHOLD;
+const float TERRAIN_STONE_THRESHOLD = ROCK_THRESHOLD;
 
 // ----------------------------------
 
@@ -323,8 +323,8 @@ float treeObjNoise(vec2 position)
 float grassMatNoise(vec2 position)
 {
     float wetness = clamp(wetNoise(position) + 0.25f, 0.f, 1.f);
-    float noise = warpNoise1Layer_4(position * 10.f) * wetness;
-    return clamp(noise * 4.f - 0.65f, 0.f, 1.f);
+    float noise = warpNoise1Layer_2(position * 10.f) * wetness;
+    return clamp(noise * 3.f - 0.55f, 0.f, 1.f);
 }
 
 bool getStoneVisibility(vec2 position)
@@ -334,14 +334,14 @@ bool getStoneVisibility(vec2 position)
     }
     const float edge = TERRAIN_STONE_THRESHOLD;
     float dryness = 1.f - wetNoise(position);
-    float stone = clamp(simplex(position * 12.f) * dryness, 0.f, 1.f);
+    float stone = clamp(simplex(position * 6.f) * dryness, 0.f, 1.f);
     bool visibility = bool(step(edge, stone));
     return visibility;
 }
 
 float stiffNoise(vec2 position)
 {
-    return warpNoise1Layer_2(position * 5.f);
+    return warpNoise1Layer_1(position * 5.f);
 }
 
 float humNoise(vec2 position)
@@ -394,12 +394,12 @@ float snowNoise(vec2 position)
     // calculating noises
     float fbm4 = FBM_4(position);
     float fbm8d2 = FBM_8(position / 2.f);
-    float fbm4d4 = FBM_4(position / 4.f);
+    float fbm2d4 = FBM_2(position / 4.f);
 
     float vor = voronoiNoise(position);
 
     // layering noises
-    float snowMountains = clamp(((2.f - (fbm4 + fbm8d2 + fbm4d4)*2.f) + vor) / 4.f, 0.f, 1.f) * iceMountainHeight;
+    float snowMountains = clamp(((2.f - (fbm4 + fbm8d2 + fbm2d4)*2.f) + vor) / 4.f, 0.f, 1.f) * iceMountainHeight;
     return terrainHeightWrapper(position, snowMountains);
 }
 
@@ -433,11 +433,11 @@ float mountainHillsNoise(vec2 position)
 
     float fbm2d4 = FBM_2(position/4.f);
 
-    float fbm2d6 = FBM_4(position/6.f);
+    float fbm2d6 = FBM_2(position/6.f);
     float fbm2d6clamped = clamp(fbm2d6, 0.f, 1.f);
     float fbm2d6clampedm2  = clamp(fbm2d6, 0.f, 0.5f) * 2.f;
 
-    float warp2d4 = warpNoise1Layer_2(position/4.f);
+    float warp2d4 = warpNoise1Layer_1(position/4.f);
 
     // layering noises
 
@@ -483,11 +483,13 @@ float GLSL::grassMaterialNoise(const vec2 &position)
 float GLSL::grassObjectNoise(const vec2 &position)
 {
     return grassObjNoise(position);
+    // return 0.f;
 }
 
 float GLSL::treeObjectNoise(const vec2 &position)
 {
     return treeObjNoise(position);
+    // return 0.f;
 }
 
 float GLSL::stiffnessNoise(const vec2 &position)
@@ -533,6 +535,7 @@ bool GLSL::oceanNoise(const vec2 &position)
 bool GLSL::stoneNoise(const vec2 &position)
 {
     return getStoneVisibility(position);
+    // return false;
 }
 
 // float GLSL::snoise(vec2 position)

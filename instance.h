@@ -16,6 +16,8 @@
 #include "noises.h"
 #include "tracker.h"
 
+#include "mem.h"
+
 //
 
 class Tracker;
@@ -27,28 +29,17 @@ class OctreeContext;
 
 class ChunkResult {
 public:
-    uint8_t *terrainMeshBuffer;
-    uint8_t *waterMeshBuffer;
-    uint8_t *treeInstancesBuffer;
-    uint8_t *bushInstancesBuffer;
-    uint8_t *rockInstancesBuffer;
-    uint8_t *stoneInstancesBuffer;
-    uint8_t *grassInstancesBuffer;
-    uint8_t *poiInstancesBuffer;
-    uint8_t *heightfieldsBuffer;
+    uint8_t *terrainMeshBuffer = nullptr;
+    uint8_t *waterMeshBuffer = nullptr;
+    uint8_t *treeInstancesBuffer = nullptr;
+    uint8_t *bushInstancesBuffer = nullptr;
+    uint8_t *rockInstancesBuffer = nullptr;
+    uint8_t *stoneInstancesBuffer = nullptr;
+    uint8_t *grassInstancesBuffer = nullptr;
+    uint8_t *poiInstancesBuffer = nullptr;
+    uint8_t *heightfieldsBuffer = nullptr;
 
-    void free() {
-        std::free(terrainMeshBuffer);
-        std::free(waterMeshBuffer);
-        std::free(treeInstancesBuffer);
-        std::free(bushInstancesBuffer);
-        std::free(rockInstancesBuffer);
-        std::free(stoneInstancesBuffer);
-        std::free(grassInstancesBuffer);
-        std::free(poiInstancesBuffer);
-        std::free(heightfieldsBuffer);
-        std::free(this);
-    }
+    void free(PGInstance *inst);
 };
 
 class SeedNoise {
@@ -91,6 +82,9 @@ public:
     vm::vec3 cameraPosition;
     Quat cameraQuaternion;
     std::array<float, 16> projectionMatrix;
+
+    // memory tracker
+    MemoryManager *memoryManager;
 
     // 2d caches
 
@@ -173,7 +167,8 @@ public:
     
     //
     
-    ChunkResult *createChunkMesh(
+   void createChunkMesh(
+        ChunkResult *result,
         const vm::ivec2 &worldPosition,
         int lod,
         const std::array<int, 2> &lodArray,

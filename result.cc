@@ -13,7 +13,7 @@ std::shared_ptr<Promise> ResultQueue::createPromise(uint32_t id) {
   std::unique_lock<Mutex> lock(mutex);
 
   // uint32_t id = ++ids;
-  std::shared_ptr<Promise> promise(new Promise(id, this));
+  std::shared_ptr<Promise> promise = std::make_shared<Promise>(id, this);
   livePromises.push_back(promise);
   return promise;
 }

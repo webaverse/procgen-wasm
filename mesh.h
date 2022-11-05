@@ -60,7 +60,7 @@ public:
 
     void pushPointMetadata(const Heightfield &fieldValue);
 
-    uint8_t *getBuffer() const;
+    uint8_t *getBuffer(PGInstance *inst) const;
 };
 
 //
@@ -79,7 +79,7 @@ public:
 
     void pushPointMetadata(const Waterfield &fieldValue);
 
-    uint8_t *getBuffer() const;
+    uint8_t *getBuffer(PGInstance *inst) const;
 };
 
 //
@@ -94,7 +94,7 @@ class SplatInstanceGeometry {
 public:
     std::map<int, SplatInstance> instances;
 
-    uint8_t *getBuffer() const;
+    uint8_t *getBuffer(PGInstance *inst) const;
 };
 
 class VegetationGeometry : public SplatInstanceGeometry {
@@ -125,14 +125,14 @@ class MaterialAwareSplatInstanceGeometry {
 public:
     std::map<int, MaterialAwareSplatInstance> instances;
 
-    uint8_t *getBuffer() const;
+    uint8_t *getBuffer(PGInstance *inst) const;
 };
 
 class GrassGeometry {
 public:
     std::map<int, GrassSplatInstance> instances;
 
-    uint8_t *getBuffer() const;
+    uint8_t *getBuffer(PGInstance *inst) const;
 };
 
 class PoiGeometry {
@@ -140,7 +140,7 @@ public:
     std::vector<float> ps;
     std::vector<int32_t> instances;
 
-    uint8_t *getBuffer() const;
+    uint8_t *getBuffer(PGInstance *inst) const;
 };
 
 //
@@ -159,7 +159,7 @@ public:
     vm::ivec2 leafNodesMax;
     std::vector<int> leafNodesIndex;
 
-    uint8_t *getBuffer() const;
+    uint8_t *getBuffer(PGInstance *inst) const;
 };
 
 //
@@ -168,7 +168,7 @@ class HeightfieldGeometry {
 public:
     std::vector<vm::vec4> heightfieldImage;
 
-    uint8_t *getBuffer() const;
+    uint8_t *getBuffer(PGInstance *inst) const;
 };
 
 #endif // MESH_H

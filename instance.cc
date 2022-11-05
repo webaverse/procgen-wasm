@@ -12,6 +12,30 @@
 
 constexpr int CHUNK_RANGE = 1;
 
+void ChunkResult::free(PGInstance *inst) {
+    std::free(terrainMeshBuffer);
+    std::free(waterMeshBuffer);
+    std::free(treeInstancesBuffer);
+    std::free(bushInstancesBuffer);
+    std::free(rockInstancesBuffer);
+    std::free(stoneInstancesBuffer);
+    std::free(grassInstancesBuffer);
+    std::free(poiInstancesBuffer);
+    std::free(heightfieldsBuffer);
+    // std::free(this);
+
+    inst->memoryManager->free(terrainMeshBuffer);
+    inst->memoryManager->free(waterMeshBuffer);
+    inst->memoryManager->free(treeInstancesBuffer);
+    inst->memoryManager->free(bushInstancesBuffer);
+    inst->memoryManager->free(rockInstancesBuffer);
+    inst->memoryManager->free(stoneInstancesBuffer);
+    inst->memoryManager->free(grassInstancesBuffer);
+    inst->memoryManager->free(poiInstancesBuffer);
+    inst->memoryManager->free(heightfieldsBuffer);
+    // inst->memoryManager->free(this);
+}
+
 // constructor/destructor
 PGInstance::PGInstance(int seed, int chunkSize) :
     seed(seed),
@@ -28,6 +52,7 @@ PGInstance::PGInstance(int seed, int chunkSize) :
     // cachedWaterSdf(this)
     // cachedDamageSdf(this)
 {
+    memoryManager = new MemoryManager();
     // std::cout << "new pg instance " << seed << " " << chunkSize << std::endl;
 }
 PGInstance::~PGInstance() {}
@@ -1959,10 +1984,10 @@ void generateRocksInstances(
                 if (slope < 0.1f)
                 {
                     float noiseValue = noises.uberNoise.stoneNoise(ax, az);
-                    if (noiseValue > STONE_THRESHOLD)
+                    if (noiseValue > ROCK_THRESHOLD)
                     {
                         pushSplatInstances(ax, az, rot, rockGeometry, instanceId, heightfieldSampler);
-                        pushSubSplatInstances(ax, az, rot, stoneGeometry, instanceId, heightfieldSampler, NUM_BUSHES_AROUND_TREE, rng, dis);
+                        pushSubSplatInstances(ax, az, rot, stoneGeometry, instanceId, heightfieldSampler, NUM_STONES_AROUND_ROCKS, rng, dis);
                     }
                 }
             }
@@ -2010,10 +2035,13 @@ void pushGrassInstances(const float &ax, const float &az, const float &rot, Gras
 
     const float heightScale = GRASS_MODEL_BASE_HEIGHT + ((crushedGrassNoise * 2.f) - 1.f) * GRASS_HEIGHT_VARIATION_RANGE;
 
-    const float randomBladeFactor = noises.uberNoise.hashNoise(ax, az);
-    const float colorVariationNoise = vm::clamp(GRASS_COLOR_VARIATION_BASE + (noises.uberNoise.simplexNoise(ax * 50.f, az * 50.f) * 2.f - 1.f) * GRASS_COLOR_VARIATION_RANGE, 0.0f, 1.f);
+    const float colorVariationNoise = vm::clamp(GRASS_COLOR_VARIATION_BASE + (noises.uberNoise.simplexNoise(ax * 10.f, az * 10.f) * 2.f - 1.f) * GRASS_COLOR_VARIATION_RANGE, 0.0f, 1.f + GRASS_COLOR_VARIATION_RANGE);
+    const float randomBladeFactor = noises.uberNoise.hashNoise(ax, az) * 2.f - 1.f;
 
-    const vm::vec4 grassProps = vm::vec4{heightScale, randomBladeFactor, colorVariationNoise, 0};
+    const vm::vec3 grassColorMultiplier = (vm::vec3{colorVariationNoise, colorVariationNoise / 1.1f, colorVariationNoise / 1.2f} +
+                                           vm::vec3{randomBladeFactor / 10.f, randomBladeFactor / 12.f, randomBladeFactor / 14.f});
+
+    const vm::vec4 grassProps = vm::vec4{grassColorMultiplier.x, grassColorMultiplier.y, grassColorMultiplier.z, heightScale};
 
     instance.grassProps.push_back(grassProps);
 }
@@ -2305,7 +2333,8 @@ enum GenerateFlags {
     GF_POI = 1 << 5,
     GF_HEIGHTFIELD = 1 << 6
 };
-ChunkResult *PGInstance::createChunkMesh(
+void PGInstance::createChunkMesh(
+    ChunkResult *result,
     const vm::ivec2 &worldPosition,
     int lod,
     const std::array<int, 2> &lodArray,
@@ -2315,8 +2344,6 @@ ChunkResult *PGInstance::createChunkMesh(
     int numGrassInstances,
     int numPoiInstances
 ) {
-    ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
-
     // heightfield
     std::vector<Heightfield> heightfields;
     if (
@@ -2345,7 +2372,7 @@ ChunkResult *PGInstance::createChunkMesh(
             heightfields,
             terrainGeometry
         );
-        result->terrainMeshBuffer = terrainGeometry.getBuffer();
+        result->terrainMeshBuffer = terrainGeometry.getBuffer(this);
     } else {
         result->terrainMeshBuffer = nullptr;
     }
@@ -2364,7 +2391,7 @@ ChunkResult *PGInstance::createChunkMesh(
             waterfields,
             waterGeometry
         );
-        result->waterMeshBuffer = waterGeometry.getBuffer();
+        result->waterMeshBuffer = waterGeometry.getBuffer(this);
     } else {
         result->waterMeshBuffer = nullptr;
     }
@@ -2385,8 +2412,8 @@ ChunkResult *PGInstance::createChunkMesh(
             bushGeometry
         );
 
-        result->treeInstancesBuffer = treeGeometry.getBuffer();
-        result->bushInstancesBuffer = bushGeometry.getBuffer();
+        result->treeInstancesBuffer = treeGeometry.getBuffer(this);
+        result->bushInstancesBuffer = bushGeometry.getBuffer(this);
     } else {
         result->treeInstancesBuffer = nullptr;
         result->bushInstancesBuffer = nullptr;
@@ -2408,8 +2435,8 @@ ChunkResult *PGInstance::createChunkMesh(
             stoneGeometry
         );
 
-        result->rockInstancesBuffer = rockGeometry.getBuffer();
-        result->stoneInstancesBuffer = stoneGeometry.getBuffer();
+        result->rockInstancesBuffer = rockGeometry.getBuffer(this);
+        result->stoneInstancesBuffer = stoneGeometry.getBuffer(this);
     } else {
         result->rockInstancesBuffer = nullptr;
         result->stoneInstancesBuffer = nullptr;
@@ -2428,7 +2455,7 @@ ChunkResult *PGInstance::createChunkMesh(
             noises,
             grassGeometry
         );
-        result->grassInstancesBuffer = grassGeometry.getBuffer();
+        result->grassInstancesBuffer = grassGeometry.getBuffer(this);
     } else {
         result->grassInstancesBuffer = nullptr;
     }
@@ -2446,7 +2473,7 @@ ChunkResult *PGInstance::createChunkMesh(
             noises,
             poiGeometry
         );
-        result->poiInstancesBuffer = poiGeometry.getBuffer();
+        result->poiInstancesBuffer = poiGeometry.getBuffer(this);
     } else {
         result->poiInstancesBuffer = nullptr;
     }
@@ -2460,12 +2487,10 @@ ChunkResult *PGInstance::createChunkMesh(
             heightfieldGeometry,
             chunkSize
         );
-        result->heightfieldsBuffer = heightfieldGeometry.getBuffer();
+        result->heightfieldsBuffer = heightfieldGeometry.getBuffer(this);
     } else {
         result->heightfieldsBuffer = nullptr;
     }
-
-    return result;
 }
 void PGInstance::createMobSplatAsync(
     uint32_t id,
@@ -2515,7 +2540,7 @@ uint8_t *PGInstance::createBarrierMesh(
         barrierGeometry
     );
 
-    uint8_t *result = barrierGeometry.getBuffer();
+    uint8_t *result = barrierGeometry.getBuffer(this);
     return result;
 }
 void PGInstance::createBarrierMeshAsync(
@@ -2551,9 +2576,13 @@ void PGInstance::createBarrierMeshAsync(
             maxLod
         );
         if (!promise->resolve(result)) {
+            memoryManager->free(result);
             free(result);
         }
-    });
+    }
+    // ,
+    // []() -> void {}
+    );
     ProcGen::taskQueue.pushTask(terrainTask);
 }
 
@@ -2803,6 +2832,9 @@ void PGInstance::createChunkMeshAsync(
 ) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
+    ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
+    // memoryManager->allocate(result, sizeof(ChunkResult), std::string("ChunkResult::Malloc"));
+
     vm::vec3 worldPositionF{
         (float)worldPosition.x,
         (float)(-WORLD_BASE_HEIGHT) + ((float)MIN_WORLD_HEIGHT + (float)MAX_WORLD_HEIGHT) / 2.f,
@@ -2814,6 +2846,7 @@ void PGInstance::createChunkMeshAsync(
     };
     Task *terrainTask = new Task(id, worldPositionF, lod, [
         this,
+        result,
         promise,
         worldPosition,
         lod,
@@ -2823,8 +2856,9 @@ void PGInstance::createChunkMeshAsync(
         numRockInstances,
         numGrassInstances,
         numPoiInstances
-    ]() -> void {
-        ChunkResult *result = createChunkMesh(
+    ]() {
+        createChunkMesh(
+            result,
             worldPosition,
             lod,
             lodArray2,
@@ -2835,9 +2869,20 @@ void PGInstance::createChunkMeshAsync(
             numPoiInstances
         );
         if (!promise->resolve(result)) {
-            result->free();
+            result->free(this);
         }
-    });
+    }
+    ,
+    [this, result]() {
+        if(result) {
+            EM_ASM(
+                console.log('Clean it up babe : ', $0);
+                , result
+            );
+            result->free(this);
+        }
+    }
+    );
     ProcGen::taskQueue.pushTask(terrainTask);
 }
 /* void PGInstance::createLiquidChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
@@ -3661,32 +3706,32 @@ float PGInstance::getComputedBiomeHeight(uint8_t b, const vm::vec2 &worldPositio
 
     switch (b)
     {
-    case (int)BIOME::biDesert: 
-        return noises.uberNoise.desertNoise(ax, az);
-    case (int)BIOME::biDesertHills: 
-        return noises.uberNoise.desertNoise(ax, az);
-    case (int)BIOME::biDesertM: 
-        return noises.uberNoise.desertNoise(ax, az);
-    case (int)BIOME::biColdBeach:
-        return noises.uberNoise.desertNoise(ax, az);
-    case (int)BIOME::biMegaTaigaHills:
-        return noises.uberNoise.mountainNoise(ax, az);
-    case (int)BIOME::biForestHills:
-        return noises.uberNoise.mountainNoise(ax, az);
-    case (int)BIOME::biJungleHills:
-        return noises.uberNoise.mountainNoise(ax, az);
-    case (int)BIOME::biIceMountains:
-        return noises.uberNoise.iceMountainNoise(ax, az);
-    case (int)BIOME::biIcePlainsSpikes:
-        return noises.uberNoise.iceMountainNoise(ax, az);
-    case (int)BIOME::biColdTaigaHills:
-        return noises.uberNoise.iceMountainNoise(ax, az);
-    case (int)BIOME::biColdTaigaM:
-        return noises.uberNoise.iceMountainNoise(ax, az);
-    case (int)BIOME::biColdTaiga:
-        return noises.uberNoise.iceMountainNoise(ax, az);
+    // case (int)BIOME::biDesert: 
+    //     return noises.uberNoise.desertNoise(ax, az);
+    // case (int)BIOME::biDesertHills: 
+    //     return noises.uberNoise.desertNoise(ax, az);
+    // case (int)BIOME::biDesertM: 
+    //     return noises.uberNoise.desertNoise(ax, az);
+    // case (int)BIOME::biColdBeach:
+    //     return noises.uberNoise.desertNoise(ax, az);
+    // case (int)BIOME::biMegaTaigaHills:
+    //     return noises.uberNoise.mountainNoise(ax, az);
+    // case (int)BIOME::biForestHills:
+    //     return noises.uberNoise.mountainNoise(ax, az);
+    // case (int)BIOME::biJungleHills:
+    //     return noises.uberNoise.mountainNoise(ax, az);
+    // case (int)BIOME::biIceMountains:
+    //     return noises.uberNoise.iceMountainNoise(ax, az);
+    // case (int)BIOME::biIcePlainsSpikes:
+    //     return noises.uberNoise.iceMountainNoise(ax, az);
+    // case (int)BIOME::biColdTaigaHills:
+    //     return noises.uberNoise.iceMountainNoise(ax, az);
+    // case (int)BIOME::biColdTaigaM:
+    //     return noises.uberNoise.iceMountainNoise(ax, az);
+    // case (int)BIOME::biColdTaiga:
+    //     return noises.uberNoise.iceMountainNoise(ax, az);
     default:
-        return noises.uberNoise.mountainNoise(ax, az);
+        return noises.uberNoise.iceMountainNoise(ax, az);
     }
 }
 
@@ -3853,7 +3898,7 @@ void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::vector
             const float stiffness = noises.uberNoise.stiffnessNoise(worldPosition.x, worldPosition.y);
 
             const float slope = std::max(0.f, 1.f - localHeightfield.normal.y);
-            const float mountainAndGroundBlend = vm::clamp(slope * 3.f - 1.f, 0.f, 1.f);
+            const float mountainAndGroundBlend = vm::clamp(slope * 3.f, 0.f, 1.f);
 
             const float grassWeight = (wetness) * bw * (1.f - mountainAndGroundBlend);
             const float dirtWeight = (1.f - wetness) * bw * (1.f - mountainAndGroundBlend);
@@ -3904,11 +3949,12 @@ void PGInstance::trackerUpdateAsync(
         maxLod,
         lod1Range
     ]() -> void {
-        const TrackerUpdate &trackerUpdate = tracker->update(position, minLod, maxLod, lod1Range);
+        const TrackerUpdate &trackerUpdate = tracker->update(this, position, minLod, maxLod, lod1Range);
         uint8_t *buffer = trackerUpdate.getBuffer();
         // std::cout << "trakcer update buffer address" << (void *)buffer << std::endl;
         if (!promise->resolve(buffer)) {
-          free(buffer);
+            memoryManager->free(buffer);
+            free(buffer);
         }
     });
     ProcGen::taskQueue.pushTask(trackerUpdateTask);

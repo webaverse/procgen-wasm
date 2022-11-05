@@ -2,6 +2,7 @@
 // #include "DualContouring/tracker.h"
 // #include "DualContouring/main.h"
 #include "procgen.h"
+#include "mem.h"
 
 extern "C" {
 
@@ -230,12 +231,23 @@ EMSCRIPTEN_KEEPALIVE void destroyTracker(PGInstance *inst, Tracker *tracker) {
 
 //
 
-EMSCRIPTEN_KEEPALIVE void *doMalloc(size_t size) {
-    return malloc(size);
+EMSCRIPTEN_KEEPALIVE void *doMalloc(size_t size, PGInstance *inst) {
+    void* ptr = malloc(size);
+    if(inst) {
+        inst->memoryManager->allocate(ptr, size, std::string("doMalloc"));
+    }
+    return ptr;
 }
 
-EMSCRIPTEN_KEEPALIVE void doFree(void *ptr) {
+EMSCRIPTEN_KEEPALIVE void doFree(void *ptr, PGInstance *inst) {
+    if(inst) {
+        inst->memoryManager->free(ptr);
+    }
     free(ptr);
+}
+
+EMSCRIPTEN_KEEPALIVE void getMemoryLeak(PGInstance *inst) {
+    inst->memoryManager->getLeaked();
 }
 
 //
