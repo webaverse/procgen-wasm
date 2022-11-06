@@ -152,7 +152,6 @@ uint8_t *TrackerUpdate::getBuffer() const {
 
   // serialize
   uint8_t *ptr = (uint8_t *)malloc(size);
-  // inst->memoryManager->allocate(ptr, size, std::string("TrackerUpdate::getBuffer"));
   int index = 0;
 
   serializeOctreeNodes(leafNodes, ptr, index);

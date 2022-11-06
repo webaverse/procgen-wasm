@@ -299,7 +299,7 @@ float waterPitNoise(vec2 position){
 
 float wetNoise(vec2 position)
 {
-    return clamp(simplex(position / 2.f) * 2.f + 0.3f, 0.f, 1.f);
+    return clamp(simplex(position / 2.f) * 2.f + 0.75f, 0.f, 1.f);
 }
 
 float grassObjNoise(vec2 position)
@@ -324,7 +324,7 @@ float grassMatNoise(vec2 position)
 {
     float wetness = clamp(wetNoise(position) + 0.25f, 0.f, 1.f);
     float noise = warpNoise1Layer_2(position * 10.f) * wetness;
-    return clamp(noise * 3.f - 0.55f, 0.f, 1.f);
+    return clamp(noise * 2.f - 0.5f, 0.f, 1.f);
 }
 
 bool getStoneVisibility(vec2 position)
@@ -476,20 +476,16 @@ float GLSL::humidityNoise(const vec2 &position)
 float GLSL::grassMaterialNoise(const vec2 &position)
 {
     return grassMatNoise(position);
-    // return getStoneVisibility(position) ? 0.1f : 0.0f;
-    // return wetNoise(position);
 }
 
 float GLSL::grassObjectNoise(const vec2 &position)
 {
     return grassObjNoise(position);
-    // return 0.f;
 }
 
 float GLSL::treeObjectNoise(const vec2 &position)
 {
     return treeObjNoise(position);
-    // return 0.f;
 }
 
 float GLSL::stiffnessNoise(const vec2 &position)
@@ -535,11 +531,4 @@ bool GLSL::oceanNoise(const vec2 &position)
 bool GLSL::stoneNoise(const vec2 &position)
 {
     return getStoneVisibility(position);
-    // return false;
 }
-
-// float GLSL::snoise(vec2 position)
-// {
-//     const vec2 p = position * NOISE_SCALE / 4.f;
-//     return glslNoise.in2DRaw(p.x, p.y);
-// }

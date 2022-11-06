@@ -23,17 +23,6 @@ void ChunkResult::free(PGInstance *inst) {
     std::free(poiInstancesBuffer);
     std::free(heightfieldsBuffer);
     std::free(this);
-
-    // inst->memoryManager->free(terrainMeshBuffer);
-    // inst->memoryManager->free(waterMeshBuffer);
-    // inst->memoryManager->free(treeInstancesBuffer);
-    // inst->memoryManager->free(bushInstancesBuffer);
-    // inst->memoryManager->free(rockInstancesBuffer);
-    // inst->memoryManager->free(stoneInstancesBuffer);
-    // inst->memoryManager->free(grassInstancesBuffer);
-    // inst->memoryManager->free(poiInstancesBuffer);
-    // inst->memoryManager->free(heightfieldsBuffer);
-    // inst->memoryManager->free(this);
 }
 
 // constructor/destructor
@@ -52,7 +41,6 @@ PGInstance::PGInstance(int seed, int chunkSize) :
     // cachedWaterSdf(this)
     // cachedDamageSdf(this)
 {
-    memoryManager = new MemoryManager();
     // std::cout << "new pg instance " << seed << " " << chunkSize << std::endl;
 }
 PGInstance::~PGInstance() {}
@@ -1987,7 +1975,7 @@ void generateRocksInstances(
                     if (noiseValue > ROCK_THRESHOLD)
                     {
                         pushSplatInstances(ax, az, rot, rockGeometry, instanceId, heightfieldSampler);
-                        pushSubSplatInstances(ax, az, rot, stoneGeometry, instanceId, heightfieldSampler, NUM_STONES_AROUND_ROCKS, rng, dis);
+                        pushSubSplatInstances(ax, az, rot, stoneGeometry, instanceId, heightfieldSampler, NUM_STONES_AROUND_ROCK, rng, dis);
                     }
                 }
             }
@@ -2372,7 +2360,7 @@ void PGInstance::createChunkMesh(
             heightfields,
             terrainGeometry
         );
-        result->terrainMeshBuffer = terrainGeometry.getBuffer(this);
+        result->terrainMeshBuffer = terrainGeometry.getBuffer();
     } else {
         result->terrainMeshBuffer = nullptr;
     }
@@ -2391,7 +2379,7 @@ void PGInstance::createChunkMesh(
             waterfields,
             waterGeometry
         );
-        result->waterMeshBuffer = waterGeometry.getBuffer(this);
+        result->waterMeshBuffer = waterGeometry.getBuffer();
     } else {
         result->waterMeshBuffer = nullptr;
     }
@@ -2412,8 +2400,8 @@ void PGInstance::createChunkMesh(
             bushGeometry
         );
 
-        result->treeInstancesBuffer = treeGeometry.getBuffer(this);
-        result->bushInstancesBuffer = bushGeometry.getBuffer(this);
+        result->treeInstancesBuffer = treeGeometry.getBuffer();
+        result->bushInstancesBuffer = bushGeometry.getBuffer();
     } else {
         result->treeInstancesBuffer = nullptr;
         result->bushInstancesBuffer = nullptr;
@@ -2435,8 +2423,8 @@ void PGInstance::createChunkMesh(
             stoneGeometry
         );
 
-        result->rockInstancesBuffer = rockGeometry.getBuffer(this);
-        result->stoneInstancesBuffer = stoneGeometry.getBuffer(this);
+        result->rockInstancesBuffer = rockGeometry.getBuffer();
+        result->stoneInstancesBuffer = stoneGeometry.getBuffer();
     } else {
         result->rockInstancesBuffer = nullptr;
         result->stoneInstancesBuffer = nullptr;
@@ -2455,7 +2443,7 @@ void PGInstance::createChunkMesh(
             noises,
             grassGeometry
         );
-        result->grassInstancesBuffer = grassGeometry.getBuffer(this);
+        result->grassInstancesBuffer = grassGeometry.getBuffer();
     } else {
         result->grassInstancesBuffer = nullptr;
     }
@@ -2473,7 +2461,7 @@ void PGInstance::createChunkMesh(
             noises,
             poiGeometry
         );
-        result->poiInstancesBuffer = poiGeometry.getBuffer(this);
+        result->poiInstancesBuffer = poiGeometry.getBuffer();
     } else {
         result->poiInstancesBuffer = nullptr;
     }
@@ -2487,7 +2475,7 @@ void PGInstance::createChunkMesh(
             heightfieldGeometry,
             chunkSize
         );
-        result->heightfieldsBuffer = heightfieldGeometry.getBuffer(this);
+        result->heightfieldsBuffer = heightfieldGeometry.getBuffer();
     } else {
         result->heightfieldsBuffer = nullptr;
     }
@@ -2540,7 +2528,7 @@ uint8_t *PGInstance::createBarrierMesh(
         barrierGeometry
     );
 
-    uint8_t *result = barrierGeometry.getBuffer(this);
+    uint8_t *result = barrierGeometry.getBuffer();
     return result;
 }
 void PGInstance::createBarrierMeshAsync(
@@ -2576,12 +2564,9 @@ void PGInstance::createBarrierMeshAsync(
             maxLod
         );
         if (!promise->resolve(result)) {
-            // memoryManager->free(result);
             free(result);
         }
     }
-    // ,
-    // []() -> void {}
     );
     ProcGen::taskQueue.pushTask(terrainTask);
 }
@@ -2855,7 +2840,6 @@ void PGInstance::createChunkMeshAsync(
         numPoiInstances
     ]() {
         ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
-        // memoryManager->allocate(result, sizeof(ChunkResult), std::string("ChunkResult::Malloc"));
 
         createChunkMesh(
             result,
@@ -2869,23 +2853,9 @@ void PGInstance::createChunkMeshAsync(
             numPoiInstances
         );
         if (!promise->resolve(result)) {
-            // EM_ASM(
-            //     console.log('Clean Up On Promise Cancellation');
-            // );
             result->free(this);
         }
-    }
-    // ,
-    // [this, result]() {
-    //     if(result) {
-    //         EM_ASM(
-    //             console.log('Clean Up On Cancel: ', $0);
-    //             , result
-    //         );
-    //         result->free(this);
-    //     }
-    // }
-    );
+    });
     ProcGen::taskQueue.pushTask(terrainTask);
 }
 /* void PGInstance::createLiquidChunkMeshAsync(uint32_t id, const vm::ivec2 &worldPosition, int lod, const std::array<int, 2> &lodArray)
@@ -3709,32 +3679,32 @@ float PGInstance::getComputedBiomeHeight(uint8_t b, const vm::vec2 &worldPositio
 
     switch (b)
     {
-    // case (int)BIOME::biDesert: 
-    //     return noises.uberNoise.desertNoise(ax, az);
-    // case (int)BIOME::biDesertHills: 
-    //     return noises.uberNoise.desertNoise(ax, az);
-    // case (int)BIOME::biDesertM: 
-    //     return noises.uberNoise.desertNoise(ax, az);
-    // case (int)BIOME::biColdBeach:
-    //     return noises.uberNoise.desertNoise(ax, az);
-    // case (int)BIOME::biMegaTaigaHills:
-    //     return noises.uberNoise.mountainNoise(ax, az);
-    // case (int)BIOME::biForestHills:
-    //     return noises.uberNoise.mountainNoise(ax, az);
-    // case (int)BIOME::biJungleHills:
-    //     return noises.uberNoise.mountainNoise(ax, az);
-    // case (int)BIOME::biIceMountains:
-    //     return noises.uberNoise.iceMountainNoise(ax, az);
-    // case (int)BIOME::biIcePlainsSpikes:
-    //     return noises.uberNoise.iceMountainNoise(ax, az);
-    // case (int)BIOME::biColdTaigaHills:
-    //     return noises.uberNoise.iceMountainNoise(ax, az);
-    // case (int)BIOME::biColdTaigaM:
-    //     return noises.uberNoise.iceMountainNoise(ax, az);
-    // case (int)BIOME::biColdTaiga:
-    //     return noises.uberNoise.iceMountainNoise(ax, az);
-    default:
+    case (int)BIOME::biDesert: 
+        return noises.uberNoise.desertNoise(ax, az);
+    case (int)BIOME::biDesertHills: 
+        return noises.uberNoise.desertNoise(ax, az);
+    case (int)BIOME::biDesertM: 
+        return noises.uberNoise.desertNoise(ax, az);
+    case (int)BIOME::biColdBeach:
+        return noises.uberNoise.desertNoise(ax, az);
+    case (int)BIOME::biMegaTaigaHills:
+        return noises.uberNoise.mountainNoise(ax, az);
+    case (int)BIOME::biForestHills:
+        return noises.uberNoise.mountainNoise(ax, az);
+    case (int)BIOME::biJungleHills:
+        return noises.uberNoise.mountainNoise(ax, az);
+    case (int)BIOME::biIceMountains:
         return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biIcePlainsSpikes:
+        return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biColdTaigaHills:
+        return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biColdTaigaM:
+        return noises.uberNoise.iceMountainNoise(ax, az);
+    case (int)BIOME::biColdTaiga:
+        return noises.uberNoise.iceMountainNoise(ax, az);
+    default:
+        return noises.uberNoise.mountainNoise(ax, az);
     }
 }
 
@@ -3956,7 +3926,6 @@ void PGInstance::trackerUpdateAsync(
         uint8_t *buffer = trackerUpdate.getBuffer();
         // std::cout << "trakcer update buffer address" << (void *)buffer << std::endl;
         if (!promise->resolve(buffer)) {
-            // memoryManager->free(buffer);
             free(buffer);
         }
     });

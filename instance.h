@@ -16,8 +16,6 @@
 #include "noises.h"
 #include "tracker.h"
 
-#include "mem.h"
-
 //
 
 class Tracker;
@@ -82,9 +80,6 @@ public:
     vm::vec3 cameraPosition;
     Quat cameraQuaternion;
     std::array<float, 16> projectionMatrix;
-
-    // memory tracker
-    MemoryManager *memoryManager;
 
     // 2d caches
 
