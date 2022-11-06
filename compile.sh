@@ -4,12 +4,12 @@ echo 'building...'
 # emcc -s NO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=52428800 -D__linux__ -s ALLOW_MEMORY_GROWTH=0 -sWASM_WORKERS=1 -g -s ASSERTIONS=1 -fexceptions \
 # -g -s ASSERTIONS=1 -fsanitize=address
 
-NUM_THREADS=1
+NUM_THREADS=8
 
 # emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=104857600 -pthread -sPTHREAD_POOL_SIZE=$NUM_THREADS -sPTHREAD_POOL_SIZE_STRICT=$NUM_THREADS -s ALLOW_MEMORY_GROWTH=0 -s ASSERTIONS=1 -g -O0 \
 
 # emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=104857600 -pthread -fsanitize=leak -sPTHREAD_POOL_SIZE=$NUM_THREADS -sPTHREAD_POOL_SIZE_STRICT=$NUM_THREADS -s ASSERTIONS=1 -g -O0 \
-emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=500MB -pthread -sPTHREAD_POOL_SIZE=$NUM_THREADS -sPTHREAD_POOL_SIZE_STRICT=$NUM_THREADS -s ALLOW_MEMORY_GROWTH=0 -sASSERTIONS -g -O0 \
+emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=100MB -pthread -sPTHREAD_POOL_SIZE=$NUM_THREADS -sPTHREAD_POOL_SIZE_STRICT=$NUM_THREADS -s ALLOW_MEMORY_GROWTH=0 -O3 \
   binding.cc \
   FastNoise.cpp \
   procgen.cc \
@@ -41,5 +41,5 @@ emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=500MB -pthr
   sed -Ei 's/scriptDirectory\+path/"\/"+path/g' bin/pg.js
   cp bin/pg.js bin/pg.module.js
   echo 'export default Module;' >>bin/pg.module.js
-  cp -R bin/* ../app/public/
+  # cp -R bin/* ../app/public/
 echo done

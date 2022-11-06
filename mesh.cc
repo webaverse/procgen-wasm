@@ -42,7 +42,7 @@ uint8_t *TerrainGeometry::getBuffer(PGInstance *inst) const {
 
   // allocate buffer
   uint8_t *buffer = (uint8_t *)malloc(neededSize);
-  inst->memoryManager->allocate(buffer, neededSize, std::string("TerrainGeometry::getBuffer"));
+  // inst->memoryManager->allocate(buffer, neededSize, std::string("TerrainGeometry::getBuffer"));
   int index = 0;
 
   // positions
@@ -131,7 +131,7 @@ uint8_t *WaterGeometry::getBuffer(PGInstance *inst) const {
 
   // allocate buffer
   uint8_t *buffer = (uint8_t *)malloc(neededSize);
-  inst->memoryManager->allocate(buffer, neededSize, std::string("WaterGeometry::getBuffer"));
+  // inst->memoryManager->allocate(buffer, neededSize, std::string("WaterGeometry::getBuffer"));
   int index = 0;
 
   // positions
@@ -179,7 +179,7 @@ uint8_t *SplatInstanceGeometry::getBuffer(PGInstance *inst) const {
   }
 
   uint8_t *buffer = (uint8_t *)malloc(size);
-  inst->memoryManager->allocate(buffer, size, std::string("SplatInstanceGeometry::getBuffer"));
+  // inst->memoryManager->allocate(buffer, size, std::string("SplatInstanceGeometry::getBuffer"));
   int index = 0;
 
   *((uint32_t *)(buffer + index)) = instances.size();
@@ -227,7 +227,7 @@ uint8_t *MaterialAwareSplatInstanceGeometry::getBuffer(PGInstance *inst) const {
   }
 
   uint8_t *buffer = (uint8_t *)malloc(size);
-  inst->memoryManager->allocate(buffer, size, std::string("MaterialAwareSplatInstanceGeometry::getBuffer"));
+  // inst->memoryManager->allocate(buffer, size, std::string("MaterialAwareSplatInstanceGeometry::getBuffer"));
   int index = 0;
 
   *((uint32_t *)(buffer + index)) = instances.size();
@@ -288,7 +288,7 @@ uint8_t *GrassGeometry::getBuffer(PGInstance *inst) const {
   }
 
   uint8_t *buffer = (uint8_t *)malloc(size);
-  inst->memoryManager->allocate(buffer, size, std::string("GrassGeometry::getBuffer"));
+  // inst->memoryManager->allocate(buffer, size, std::string("GrassGeometry::getBuffer"));
   int index = 0;
 
   *((uint32_t *)(buffer + index)) = instances.size();
@@ -339,7 +339,7 @@ uint8_t *PoiGeometry::getBuffer(PGInstance *inst) const {
     sizeof(int32_t) * instances.size();
 
   uint8_t *buffer = (uint8_t *)malloc(size);
-  inst->memoryManager->allocate(buffer, size, std::string("PoiGeometry::getBuffer"));
+  // inst->memoryManager->allocate(buffer, size, std::string("PoiGeometry::getBuffer"));
   int index = 0;
 
   *((uint32_t *)(buffer + index)) = ps.size();
@@ -389,7 +389,7 @@ uint8_t *BarrierGeometry::getBuffer(PGInstance *inst) const {
 
   // allocate buffer
   uint8_t *buffer = (uint8_t *)malloc(neededSize);
-  inst->memoryManager->allocate(buffer, neededSize, std::string("BarrierGeometry::getBuffer"));
+  // inst->memoryManager->allocate(buffer, neededSize, std::string("BarrierGeometry::getBuffer"));
   int index = 0;
 
   // positions
@@ -460,7 +460,7 @@ uint8_t *HeightfieldGeometry::getBuffer(PGInstance *inst) const {
 
   // allocate buffer
   uint8_t *buffer = (uint8_t *)malloc(neededSize);
-  inst->memoryManager->allocate(buffer, neededSize, std::string("HeightfieldGeometry::getBuffer"));
+  // inst->memoryManager->allocate(buffer, neededSize, std::string("HeightfieldGeometry::getBuffer"));
   int index = 0;
 
   // numPixels

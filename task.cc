@@ -67,8 +67,8 @@ void Task::run() {
   fn();
 }
 void Task::cancel() {
+  // cleanup();
   live.store(false);
-  cleanup();
 }
 
 int Task::getPriority() const {

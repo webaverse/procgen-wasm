@@ -28,52 +28,52 @@ struct MemoryManager {
     std::unordered_map<void*, AllocationData> allocationMap;
 
     MemoryManager() {
-        EM_ASM(
-            console.log("MemoryManager Init");
-        );
+        // EM_ASM(
+        //     console.log("MemoryManager Init");
+        // );
     }
 
     ~MemoryManager() {
-        EM_ASM(
-            console.log("MemoryManager Destroy");
-        );
+        // EM_ASM(
+        //     console.log("MemoryManager Destroy");
+        // );
     }
 
     template<typename T>
     void allocate(T ptr, size_t size, const std::string &str) {
-        if(ptr) {
-            AllocationData a{size, str};
-            void *vptr = (void*)ptr;
-            allocationMap.insert(std::make_pair(vptr, a));
-        }
+        // if(ptr) {
+        //     AllocationData a{size, str};
+        //     void *vptr = (void*)ptr;
+        //     allocationMap.insert(std::make_pair(vptr, a));
+        // }
     }
 
     template<typename T>
     void free(T ptr) {
-        if(ptr) {
-            void *vptr = (void*)ptr;
-            allocationMap.erase(vptr);
-        }
+        // if(ptr) {
+        //     void *vptr = (void*)ptr;
+        //     allocationMap.erase(vptr);
+        // }
     }
 
     void getLeaked() {
-        size_t leaked = 0;
-        std::string str = "Leaked memory locations: ";
+        // size_t leaked = 0;
+        // std::string str = "Leaked memory locations: ";
 
-        for (auto &pair : allocationMap) {
-            AllocationData &a = pair.second;
-            leaked += a.size;
-            str += a.getDataString() + ", ";
-        }
+        // for (auto &pair : allocationMap) {
+        //     AllocationData &a = pair.second;
+        //     leaked += a.size;
+        //     str += a.getDataString() + ", ";
+        // }
 
-        EM_ASM({
-            console.log('Leaked Size: ', $0);
-        }, leaked);
+        // EM_ASM({
+        //     console.log('Leaked Size: ', $0);
+        // }, leaked);
 
-        const char* ccstr = str.c_str();
-        EM_ASM({
-            console.log(UTF8ToString($0));
-        }, ccstr);
+        // const char* ccstr = str.c_str();
+        // EM_ASM({
+        //     console.log(UTF8ToString($0));
+        // }, ccstr);
     }
 };
 

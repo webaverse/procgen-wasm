@@ -22,17 +22,17 @@ void ChunkResult::free(PGInstance *inst) {
     std::free(grassInstancesBuffer);
     std::free(poiInstancesBuffer);
     std::free(heightfieldsBuffer);
-    // std::free(this);
+    std::free(this);
 
-    inst->memoryManager->free(terrainMeshBuffer);
-    inst->memoryManager->free(waterMeshBuffer);
-    inst->memoryManager->free(treeInstancesBuffer);
-    inst->memoryManager->free(bushInstancesBuffer);
-    inst->memoryManager->free(rockInstancesBuffer);
-    inst->memoryManager->free(stoneInstancesBuffer);
-    inst->memoryManager->free(grassInstancesBuffer);
-    inst->memoryManager->free(poiInstancesBuffer);
-    inst->memoryManager->free(heightfieldsBuffer);
+    // inst->memoryManager->free(terrainMeshBuffer);
+    // inst->memoryManager->free(waterMeshBuffer);
+    // inst->memoryManager->free(treeInstancesBuffer);
+    // inst->memoryManager->free(bushInstancesBuffer);
+    // inst->memoryManager->free(rockInstancesBuffer);
+    // inst->memoryManager->free(stoneInstancesBuffer);
+    // inst->memoryManager->free(grassInstancesBuffer);
+    // inst->memoryManager->free(poiInstancesBuffer);
+    // inst->memoryManager->free(heightfieldsBuffer);
     // inst->memoryManager->free(this);
 }
 
@@ -1920,7 +1920,7 @@ void generateVegetationInstances(
 
                 if (slope < 0.1f)
                 {
-                    float noiseValue = noises.uberNoise.treeObjectNoise(ax, az);
+                    float noiseValue = noises.uberNoise.treeObjectNoise(ax, az) / lod;
                     if (noiseValue > VEGGIE_THRESHOLD)
                     {
                         pushSplatInstances(ax, az, rot, treeGeometry, instanceId, heightfieldSampler);
@@ -1983,7 +1983,7 @@ void generateRocksInstances(
 
                 if (slope < 0.1f)
                 {
-                    float noiseValue = noises.uberNoise.stoneNoise(ax, az);
+                    float noiseValue = noises.uberNoise.stoneNoise(ax, az) / lod;
                     if (noiseValue > ROCK_THRESHOLD)
                     {
                         pushSplatInstances(ax, az, rot, rockGeometry, instanceId, heightfieldSampler);
@@ -2100,7 +2100,7 @@ void generateGrassInstances(
 
                 if (slope < 0.1f)
                 {
-                    float noiseValue = noises.uberNoise.grassObjectNoise(ax, az);
+                    float noiseValue = noises.uberNoise.grassObjectNoise(ax, az) / lod;
                     if (noiseValue > GRASS_THRESHOLD)
                     {
                         const float crushedGrassNoise = 1.f - noises.uberNoise.stoneNoise(ax, az);
@@ -2576,7 +2576,7 @@ void PGInstance::createBarrierMeshAsync(
             maxLod
         );
         if (!promise->resolve(result)) {
-            memoryManager->free(result);
+            // memoryManager->free(result);
             free(result);
         }
     }
@@ -2832,9 +2832,6 @@ void PGInstance::createChunkMeshAsync(
 ) {
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
-    ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
-    // memoryManager->allocate(result, sizeof(ChunkResult), std::string("ChunkResult::Malloc"));
-
     vm::vec3 worldPositionF{
         (float)worldPosition.x,
         (float)(-WORLD_BASE_HEIGHT) + ((float)MIN_WORLD_HEIGHT + (float)MAX_WORLD_HEIGHT) / 2.f,
@@ -2846,7 +2843,7 @@ void PGInstance::createChunkMeshAsync(
     };
     Task *terrainTask = new Task(id, worldPositionF, lod, [
         this,
-        result,
+        // result,
         promise,
         worldPosition,
         lod,
@@ -2857,6 +2854,9 @@ void PGInstance::createChunkMeshAsync(
         numGrassInstances,
         numPoiInstances
     ]() {
+        ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
+        // memoryManager->allocate(result, sizeof(ChunkResult), std::string("ChunkResult::Malloc"));
+
         createChunkMesh(
             result,
             worldPosition,
@@ -2869,19 +2869,22 @@ void PGInstance::createChunkMeshAsync(
             numPoiInstances
         );
         if (!promise->resolve(result)) {
+            // EM_ASM(
+            //     console.log('Clean Up On Promise Cancellation');
+            // );
             result->free(this);
         }
     }
-    ,
-    [this, result]() {
-        if(result) {
-            EM_ASM(
-                console.log('Clean it up babe : ', $0);
-                , result
-            );
-            result->free(this);
-        }
-    }
+    // ,
+    // [this, result]() {
+    //     if(result) {
+    //         EM_ASM(
+    //             console.log('Clean Up On Cancel: ', $0);
+    //             , result
+    //         );
+    //         result->free(this);
+    //     }
+    // }
     );
     ProcGen::taskQueue.pushTask(terrainTask);
 }
@@ -3953,7 +3956,7 @@ void PGInstance::trackerUpdateAsync(
         uint8_t *buffer = trackerUpdate.getBuffer();
         // std::cout << "trakcer update buffer address" << (void *)buffer << std::endl;
         if (!promise->resolve(buffer)) {
-            memoryManager->free(buffer);
+            // memoryManager->free(buffer);
             free(buffer);
         }
     });
