@@ -1908,7 +1908,7 @@ void generateVegetationInstances(
 
                 if (slope < 0.1f)
                 {
-                    float noiseValue = noises.uberNoise.treeObjectNoise(ax, az) / lod;
+                    float noiseValue = noises.uberNoise.treeObjectNoise(ax, az);
                     if (noiseValue > VEGGIE_THRESHOLD)
                     {
                         pushSplatInstances(ax, az, rot, treeGeometry, instanceId, heightfieldSampler);
@@ -1971,7 +1971,7 @@ void generateRocksInstances(
 
                 if (slope < 0.1f)
                 {
-                    float noiseValue = noises.uberNoise.stoneNoise(ax, az) / lod;
+                    float noiseValue = noises.uberNoise.stoneNoise(ax, az);
                     if (noiseValue > ROCK_THRESHOLD)
                     {
                         pushSplatInstances(ax, az, rot, rockGeometry, instanceId, heightfieldSampler);

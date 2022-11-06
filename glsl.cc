@@ -333,7 +333,7 @@ bool getStoneVisibility(vec2 position)
         return 0.f;
     }
     const float edge = TERRAIN_STONE_THRESHOLD;
-    float dryness = 1.f - wetNoise(position);
+    float dryness = 1.f - (wetNoise(position) - 0.5f);
     float stone = clamp(simplex(position * 6.f) * dryness, 0.f, 1.f);
     bool visibility = bool(step(edge, stone));
     return visibility;
@@ -425,7 +425,7 @@ float mountainHillsNoise(vec2 position)
     // defining terrain height parameters
     const float highMountainsHeight = MAX_TERRAIN_HEIGHT;
     const float lowMountainsHeight = MAX_TERRAIN_HEIGHT / 2.f;
-    const float smallHillsHeight = MAX_TERRAIN_HEIGHT / 5.f;
+    const float smallHillsHeight = MAX_TERRAIN_HEIGHT / 3.f;
 
     // calculating noises
     float fbm2d2 = FBM_2(position/2.f);
