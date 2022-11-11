@@ -71,7 +71,6 @@ public:
     float temperature;
     float humidity;
     bool ocean;
-    float river;
 };
 
 //

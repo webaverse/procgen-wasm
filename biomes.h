@@ -1498,12 +1498,12 @@ const UV BIOME_UVS[] {
 //   vm::vec3 color;
 // };
 enum class MATERIAL : uint8_t {
-  GRASS = 0,
-  DIRT = 1,
-  ROCK = 2,
-  STONE = 3,
+  GRASS,
+  DIRT,
+  ROCK,
+  STONE,
 
-  NUM_MATERIALS = 4,
+  NUM_MATERIALS,
 };
 
 // MaterialInfo MATERIAL_INFO[(int)MATERIAL::NUM_MATERIALS] = {

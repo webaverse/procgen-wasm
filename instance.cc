@@ -3056,13 +3056,11 @@ NoiseField PGInstance::getNoise(float bx, float bz) {
     float tNoise = (float)noises.uberNoise.temperatureNoise(bx, bz);
     float hNoise = (float)noises.uberNoise.humidityNoise(bx, bz);
     bool oNoise = noises.uberNoise.oceanNoise(bx, bz);
-    // float rNoise = (float)noises.riverNoise.in2D(bx, bz);
 
     return NoiseField{
         tNoise,
         hNoise,
         oNoise
-        // rNoise
     };
 }
 uint8_t PGInstance::getBiome(float bx, float bz) {
@@ -3072,7 +3070,6 @@ uint8_t PGInstance::getBiome(float bx, float bz) {
     float temperatureNoise = noise.temperature;
     float humidityNoise = noise.humidity;
     bool oceanNoise = noise.ocean;
-    // float riverNoise = noise.river;
 
     if (oceanNoise)
     {
