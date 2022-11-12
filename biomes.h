@@ -3,6 +3,7 @@
 
 #include <string>
 #include <tuple>
+#include "./vectorMath.h"
 
 class UV {
 public:
@@ -1493,14 +1494,24 @@ const UV BIOME_UVS[] {
   {0.5714285714285714, 0.7142857142857143}, // liLava
 };
 
+// struct MaterialInfo {
+//   vm::vec3 color;
+// };
 enum class MATERIAL : uint8_t {
-  GRASS = 0,
-  DIRT = 1,
-  STONE = 2,
-  ROCK = 3,
+  GRASS,
+  DIRT,
+  ROCK,
+  STONE,
 
-  NUM_MATERIALS = 4,
+  NUM_MATERIALS,
 };
+
+// MaterialInfo MATERIAL_INFO[(int)MATERIAL::NUM_MATERIALS] = {
+//   {vm::vec3{0.0, 0.0, 0.0}}, // GRASS
+//   {vm::vec3{1.0, 1.0, 1.0}}, // DIRT
+//   {vm::vec3{1.0, 1.0, 1.0}}, // ROCK
+//   {vm::vec3{1.0, 1.0, 1.0}}, // STONE
+// };
 
 bool isWaterBiome(unsigned char b);
 

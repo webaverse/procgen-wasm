@@ -43,9 +43,21 @@ float UberNoise::temperatureNoise(float x, float z)
 {
   return GLSL::temperatureNoise(vm::vec2(x, z));
 }
-float UberNoise::wetnessNoise(float x, float z)
+float UberNoise::grassMaterialNoise(float x, float z)
 {
-  return GLSL::wetnessNoise(vm::vec2(x, z));
+  return GLSL::grassMaterialNoise(vm::vec2(x, z));
+}
+float UberNoise::grassObjectNoise(float x, float z)
+{
+  return GLSL::grassObjectNoise(vm::vec2(x, z));
+}
+float UberNoise::treeObjectNoise(float x, float z)
+{
+  return GLSL::treeObjectNoise(vm::vec2(x, z));
+}
+float UberNoise::stiffnessNoise(float x, float z)
+{
+  return GLSL::stiffnessNoise(vm::vec2(x, z));  
 }
 float UberNoise::desertNoise(float x, float z)
 {
@@ -59,7 +71,19 @@ float UberNoise::iceMountainNoise(float x, float z)
 {
   return GLSL::iceMountainNoise(vm::vec2(x, z));
 }
-float UberNoise::oceanNoise(float x, float z)
+float UberNoise::hashNoise(float x, float z)
+{
+  return GLSL::hashNoise(vm::vec2(x, z));
+}
+float UberNoise::simplexNoise(float x, float z)
+{
+  return GLSL::simplexNoise(vm::vec2(x, z));
+}
+bool UberNoise::oceanNoise(float x, float z)
 {
   return GLSL::oceanNoise(vm::vec2(x, z));
+}
+bool UberNoise::stoneNoise(float x, float z)
+{
+  return GLSL::stoneNoise(vm::vec2(x, z));
 }

@@ -90,6 +90,7 @@ typedef std::shared_ptr<TrackerTask> TrackerTaskPtr; */
 
 class TrackerUpdate {
 public:
+  PGInstance *inst;
   std::vector<OctreeNodePtr> leafNodes;
 
   std::vector<DataRequestPtr> newDataRequests;
@@ -175,7 +176,7 @@ public:
     const std::vector<OctreeNodePtr> &oldRenderedChunks,
     std::unordered_map<uint64_t, DataRequestPtr> &dataRequests
   ); */
-  TrackerUpdate update(const vm::vec3 &position, int minLod, int maxLod, int lod1Range);
+  TrackerUpdate update(PGInstance *inst, const vm::vec3 &position, int minLod, int maxLod, int lod1Range);
 };
 
 #endif // _TRACKER_H_

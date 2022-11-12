@@ -223,7 +223,7 @@ std::vector<uint8_t> Dominator::getBuffer() const {
     *((uint32_t *)(result.data() + index)) = hash;
     index += sizeof(uint32_t);
   }
-  
+
   return result;
 }
 
@@ -318,10 +318,10 @@ bool chunksIntersect(const vm::ivec2 &min1, const int lod1, const vm::ivec2 &min
   };
 } */
 OctreeNodePtr OctreeNodeAllocator::alloc(const vm::ivec2 &min, int lod) {
-  OctreeNode *octreeNode = new OctreeNode(min, lod);
+  // OctreeNode *octreeNode = new OctreeNode(min, lod);
   // octreeNode->min = min;
   // octreeNode->lod = lod;
-  return std::shared_ptr<OctreeNode>(octreeNode);
+  return std::make_shared<OctreeNode>(min, lod);
 }
 
 OctreeNodePtr OctreeContext::alloc(const vm::ivec2 &min, int lod) {
@@ -1025,7 +1025,7 @@ DataRequestUpdate Tracker::updateDataRequests(
   }
   return dominators;
 } */
-TrackerUpdate Tracker::update(const vm::vec3 &position, int minLod, int maxLod, int lod1Range) {
+TrackerUpdate Tracker::update(PGInstance *inst, const vm::vec3 &position, int minLod, int maxLod, int lod1Range) {
   std::lock_guard<std::mutex> lock(mutex);
   
   // new octrees

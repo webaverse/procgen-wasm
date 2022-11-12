@@ -54,6 +54,7 @@ EMSCRIPTEN_KEEPALIVE void createChunkMeshAsync(
     int *lodArray,
     int generateFlags,
     int numVegetationInstances,
+    int numRockInstances,
     int numGrassInstances,
     int numPoiInstances
 ) {
@@ -69,6 +70,7 @@ EMSCRIPTEN_KEEPALIVE void createChunkMeshAsync(
         lodArray2,
         generateFlags,
         numVegetationInstances,
+        numRockInstances,
         numGrassInstances,
         numPoiInstances
     );
@@ -228,11 +230,12 @@ EMSCRIPTEN_KEEPALIVE void destroyTracker(PGInstance *inst, Tracker *tracker) {
 
 //
 
-EMSCRIPTEN_KEEPALIVE void *doMalloc(size_t size) {
-    return malloc(size);
+EMSCRIPTEN_KEEPALIVE void *doMalloc(size_t size, PGInstance *inst) {
+    void* ptr = malloc(size);
+    return ptr;
 }
 
-EMSCRIPTEN_KEEPALIVE void doFree(void *ptr) {
+EMSCRIPTEN_KEEPALIVE void doFree(void *ptr, PGInstance *inst) {
     free(ptr);
 }
 

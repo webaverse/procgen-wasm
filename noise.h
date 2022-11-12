@@ -32,11 +32,17 @@ public:
 
   float humidityNoise(float x, float z);
   float temperatureNoise(float x, float z);
-  float wetnessNoise(float x, float z);
+  float grassMaterialNoise(float x, float z);
+  float grassObjectNoise(float x, float z);
+  float treeObjectNoise(float x, float z);
+  float stiffnessNoise(float x, float z);
   float desertNoise(float x, float z);
   float mountainNoise(float x, float z);
   float iceMountainNoise(float x, float z);
-  float oceanNoise(float x, float z);
+  float hashNoise(float x, float z);
+  float simplexNoise(float x, float z);
+  bool oceanNoise(float x, float z);
+  bool stoneNoise(float x, float z);
 };
 
 #endif

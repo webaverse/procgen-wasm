@@ -12,6 +12,19 @@
 
 constexpr int CHUNK_RANGE = 1;
 
+void ChunkResult::free(PGInstance *inst) {
+    std::free(terrainMeshBuffer);
+    std::free(waterMeshBuffer);
+    std::free(treeInstancesBuffer);
+    std::free(bushInstancesBuffer);
+    std::free(rockInstancesBuffer);
+    std::free(stoneInstancesBuffer);
+    std::free(grassInstancesBuffer);
+    std::free(poiInstancesBuffer);
+    std::free(heightfieldsBuffer);
+    std::free(this);
+}
+
 // constructor/destructor
 PGInstance::PGInstance(int seed, int chunkSize) :
     seed(seed),
@@ -303,33 +316,13 @@ void normalizeNormals(std::vector<vm::vec3> &normals) {
         normals[i].z = vec.z;
     }
 }
-void computeVertexNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3> &normals, std::vector<uint32_t> &indices) {
-    // const index = this.index;
-    // const positionAttribute = this.getAttribute( 'position' );
-
-    // reset existing normals to zero
-    // for ( let i = 0, il = normalAttribute.count; i < il; i ++ ) {
-    //   normalAttribute.setXYZ( i, 0, 0, 0 );
-    // }
-    // std::fill(normals.begin(), normals.end(), 0);
-
-    // const pA = new Vector3(), pB = new Vector3(), pC = new Vector3();
-    // const nA = new Vector3(), nB = new Vector3(), nC = new Vector3();
-    // const cb = new Vector3(), ab = new Vector3();
-
+void computeFaceNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3> &normals, std::vector<uint32_t> &indices) {
     // indexed elements
     for (size_t i = 0, il = indices.size(); i < il; i += 3) {
-        // const uint32_t vA = index.getX(i + 0);
-        // const uint32_t vB = index.getX(i + 1);
-        // const uint32_t vC = index.getX(i + 2);
-
         const uint32_t &vA = indices[i];
         const uint32_t &vB = indices[i + 1];
         const uint32_t &vC = indices[i + 2];
 
-        // pA.fromBufferAttribute( positionAttribute, vA );
-        // pB.fromBufferAttribute( positionAttribute, vB );
-        // pC.fromBufferAttribute( positionAttribute, vC );
         Vec pA{
             positions[vA].x,
             positions[vA].y,
@@ -346,17 +339,10 @@ void computeVertexNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3
             positions[vC].z
         };
 
-        // cb.subVectors( pC, pB );
-        // ab.subVectors( pA, pB );
-        // cb.cross( ab );
         Vec cb = pC - pB;
         Vec ab = pA - pB;
-        // cb.cross(ab);
         cb ^= ab;
 
-        // nA.fromBufferAttribute( normalAttribute, vA );
-        // nB.fromBufferAttribute( normalAttribute, vB );
-        // nC.fromBufferAttribute( normalAttribute, vC );
         Vec nA{
             normals[vA].x,
             normals[vA].y,
@@ -373,16 +359,10 @@ void computeVertexNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3
             normals[vC].z
         };
 
-        // nA.add( cb );
-        // nB.add( cb );
-        // nC.add( cb );
         nA += cb;
         nB += cb;
         nC += cb;
 
-        // normalAttribute.setXYZ( vA, nA.x, nA.y, nA.z );
-        // normalAttribute.setXYZ( vB, nB.x, nB.y, nB.z );
-        // normalAttribute.setXYZ( vC, nC.x, nC.y, nC.z );
         normals[vA].x = nA.x;
         normals[vA].y = nA.y;
         normals[vA].z = nA.z;
@@ -395,6 +375,214 @@ void computeVertexNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3
     }
 
     normalizeNormals(normals);
+}
+
+template<typename T>
+vm::vec3 calculateCenterPointNormal(const int &x, const int &y, const std::vector<T> &heightfields, const int &rowSize)
+{
+    const int Lx = (x - 1) + 1;
+    const int Ly = y + 1;
+    const int Lindex = Lx + Ly * rowSize;
+    const float Lheight = heightfields[Lindex].getHeight();
+
+    const int Rx = (x + 1) + 1;
+    const int Ry = y + 1;
+    const int Rindex = Rx + Ry * rowSize;
+    const float Rheight = heightfields[Rindex].getHeight();
+
+    const int Ux = x + 1;
+    const int Uy = (y - 1) + 1;
+    const int Uindex = Ux + Uy * rowSize;
+    const float Uheight = heightfields[Uindex].getHeight();
+
+    const int Dx = x + 1;
+    const int Dy = (y + 1) + 1;
+    const int Dindex = Dx + Dy * rowSize;
+    const float Dheight = heightfields[Dindex].getHeight();
+
+    return vm::normalize(vm::vec3{Lheight - Rheight, 2.0f, Uheight - Dheight});
+}
+
+template <typename T>
+vm::vec3 calculateBottomPointNormal(const int &x, const int &y, const std::vector<T> &heightfields, const int &heightfieldsCenterDataReadOffset, const int &gridWidth)
+{
+    const int gridWidthP3 = gridWidth + 3;
+    const int Lx = x - 1;
+    const int Ly = y;
+    const int Lindex =
+        heightfieldsCenterDataReadOffset +
+        (Ly * gridWidthP3) +
+        Lx;
+    const float Lheight = heightfields[Lindex].getHeight();
+
+    const int Rx = x + 1;
+    const int Ry = y;
+    const int Rindex =
+        heightfieldsCenterDataReadOffset +
+        (Ry * gridWidthP3) +
+        Rx;
+    const float Rheight = heightfields[Rindex].getHeight();
+
+    const int Ux = x;
+    const int Uy = y - 1;
+    const int Uindex =
+        heightfieldsCenterDataReadOffset +
+        (Uy * gridWidthP3) +
+        Ux;
+    const float Uheight = heightfields[Uindex].getHeight();
+
+    const int Dx = x;
+    const int Dy = y + 1;
+    const int Dindex =
+        heightfieldsCenterDataReadOffset +
+        (Dy * gridWidthP3) +
+        Dx;
+    const float Dheight = heightfields[Dindex].getHeight();
+
+    return vm::normalize(vm::vec3{Lheight - Rheight, 2.0f, Uheight - Dheight});
+}
+
+template <typename T>
+vm::vec3 calculateRightPointNormal(const int &x, const int &y, const std::vector<T> &heightfields, const int &heightfieldsCenterDataReadOffset, const int &gridWidth, const int &gridHeight)
+{
+    const int gridWidthP3 = gridWidth + 3;
+    const int gridHeightP3 = gridHeight + 3;
+
+    const int Lx = x - 1;
+    const int Ly = y;
+    const int Lindex =
+        heightfieldsCenterDataReadOffset +
+        (3 * gridWidthP3) +
+        (Lx * gridHeightP3) +
+        Ly;
+    const float Lheight = heightfields[Lindex].getHeight();
+
+    const int Rx = x + 1;
+    const int Ry = y;
+    const int Rindex =
+        heightfieldsCenterDataReadOffset +
+        (3 * gridWidthP3) +
+        (Rx * gridHeightP3) +
+        Ry;
+    const float Rheight = heightfields[Rindex].getHeight();
+
+    const int Ux = x;
+    const int Uy = y - 1;
+    const int Uindex =
+        heightfieldsCenterDataReadOffset +
+        (3 * gridWidthP3) +
+        (Ux * gridHeightP3) +
+        Uy;
+    const float Uheight = heightfields[Uindex].getHeight();
+
+    const int Dx = x;
+    const int Dy = y + 1;
+    const int Dindex =
+        heightfieldsCenterDataReadOffset +
+        (3 * gridWidthP3) +
+        (Dx * gridHeightP3) +
+        Dy;
+    const float Dheight = heightfields[Dindex].getHeight();
+
+    return vm::normalize(vm::vec3{Lheight - Rheight, 2.0f, Uheight - Dheight});
+}
+
+template <typename T>
+void calculateCenterNormals(std::vector<T> &heightfields, const int &chunkSize, const int &rowSize)
+{
+    auto pushCenterPointNormal = [&](const int &x, const int &y) -> void
+    {
+        const int dx = x + 1;
+        const int dy = y + 1;
+        const int index = dx + dy * rowSize;
+        T &v = heightfields[index];
+        v.normal = calculateCenterPointNormal<T>(x, y, heightfields, rowSize);
+    };
+
+    for (int y = 0; y < chunkSize; y++)
+    {
+        for (int x = 0; x < chunkSize; x++)
+        {
+            pushCenterPointNormal(x, y);
+        }
+    }
+}
+
+template <typename T>
+void calculateSeamNormals(std::vector<T> &heightfields,
+                          const int &lod,
+                          const std::array<int, 2> &lodArray,
+                          const int &chunkSize,
+                          const int &rowSize)
+{
+    const int &bottomLod = lodArray[0];
+    const int &rightLod = lodArray[1];
+
+    const int gridWidth = chunkSize * lod / bottomLod;
+    const int gridWidthP1 = gridWidth + 1;
+    const int gridWidthP3 = gridWidth + 3;
+
+    const int gridHeight = chunkSize * lod / rightLod;
+    const int gridHeightP1 = gridHeight + 1;
+    const int gridHeightP3 = gridHeight + 3;
+
+    const int heightfieldsCenterDataReadOffset = rowSize * rowSize;
+
+    auto pushBottomPointNormal = [&](const int &x, const int &y) -> void
+    {
+        const int dx = x + 1;
+        const int dy = y + 1;
+        const int index =
+            heightfieldsCenterDataReadOffset +
+            (dy * gridWidthP3) +
+            dx;
+        T &v = heightfields[index];
+
+        v.normal = calculateBottomPointNormal(dx, dy, heightfields, heightfieldsCenterDataReadOffset, gridWidth);
+    };
+
+    // bottom
+    {
+        const int y = 0;
+        for (int x = 0; x < gridWidthP1; x++) {
+            pushBottomPointNormal(x, y);
+        }
+    }
+
+    auto pushRightPointNormal = [&](const int &x, const int &y) -> void
+    {
+        const int dx = x + 1;
+        const int dy = y + 1;
+        const int index =
+            heightfieldsCenterDataReadOffset +
+            (3 * gridWidthP3) +
+            (dx * gridHeightP3) +
+            dy;
+        T &v = heightfields[index];
+
+        v.normal = calculateRightPointNormal(dx, dy, heightfields, heightfieldsCenterDataReadOffset, gridWidth, gridHeight);
+    };
+
+    // right
+    {
+        const int x = 0;
+        for (int y = 0; y < gridHeightP1; y++) {
+            pushRightPointNormal(x, y);
+        }
+    }
+}
+
+template <typename T>
+void calculateSurfaceNormals(std::vector<T> &heightfields,
+                             const int &lod,
+                             const std::array<int, 2> &lodArray, 
+                             const int &chunkSize)
+{
+
+    const int rowSize = chunkSize + 2;
+
+    calculateCenterNormals<T>(heightfields, chunkSize, rowSize);
+    calculateSeamNormals<T>(heightfields, lod, lodArray, chunkSize, rowSize);
 }
 /* void fillVec3(std::vector<vm::vec3> &array, const vm::vec3 &v) {
     for (size_t i = 0, il = array.size(); i < il; i++) {
@@ -451,14 +639,15 @@ void createPlaneGeometry(
         // position
         const float height = v0.getHeight();
 
-        const MaterialsArray &materials = v0.materials;
-        const MaterialsWeightsArray &materialWeights = v0.materialsWeights;
-
         geometry.positions.push_back(vm::vec3{
             (float)ax,
             height,
             (float)ay
         });
+
+        // materials
+        const MaterialsArray &materials = v0.materials;
+        const MaterialsWeightsArray &materialWeights = v0.materialsWeights;
 
         geometry.materials.push_back(vm::ivec4{
             materials[0],
@@ -466,7 +655,6 @@ void createPlaneGeometry(
             materials[2],
             materials[3]
         });
-
         geometry.materialsWeights.push_back(vm::vec4{
             materialWeights[0],
             materialWeights[1],
@@ -475,42 +663,7 @@ void createPlaneGeometry(
         });
 
         // normal
-        vm::vec3 normal;
-        if (computeNormals == ComputeNormals::YES) {
-            const int Lx = (x - 1) + 1;
-            const int Ly = y + 1;
-            const int Lindex = Lx + Ly * rowSize;
-            const float Lheight = heightfields[Lindex].getHeight();
-
-            const int Rx = (x + 1) + 1;
-            const int Ry = y + 1;
-            const int Rindex = Rx + Ry * rowSize;
-            const float Rheight = heightfields[Rindex].getHeight();
-
-            const int Ux = x + 1;
-            const int Uy = (y - 1) + 1;
-            const int Uindex = Ux + Uy * rowSize;
-            const float Uheight = heightfields[Uindex].getHeight();
-
-            const int Dx = x + 1;
-            const int Dy = (y + 1) + 1;
-            const int Dindex = Dx + Dy * rowSize;
-            const float Dheight = heightfields[Dindex].getHeight();
-
-            normal = vm::normalize(
-                vm::vec3{
-                    Lheight - Rheight,
-                    2.0f,
-                    Uheight - Dheight
-                }
-            );
-        } else {
-            normal = vm::vec3{
-                0,
-                1,
-                0
-            };
-        }
+        const vm::vec3 &normal = v0.normal;
         geometry.normals.push_back(normal);
         
         // metadata
@@ -594,7 +747,8 @@ void createPlaneSeamsGeometry(
 
     //
 
-    auto pushBottomPoint = [&](int x, int y) -> void {
+    auto pushBottomPoint = [&](int x, int y) -> void
+    {
         const int ax = x * bottomLod;
         const int ay = (y + chunkSize) * lod;
 
@@ -633,60 +787,14 @@ void createPlaneSeamsGeometry(
         });
 
         // normal
-        vm::vec3 normal;
-        if (computeNormals == ComputeNormals::YES) {
-            const int Lx = dx - 1;
-            const int Ly = dy;
-            const int Lindex =
-                heightfieldsCenterDataReadOffset +
-                (Ly * gridWidthP3) +
-                Lx;
-            const float Lheight = heightfields[Lindex].getHeight();
-
-            const int Rx = dx + 1;
-            const int Ry = dy;
-            const int Rindex =
-                heightfieldsCenterDataReadOffset +
-                (Ry * gridWidthP3) +
-                Rx;
-            const float Rheight = heightfields[Rindex].getHeight();
-
-            const int Ux = dx;
-            const int Uy = dy - 1;
-            const int Uindex =
-                heightfieldsCenterDataReadOffset +
-                (Uy * gridWidthP3) +
-                Ux;
-            const float Uheight = heightfields[Uindex].getHeight();
-
-            const int Dx = dx;
-            const int Dy = dy + 1;
-            const int Dindex =
-                heightfieldsCenterDataReadOffset +
-                (Dy * gridWidthP3) +
-                Dx;
-            const float Dheight = heightfields[Dindex].getHeight();
-
-            normal = vm::normalize(
-                vm::vec3{
-                    Lheight - Rheight,
-                    2.0f,
-                    Uheight - Dheight
-                }
-            );
-        } else {
-            normal = vm::vec3{
-                0,
-                1,
-                0
-            };
-        }
+        const vm::vec3 &normal = v0.normal;
         geometry.normals.push_back(normal);
 
         // metadata
         geometry.pushPointMetadata(v0);
     };
-    auto pushRightPoint = [&](int x, int y) -> void {
+    auto pushRightPoint = [&](int x, int y) -> void
+    {
         const int ax = (x + chunkSize) * lod;
         const int ay = y * rightLod;
 
@@ -708,76 +816,22 @@ void createPlaneSeamsGeometry(
         geometry.positions.push_back(vm::vec3{
             (float)ax,
             height,
-            (float)ay
-        });
+            (float)ay});
 
         geometry.materials.push_back(vm::ivec4{
             materials[0],
             materials[1],
             materials[2],
-            materials[3]
-        });
+            materials[3]});
 
         geometry.materialsWeights.push_back(vm::vec4{
             materialWeights[0],
             materialWeights[1],
             materialWeights[2],
-            materialWeights[3]
-        });
-        
+            materialWeights[3]});
+
         // normal
-        vm::vec3 normal;
-        if (computeNormals == ComputeNormals::YES) {
-            const int Lx = dx - 1;
-            const int Ly = dy;
-            const int Lindex =
-                heightfieldsCenterDataReadOffset +
-                (3 * gridWidthP3) +
-                (Lx * gridHeightP3) +
-                Ly;
-            const float Lheight = heightfields[Lindex].getHeight();
-
-            const int Rx = dx + 1;
-            const int Ry = dy;
-            const int Rindex =
-                heightfieldsCenterDataReadOffset +
-                (3 * gridWidthP3) +
-                (Rx * gridHeightP3) +
-                Ry;
-            const float Rheight = heightfields[Rindex].getHeight();
-
-            const int Ux = dx;
-            const int Uy = dy - 1;
-            const int Uindex =
-                heightfieldsCenterDataReadOffset +
-                (3 * gridWidthP3) +
-                (Ux * gridHeightP3) +
-                Uy;
-            const float Uheight = heightfields[Uindex].getHeight();
-
-            const int Dx = dx;
-            const int Dy = dy + 1;
-            const int Dindex =
-                heightfieldsCenterDataReadOffset +
-                (3 * gridWidthP3) +
-                (Dx * gridHeightP3) +
-                Dy;
-            const float Dheight = heightfields[Dindex].getHeight();
-
-            normal = vm::normalize(
-                vm::vec3{
-                    Lheight - Rheight,
-                    2.0f,
-                    Uheight - Dheight
-                }
-            );
-        } else {
-            normal = vm::vec3{
-                0,
-                1,
-                0
-            };
-        }
+        const vm::vec3 &normal = v0.normal;
         geometry.normals.push_back(normal);
 
         // metadata
@@ -1677,48 +1731,132 @@ void generateWaterGeometry(
 
 //
 
-class HeightfieldSampler {
+class HeightfieldSampler
+{
 public:
     const vm::vec2 &worldPositionXZ;
     const int &lod;
     const int chunkSize;
     const int chunkSizeP2;
     const std::vector<Heightfield> &heightfields;
-    
+
     HeightfieldSampler(
         const vm::vec2 &worldPositionXZ,
         const int &lod,
         const int chunkSize,
-        const std::vector<Heightfield> &heightfields
-    ) :
-        worldPositionXZ(worldPositionXZ),
-        lod(lod),
-        chunkSize(chunkSize),
-        chunkSizeP2(chunkSize + 2),
-        heightfields(heightfields)
-        {}
-    float getHeight(float x, float z) {
-        vm::vec2 location{
-            x - worldPositionXZ.x,
-            z - worldPositionXZ.y
-        };
-        location /= (float)lod;
+        const std::vector<Heightfield> &heightfields) : worldPositionXZ(worldPositionXZ),
+                                                        lod(lod),
+                                                        chunkSize(chunkSize),
+                                                        chunkSizeP2(chunkSize + 2),
+                                                        heightfields(heightfields)
+    {
+    }
+    float getHeight(float x, float z)
+    {
+        const vm::vec2 location = getLocalPosition(x, z);
 
         float result = bilinear<HeightfieldSampler, float>(location, chunkSize, *this);
         return result;
     }
-    float get(int x, int z) {
+    Heightfield getHeightfield(float x, float z)
+    {
+        const vm::vec2 location = getLocalPosition(x, z);
+
+        float rx = std::floor(location.x);
+        float ry = std::floor(location.y);
+
+        int ix = (int)rx;
+        int iy = (int)ry;
+
+        return getHeightfieldByLocalPosition(ix, iy);
+    }
+    float get(int x, int z)
+    {
+        const Heightfield heightfield = getHeightfieldByLocalPosition(x, z);
+        const float &height = heightfield.heightField;
+        return height;
+    }
+
+private:
+    vm::vec2 getLocalPosition(float x, float z)
+    {
+        vm::vec2 location{
+            x - worldPositionXZ.x,
+            z - worldPositionXZ.y};
+        location /= (float)lod;
+        return location;
+    };
+    Heightfield getHeightfieldByLocalPosition(int x, int z)
+    {
         const int dx = x + 1;
         const int dz = z + 1;
         const int index = dx + dz * chunkSizeP2;
         const Heightfield &heightfield = heightfields[index];
-        const float &height = heightfield.heightField;
-        return height;
+        return heightfield;
     }
 };
 
 //
 
+void pushSplatInstances(const float &ax, const float &az, const float &rot, SplatInstanceGeometry &geometry, const int &instanceId, HeightfieldSampler &heightfieldSampler)
+{
+    auto iterPair = geometry.instances.emplace(std::make_pair(instanceId, SplatInstance{}));
+    auto iter = iterPair.first;
+    const bool &inserted = iterPair.second;
+    SplatInstance &instance = iter->second;
+    if (inserted)
+    {
+        instance.instanceId = instanceId;
+    }
+
+    const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
+
+    instance.ps.push_back(ax);
+    instance.ps.push_back(height);
+    instance.ps.push_back(az);
+
+    Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
+    instance.qs.push_back(q.x);
+    instance.qs.push_back(q.y);
+    instance.qs.push_back(q.z);
+    instance.qs.push_back(q.w);
+}
+
+void pushSubSplatInstances(const float &ax, const float &az, const float &rot, SplatInstanceGeometry &geometry, const int &instanceId, HeightfieldSampler &heightfieldSampler, const int &numSubObjectsPerObject, std::mt19937 &rng, std::uniform_real_distribution<float> &dis)
+{
+    for (int i = 0; i < numSubObjectsPerObject; i++)
+    {
+        const float offsetX = dis(rng) * 2.f - 1.f;
+        const float offsetZ = dis(rng) * 2.f - 1.f;
+
+        const float signX = signbit(offsetX) ? -1.f : 1.f;
+        const float signZ = signbit(offsetZ) ? -1.f : 1.f;
+
+        const float newX = (BUSH_AROUND_TREE_BASE_OFFSET * signX) + ax + offsetX * BUSH_AROUND_TREE_OFFSET_RANGE;
+        const float newZ = (BUSH_AROUND_TREE_BASE_OFFSET * signZ) + az + offsetZ * BUSH_AROUND_TREE_OFFSET_RANGE;
+
+        auto iterPair = geometry.instances.emplace(std::make_pair(instanceId, SplatInstance{}));
+        auto iter = iterPair.first;
+        const bool &inserted = iterPair.second;
+        SplatInstance &instance = iter->second;
+        if (inserted)
+        {
+            instance.instanceId = instanceId;
+        }
+
+        const float height = heightfieldSampler.getHeight(newX, newZ) - (float)WORLD_BASE_HEIGHT;
+
+        instance.ps.push_back(newX);
+        instance.ps.push_back(height);
+        instance.ps.push_back(newZ);
+
+        Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
+        instance.qs.push_back(q.x);
+        instance.qs.push_back(q.y);
+        instance.qs.push_back(q.z);
+        instance.qs.push_back(q.w);
+    }
+}
 void generateVegetationInstances(
     const vm::ivec2 &worldPositionXZ,
     const int lod,
@@ -1726,77 +1864,175 @@ void generateVegetationInstances(
     const int numVegetationInstances,
     const std::vector<Heightfield> &heightfields,
     Noises &noises,
-    VegetationGeometry &vegetationGeometry
-) {
-    constexpr int maxNumVeggiesPerChunk = 8;
-    constexpr float maxVeggieRate = 0.35;
-    // const float veggieRate = maxVeggieRate / (float)(lod * lod);
-    const float veggieRate = maxVeggieRate / (float)lod;
-    // const float veggieRate = maxVeggieRate;
-
+    VegetationGeometry &treeGeometry,
+    VegetationGeometry &bushGeometry)
+{
     int baseMinX = worldPositionXZ.x;
     int baseMinZ = worldPositionXZ.y;
 
     vm::vec2 worldPositionXZf{
         (float)worldPositionXZ.x,
-        (float)worldPositionXZ.y
-    };
+        (float)worldPositionXZ.y};
     HeightfieldSampler heightfieldSampler(
         worldPositionXZf,
         lod,
         chunkSize,
-        heightfields
-    );
-    
-    for (int dz = 0; dz < lod; dz++) {
-        for (int dx = 0; dx < lod; dx++) {
+        heightfields);
+
+    for (int dz = 0; dz < lod; dz++)
+    {
+        for (int dx = 0; dx < lod; dx++)
+        {
             int chunkMinX = baseMinX + dx * chunkSize;
             int chunkMinZ = baseMinZ + dz * chunkSize;
 
-            float chunkSeed = noises.vegetationSeedNoise.in2D(chunkMinX, chunkMinZ);
+            float chunkSeed = noises.uberNoise.treeObjectNoise(chunkMinX, chunkMinZ);
             unsigned int seedInt = *(unsigned int *)&chunkSeed;
             std::mt19937 rng(seedInt);
             std::uniform_real_distribution<float> dis(0.f, 1.f);
 
-            for (int i = 0; i < maxNumVeggiesPerChunk; i++) {
-                float noiseValue = dis(rng);
+            for (int i = 0; i < MAX_NUM_VEGGIES_PER_CHUNK; i++)
+            {
                 float chunkOffsetX = dis(rng) * (float)chunkSize;
                 float chunkOffsetZ = dis(rng) * (float)chunkSize;
                 float rot = dis(rng) * 2.0f * M_PI;
                 int instanceId = (int)std::round(dis(rng) * (float)(numVegetationInstances - 1));
 
-                if (noiseValue < veggieRate) {
-                    auto iterPair = vegetationGeometry.instances.emplace(
-                        std::make_pair(instanceId, SplatInstance{})
-                    );
-                    auto iter = iterPair.first;
-                    const bool &inserted = iterPair.second;
-                    SplatInstance &instance = iter->second;
-                    if (inserted) {
-                        instance.instanceId = instanceId;
+                float ax = (float)chunkMinX + chunkOffsetX;
+                float az = (float)chunkMinZ + chunkOffsetZ;
+
+                const Heightfield &heightfield = heightfieldSampler.getHeightfield(ax, az);
+                const vm::vec3 &normal = heightfield.normal;
+
+                float slope = std::max(0.f, 1.f - normal.y);
+
+                if (slope < 0.1f)
+                {
+                    float noiseValue = noises.uberNoise.treeObjectNoise(ax, az);
+                    if (noiseValue > VEGGIE_THRESHOLD)
+                    {
+                        pushSplatInstances(ax, az, rot, treeGeometry, instanceId, heightfieldSampler);
+                        pushSubSplatInstances(ax, az, rot, bushGeometry, instanceId, heightfieldSampler, NUM_BUSHES_AROUND_TREE, rng, dis);
                     }
-
-                    float ax = (float)chunkMinX + chunkOffsetX;
-                    float az = (float)chunkMinZ + chunkOffsetZ;
-                    const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
-
-                    instance.ps.push_back(ax);
-                    instance.ps.push_back(height);
-                    instance.ps.push_back(az);
-
-                    Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
-                    instance.qs.push_back(q.x);
-                    instance.qs.push_back(q.y);
-                    instance.qs.push_back(q.z);
-                    instance.qs.push_back(q.w);
                 }
             }
         }
     }
 }
 
+void generateRocksInstances(
+    const vm::ivec2 &worldPositionXZ,
+    const int lod,
+    const int chunkSize,
+    const int numRockInstances,
+    const std::vector<Heightfield> &heightfields,
+    Noises &noises,
+    RockGeometry &rockGeometry,
+    RockGeometry &stoneGeometry)
+{
+    int baseMinX = worldPositionXZ.x;
+    int baseMinZ = worldPositionXZ.y;
+
+    vm::vec2 worldPositionXZf{
+        (float)worldPositionXZ.x,
+        (float)worldPositionXZ.y};
+    HeightfieldSampler heightfieldSampler(
+        worldPositionXZf,
+        lod,
+        chunkSize,
+        heightfields);
+
+    for (int dz = 0; dz < lod; dz++)
+    {
+        for (int dx = 0; dx < lod; dx++)
+        {
+            int chunkMinX = baseMinX + dx * chunkSize;
+            int chunkMinZ = baseMinZ + dz * chunkSize;
+
+            float chunkSeed = noises.uberNoise.stoneNoise(chunkMinX, chunkMinZ);
+            unsigned int seedInt = *(unsigned int *)&chunkSeed;
+            std::mt19937 rng(seedInt);
+            std::uniform_real_distribution<float> dis(0.f, 1.f);
+
+            for (int i = 0; i < MAX_NUM_VEGGIES_PER_CHUNK; i++)
+            {
+                float chunkOffsetX = dis(rng) * (float)chunkSize;
+                float chunkOffsetZ = dis(rng) * (float)chunkSize;
+                float rot = dis(rng) * 2.0f * M_PI;
+                int instanceId = (int)std::round(dis(rng) * (float)(numRockInstances - 1));
+
+                float ax = (float)chunkMinX + chunkOffsetX;
+                float az = (float)chunkMinZ + chunkOffsetZ;
+
+                const Heightfield &heightfield = heightfieldSampler.getHeightfield(ax, az);
+                const vm::vec3 &normal = heightfield.normal;
+
+                float slope = std::max(0.f, 1.f - normal.y);
+
+                if (slope < 0.1f)
+                {
+                    float noiseValue = noises.uberNoise.stoneNoise(ax, az);
+                    if (noiseValue > ROCK_THRESHOLD)
+                    {
+                        pushSplatInstances(ax, az, rot, rockGeometry, instanceId, heightfieldSampler);
+                        pushSubSplatInstances(ax, az, rot, stoneGeometry, instanceId, heightfieldSampler, NUM_STONES_AROUND_ROCK, rng, dis);
+                    }
+                }
+            }
+        }
+    }
+}
 //
 
+
+template <typename T, typename G>
+G& pushMaterialAwareSplatInstances(const float &ax, const float &az, const float &rot, T &geometry, const int &instanceId, HeightfieldSampler &heightfieldSampler, const Heightfield &heightfield)
+{
+    auto iterPair = geometry.instances.emplace(std::make_pair(instanceId, G{}));
+    auto iter = iterPair.first;
+    const bool &inserted = iterPair.second;
+    G &instance = iter->second;
+    if (inserted)
+    {
+        instance.instanceId = instanceId;
+    }
+
+    const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
+
+    instance.ps.push_back(ax);
+    instance.ps.push_back(height);
+    instance.ps.push_back(az);
+
+    Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
+    instance.qs.push_back(q.x);
+    instance.qs.push_back(q.y);
+    instance.qs.push_back(q.z);
+    instance.qs.push_back(q.w);
+
+    const MaterialsArray &heightfieldMaterials = heightfield.materials;
+    const MaterialsWeightsArray &heightfieldMaterialsWeights = heightfield.materialsWeights;
+    const vm::vec4 materials = vm::vec4{(float)heightfieldMaterials[0], (float)heightfieldMaterials[1], (float)heightfieldMaterials[2], (float)heightfieldMaterials[3]};
+    const vm::vec4 materialsWeights = vm::vec4{heightfieldMaterialsWeights[0], heightfieldMaterialsWeights[1], heightfieldMaterialsWeights[2], heightfieldMaterialsWeights[3]};
+    instance.materials.push_back(materials);
+    instance.materialsWeights.push_back(materialsWeights);
+
+    return instance;
+}
+void pushGrassInstances(const float &ax, const float &az, const float &rot, GrassGeometry &geometry, const int &instanceId, HeightfieldSampler &heightfieldSampler, const Heightfield &heightfield, Noises &noises, const float &crushedGrassNoise){
+    GrassSplatInstance &instance = pushMaterialAwareSplatInstances<GrassGeometry, GrassSplatInstance>(ax, az, rot, geometry, instanceId, heightfieldSampler, heightfield);
+
+    const float heightScale = GRASS_MODEL_BASE_HEIGHT + ((crushedGrassNoise * 2.f) - 1.f) * GRASS_HEIGHT_VARIATION_RANGE;
+
+    const float colorVariationNoise = vm::clamp(GRASS_COLOR_VARIATION_BASE + (noises.uberNoise.simplexNoise(ax * 10.f, az * 10.f) * 2.f - 1.f) * GRASS_COLOR_VARIATION_RANGE, 0.0f, 1.f + GRASS_COLOR_VARIATION_RANGE);
+    const float randomBladeFactor = noises.uberNoise.hashNoise(ax, az) * 2.f - 1.f;
+
+    const vm::vec3 grassColorMultiplier = (vm::vec3{colorVariationNoise, colorVariationNoise / 1.1f, colorVariationNoise / 1.2f} +
+                                           vm::vec3{randomBladeFactor / 10.f, randomBladeFactor / 12.f, randomBladeFactor / 14.f});
+
+    const vm::vec4 grassProps = vm::vec4{grassColorMultiplier.x, grassColorMultiplier.y, grassColorMultiplier.z, heightScale};
+
+    instance.grassProps.push_back(grassProps);
+}
 void generateGrassInstances(
     const vm::ivec2 &worldPositionXZ,
     const int lod,
@@ -1804,71 +2040,62 @@ void generateGrassInstances(
     const int numGrassInstances,
     const std::vector<Heightfield> &heightfields,
     Noises &noises,
-    GrassGeometry &grassGeometry
-) {
-    constexpr int maxNumGrassesPerChunk = 2048;
-    constexpr float grassRate = 0.5;
-    // const float grassRate = maxGrassRate / (float)(lod * lod);
-    const float grassThrowRate = 1.f / (float)lod;
-    // const float grassRate = maxGrassRate;
+    GrassGeometry &grassGeometry)
+{
+    // const float GRASS_THRESHOLD = maxGrassRate / (float)(lod * lod);
+    // const float grassThrowRate = 1.f / (float)lod;
+    // const float GRASS_THRESHOLD = maxGrassRate;
 
     int baseMinX = worldPositionXZ.x;
     int baseMinZ = worldPositionXZ.y;
 
     vm::vec2 worldPositionXZf{
         (float)worldPositionXZ.x,
-        (float)worldPositionXZ.y
-    };
+        (float)worldPositionXZ.y};
     HeightfieldSampler heightfieldSampler(
         worldPositionXZf,
         lod,
         chunkSize,
-        heightfields
-    );
-    
-    for (int dz = 0; dz < lod; dz++) {
-        for (int dx = 0; dx < lod; dx++) {
+        heightfields);
+
+    for (int dz = 0; dz < lod; dz++)
+    {
+        for (int dx = 0; dx < lod; dx++)
+        {
             int chunkMinX = baseMinX + dx * chunkSize;
             int chunkMinZ = baseMinZ + dz * chunkSize;
 
-            float chunkSeed = noises.grassSeedNoise.in2D(chunkMinX, chunkMinZ);
+            float chunkSeed = noises.uberNoise.grassObjectNoise(chunkMinX, chunkMinZ);
             unsigned int seedInt = *(unsigned int *)&chunkSeed;
             std::mt19937 rng(seedInt);
             std::uniform_real_distribution<float> dis(0.f, 1.f);
 
-            for (int i = 0; i < maxNumGrassesPerChunk; i++) {
+            for (int i = 0; i < MAX_NUM_GRASSES_PER_CHUNK; i++)
+            {
+                float throwNoise = dis(rng);
                 float chunkOffsetX = dis(rng) * (float)chunkSize;
                 float chunkOffsetZ = dis(rng) * (float)chunkSize;
                 float rot = dis(rng) * 2.0f * M_PI;
                 int instanceId = (int)std::round(dis(rng) * (float)(numGrassInstances - 1));
-                float throwNoise = dis(rng);
-                
+
                 float ax = (float)chunkMinX + chunkOffsetX;
                 float az = (float)chunkMinZ + chunkOffsetZ;
-                float noiseValue = noises.grassNoise.in2D(ax, az);
 
-                if (noiseValue < grassRate && throwNoise <= grassThrowRate) {
-                    auto iterPair = grassGeometry.instances.emplace(
-                        std::make_pair(instanceId, SplatInstance{})
-                    );
-                    auto iter = iterPair.first;
-                    const bool &inserted = iterPair.second;
-                    SplatInstance &instance = iter->second;
-                    if (inserted) {
-                        instance.instanceId = instanceId;
+                const Heightfield &heightfield = heightfieldSampler.getHeightfield(ax, az);
+                const vm::vec3 &normal = heightfield.normal;
+
+                float slope = std::max(0.f, 1.f - normal.y);
+
+                if (slope < 0.1f)
+                {
+                    float noiseValue = noises.uberNoise.grassObjectNoise(ax, az) / lod;
+                    if (noiseValue > GRASS_THRESHOLD)
+                    {
+                        const float crushedGrassNoise = 1.f - noises.uberNoise.stoneNoise(ax, az);
+                        if(crushedGrassNoise > CRUSHED_GRASS_THRESHOLD) {
+                            pushGrassInstances(ax, az, rot, grassGeometry, instanceId, heightfieldSampler, heightfield, noises, crushedGrassNoise);
+                        }
                     }
-                    
-                    const float height = heightfieldSampler.getHeight(ax, az) - (float)WORLD_BASE_HEIGHT;
-
-                    instance.ps.push_back(ax);
-                    instance.ps.push_back(height);
-                    instance.ps.push_back(az);
-
-                    Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
-                    instance.qs.push_back(q.x);
-                    instance.qs.push_back(q.y);
-                    instance.qs.push_back(q.z);
-                    instance.qs.push_back(q.w);
                 }
             }
         }
@@ -2089,32 +2316,36 @@ enum GenerateFlags {
     GF_TERRAIN = 1 << 0,
     GF_WATER = 1 << 1,
     GF_VEGETATION = 1 << 2,
-    GF_GRASS = 1 << 3,
-    GF_POI = 1 << 4,
-    GF_HEIGHTFIELD = 1 << 5
+    GF_ROCK = 1 << 3,
+    GF_GRASS = 1 << 4,
+    GF_POI = 1 << 5,
+    GF_HEIGHTFIELD = 1 << 6
 };
-ChunkResult *PGInstance::createChunkMesh(
+void PGInstance::createChunkMesh(
+    ChunkResult *result,
     const vm::ivec2 &worldPosition,
     int lod,
     const std::array<int, 2> &lodArray,
     int generateFlags,
     int numVegetationInstances,
+    int numRockInstances,
     int numGrassInstances,
     int numPoiInstances
 ) {
-    ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
-
     // heightfield
     std::vector<Heightfield> heightfields;
     if (
         (generateFlags & GF_TERRAIN) |
         (generateFlags & GF_WATER) |
         (generateFlags & GF_VEGETATION) |
+        (generateFlags & GF_ROCK) |
         (generateFlags & GF_GRASS) |
         (generateFlags & GF_POI) |
         (generateFlags & GF_HEIGHTFIELD)
     ) {
         heightfields = getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
+        calculateSurfaceNormals(heightfields, lod, lodArray, chunkSize);
+        applyMaterials(worldPosition.x, worldPosition.y, lod, lodArray, heightfields);
     }
 
     // terrain
@@ -2155,7 +2386,8 @@ ChunkResult *PGInstance::createChunkMesh(
 
     // vegetation
     if (generateFlags & GF_VEGETATION) {
-        VegetationGeometry vegetationGeometry;
+        VegetationGeometry treeGeometry;
+        VegetationGeometry bushGeometry;
 
         generateVegetationInstances(
             worldPosition,
@@ -2164,11 +2396,38 @@ ChunkResult *PGInstance::createChunkMesh(
             numVegetationInstances,
             heightfields,
             noises,
-            vegetationGeometry
+            treeGeometry,
+            bushGeometry
         );
-        result->vegetationInstancesBuffer = vegetationGeometry.getBuffer();
+
+        result->treeInstancesBuffer = treeGeometry.getBuffer();
+        result->bushInstancesBuffer = bushGeometry.getBuffer();
     } else {
-        result->vegetationInstancesBuffer = nullptr;
+        result->treeInstancesBuffer = nullptr;
+        result->bushInstancesBuffer = nullptr;
+    }
+
+    // rocks
+    if (generateFlags & GF_ROCK) {
+        RockGeometry rockGeometry;
+        RockGeometry stoneGeometry;
+
+        generateRocksInstances(
+            worldPosition,
+            lod,
+            chunkSize,
+            numRockInstances,
+            heightfields,
+            noises,
+            rockGeometry,
+            stoneGeometry
+        );
+
+        result->rockInstancesBuffer = rockGeometry.getBuffer();
+        result->stoneInstancesBuffer = stoneGeometry.getBuffer();
+    } else {
+        result->rockInstancesBuffer = nullptr;
+        result->stoneInstancesBuffer = nullptr;
     }
 
     // grass
@@ -2220,8 +2479,6 @@ ChunkResult *PGInstance::createChunkMesh(
     } else {
         result->heightfieldsBuffer = nullptr;
     }
-
-    return result;
 }
 void PGInstance::createMobSplatAsync(
     uint32_t id,
@@ -2309,7 +2566,8 @@ void PGInstance::createBarrierMeshAsync(
         if (!promise->resolve(result)) {
             free(result);
         }
-    });
+    }
+    );
     ProcGen::taskQueue.pushTask(terrainTask);
 }
 
@@ -2553,6 +2811,7 @@ void PGInstance::createChunkMeshAsync(
     const std::array<int, 2> &lodArray,
     int generateFlags,
     int numVegetationInstances,
+    int numRockInstances,
     int numGrassInstances,
     int numPoiInstances
 ) {
@@ -2569,26 +2828,32 @@ void PGInstance::createChunkMeshAsync(
     };
     Task *terrainTask = new Task(id, worldPositionF, lod, [
         this,
+        // result,
         promise,
         worldPosition,
         lod,
         lodArray2,
         generateFlags,
         numVegetationInstances,
+        numRockInstances,
         numGrassInstances,
         numPoiInstances
-    ]() -> void {
-        ChunkResult *result = createChunkMesh(
+    ]() {
+        ChunkResult *result = (ChunkResult *)malloc(sizeof(ChunkResult));
+
+        createChunkMesh(
+            result,
             worldPosition,
             lod,
             lodArray2,
             generateFlags,
             numVegetationInstances,
+            numRockInstances,
             numGrassInstances,
             numPoiInstances
         );
         if (!promise->resolve(result)) {
-            result->free();
+            result->free(this);
         }
     });
     ProcGen::taskQueue.pushTask(terrainTask);
@@ -2790,14 +3055,12 @@ void PGInstance::getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, in
 NoiseField PGInstance::getNoise(float bx, float bz) {
     float tNoise = (float)noises.uberNoise.temperatureNoise(bx, bz);
     float hNoise = (float)noises.uberNoise.humidityNoise(bx, bz);
-    float oNoise = (float)noises.uberNoise.oceanNoise(bx, bz);
-    // float rNoise = (float)noises.riverNoise.in2D(bx, bz);
+    bool oNoise = noises.uberNoise.oceanNoise(bx, bz);
 
     return NoiseField{
         tNoise,
         hNoise,
         oNoise
-        // rNoise
     };
 }
 uint8_t PGInstance::getBiome(float bx, float bz) {
@@ -2806,10 +3069,9 @@ uint8_t PGInstance::getBiome(float bx, float bz) {
     const auto &noise = getNoise(bx, bz);
     float temperatureNoise = noise.temperature;
     float humidityNoise = noise.humidity;
-    float oceanNoise = noise.ocean;
-    // float riverNoise = noise.river;
+    bool oceanNoise = noise.ocean;
 
-    if (oceanNoise > OCEAN_THRESHOLD)
+    if (oceanNoise)
     {
         biome = (unsigned char)BIOME::biOcean;
     }
@@ -2839,8 +3101,8 @@ uint8_t PGInstance::getBiome(float bx, float bz) {
 
     if (biome == 0xFF)
     {
-        float temperatureNoise2 = vm::clamp(std::pow(temperatureNoise, 1.3f), 0.f, 1.f);
-        float humidityNoise2 = vm::clamp(std::pow(humidityNoise, 1.3f), 0.f, 1.f);
+        float temperatureNoise2 = vm::clamp(temperatureNoise, 0.f, 1.f);
+        float humidityNoise2 = vm::clamp(humidityNoise, 0.f, 1.f);
 
         int t = (int)std::floor(temperatureNoise2 * 16.0f);
         int h = (int)std::floor(humidityNoise2 * 16.0f);
@@ -2917,7 +3179,8 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
     }
 }
 
-Heightfield PGInstance::getHeightField(float bx, float bz) {
+Heightfield PGInstance::getHeightField(float bx, float bz) 
+{
     Heightfield localHeightfield;
 
     vm::vec2 fWorldPosition{bx, bz};
@@ -2934,9 +3197,6 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
     // acc height
     std::vector<float> biomeCounts(numBiomes);
     float totalHeightFactors = 0;
-    // acc material
-    std::vector<MaterialWeightAccumulator> materialWeightAccumulators(numMaterials);
-    float totalMaterialFactors = 0;
     // acc water
     float sumWaterFactor = 0;
     float totalWaterFactors = 0;
@@ -3032,46 +3292,8 @@ Heightfield PGInstance::getHeightField(float bx, float bz) {
 
         float elevation = elevationSum / totalHeightFactors;
         localHeightfield.heightField = elevation;
-
-        // materials
-
-        getComputedMaterials(localHeightfield, materialWeightAccumulators, totalMaterialFactors, fWorldPosition);
-
-        std::vector<uint8_t> seenMaterials;
-        for (size_t i = 0; i < materialWeightAccumulators.size(); i++)
-        {
-            const uint8_t material = (uint8_t)i;
-            const bool &isSeen = materialWeightAccumulators[material].getSeen();
-            if(isSeen) {
-                seenMaterials.push_back(material);
-            }
-        }
-        
-        // sort by the overall weight of the material
-        // std::sort(
-        //     seenMaterials.begin(),
-        //     seenMaterials.end(),
-        //     [&](uint8_t b1, uint8_t b2) -> bool {
-        //         return materialWeightAccumulators[b1].getWeight() > materialWeightAccumulators[b2].getWeight();
-        //     }
-        // );
-
-        for (size_t i = 0; i < 4; i++)
-        {
-            if (i < seenMaterials.size())
-            {
-                const uint8_t &material = seenMaterials[i];
-                const float &materialWeight = materialWeightAccumulators[material].getWeight();
-                localHeightfield.materials[i] = material;
-                localHeightfield.materialsWeights[i] = materialWeight / totalMaterialFactors;
-            }
-            else
-            {
-                localHeightfield.materials[i] = 0;
-                localHeightfield.materialsWeights[i] = 0;
-            }
-        }
     }
+
 
     // postprocess water
     {
@@ -3483,7 +3705,146 @@ float PGInstance::getComputedBiomeHeight(uint8_t b, const vm::vec2 &worldPositio
     }
 }
 
+
 // materials
+void PGInstance::setHeightfieldMaterial(Heightfield &localHeightfield, const vm::vec2 &position)
+{
+    std::vector<MaterialWeightAccumulator> materialWeightAccumulators(numMaterials);
+    float totalMaterialFactors = 0;
+
+    getComputedMaterials(localHeightfield, materialWeightAccumulators, totalMaterialFactors, position);
+
+    std::vector<uint8_t> seenMaterials;
+    for (size_t i = 0; i < materialWeightAccumulators.size(); i++)
+    {
+        const uint8_t material = (uint8_t)i;
+        const bool &isSeen = materialWeightAccumulators[material].getSeen();
+        if (isSeen)
+        {
+            seenMaterials.push_back(material);
+        }
+    }
+
+    // sort by the overall weight of the material
+    // std::sort(
+    //     seenMaterials.begin(),
+    //     seenMaterials.end(),
+    //     [&](uint8_t b1, uint8_t b2) -> bool {
+    //         return materialWeightAccumulators[b1].getWeight() > materialWeightAccumulators[b2].getWeight();
+    //     }
+    // );
+
+    for (size_t i = 0; i < 4; i++)
+    {
+        if (i < seenMaterials.size())
+        {
+            const uint8_t &material = seenMaterials[i];
+            const float &materialWeight = materialWeightAccumulators[material].getWeight();
+            localHeightfield.materials[i] = material;
+            localHeightfield.materialsWeights[i] = materialWeight / totalMaterialFactors;
+        }
+        else
+        {
+            localHeightfield.materials[i] = 0;
+            localHeightfield.materialsWeights[i] = 0;
+        }
+    }
+}
+void PGInstance::applyCenterMaterials(const int &bx, const int &bz, const int &lod, std::vector<Heightfield> &heightfields) {
+    const int chunkSizeP2 = chunkSize + 2;
+    for (int dz = 0; dz < chunkSizeP2; dz++) {
+        for (int dx = 0; dx < chunkSizeP2; dx++) {
+            const int index = dx + dz * chunkSizeP2;
+            Heightfield &localHeightfield = heightfields[index];
+
+            const int x = dx - 1;
+            const int z = dz - 1;
+            const int ax = bx + x * lod;
+            const int az = bz + z * lod;
+
+            const vm::vec2 fWorldPosition{(float)ax, (float)az};
+
+            setHeightfieldMaterial(localHeightfield, fWorldPosition);
+        }
+    }
+}
+void PGInstance::applySeamMaterials(const int &bx, const int &bz, const int &lod, const std::array<int, 2> &lodArray, const int &rowSize, std::vector<Heightfield> &heightfields) {
+    const int &bottomLod = lodArray[0];
+    const int &rightLod = lodArray[1];
+
+    const int gridWidth = chunkSize * lod / bottomLod;
+    const int gridWidthP3 = gridWidth + 3;
+
+    const int gridHeight = chunkSize * lod / rightLod;
+    const int gridHeightP3 = gridHeight + 3;
+
+    const int heightfieldsCenterDataOffset = rowSize * rowSize;
+
+    // bottom
+    int index = heightfieldsCenterDataOffset;
+    {
+        for (int dz = 0; dz < 3; dz++) {
+            for (int dx = 0; dx < gridWidthP3; dx++) {
+                const int x = dx - 1;
+                const int z = dz - 1;
+
+                Heightfield &localHeightfieldSeam = heightfields[index];
+                
+                const int ax = bx + x * bottomLod;
+                const int az = bz + chunkSize * lod + z * bottomLod;
+
+                const vm::vec2 &fWorldPosition{(float)ax, (float)az};
+                setHeightfieldMaterial(localHeightfieldSeam, fWorldPosition);
+
+                index++;
+            }
+        }
+    }
+    // right
+    {
+        for (int dx = 0; dx < 3; dx++) {
+            for (int dz = 0; dz < gridHeightP3; dz++) {
+                const int x = dx - 1;
+                const int z = dz - 1;
+                
+                Heightfield &localHeightfieldSeam = heightfields[index];
+
+                const int ax = bx + chunkSize * lod + x * rightLod;
+                const int az = bz + z * rightLod;
+
+                const vm::vec2 &fWorldPosition{(float)ax, (float)az};
+
+                setHeightfieldMaterial(localHeightfieldSeam, fWorldPosition);
+
+                index++;
+            }
+        }
+    }
+}
+void PGInstance::applyMaterials(const int &x, const int &z, const int &lod, const std::array<int, 2> &lodArray, std::vector<Heightfield> &heightfields)
+{
+    const int &bottomLod = lodArray[0];
+    const int &rightLod = lodArray[1];
+
+    const int gridWidth = chunkSize * lod / bottomLod;
+    const int gridWidthP1 = gridWidth + 1;
+    const int gridWidthP3 = gridWidth + 3;
+    const int gridWidthP3T3 = gridWidthP3 * 3;
+   
+    const int gridHeight = chunkSize * lod / rightLod;
+    const int gridHeightP1 = gridHeight + 1;
+    const int gridHeightP3 = gridHeight + 3;
+    const int gridHeightP3T3 = gridHeightP3 * 3;
+
+    const int chunkSizeP2 = chunkSize + 2;
+
+    applyCenterMaterials(x, z, lod, heightfields);
+    applySeamMaterials(x, z, lod, lodArray, chunkSizeP2, heightfields);
+}
+// void PGInstance::getTerrainMaterialBuffer(std::vector<Heightfield> &heightfields){
+
+// }
+
 void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::vector<MaterialWeightAccumulator> &materialWeightAccumulators, float &totalMaterialFactors, const vm::vec2 &worldPosition)
 {
     const std::array<uint8_t, 4> &biomes = localHeightfield.biomesVectorField;
@@ -3491,28 +3852,45 @@ void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::vector
 
     const int GRASS = (int)MATERIAL::GRASS;
     const int DIRT = (int)MATERIAL::DIRT;
+    const int ROCK = (int)MATERIAL::ROCK;
+    const int STONE = (int)MATERIAL::STONE;
 
     for (int i = 0; i < 1; i++)
     {
         const uint8_t b = biomes[i];
         const float bw = (float)biomesWeights[i] / 255.f;
+
         switch (b)
         {
         // TODO : Define a different set of material rules for each biome, for now we're using these rules as default
         default:
-            const float materialNoise = noises.uberNoise.wetnessNoise(worldPosition.x, worldPosition.y);
+            const float wetness = noises.uberNoise.grassMaterialNoise(worldPosition.x, worldPosition.y);
+            const float stiffness = noises.uberNoise.stiffnessNoise(worldPosition.x, worldPosition.y);
 
-            const float grassWeight = (1.f - materialNoise) * bw;
-            const float dirtWeight = (materialNoise) * bw;
+            const float slope = std::max(0.f, 1.f - localHeightfield.normal.y);
+            const float mountainAndGroundBlend = vm::clamp(slope * 3.f, 0.f, 1.f);
+
+            const float grassWeight = (wetness) * bw * (1.f - mountainAndGroundBlend);
+            const float dirtWeight = (1.f - wetness) * bw * (1.f - mountainAndGroundBlend);
+
+            const float stoneWeight = (stiffness) * mountainAndGroundBlend * bw;
+            const float rockWeight = (1.f - stiffness) * mountainAndGroundBlend * bw;
+
 
             MaterialWeightAccumulator &grassWeightAcc = materialWeightAccumulators[GRASS];
             MaterialWeightAccumulator &dirtWeightAcc = materialWeightAccumulators[DIRT];
+            MaterialWeightAccumulator &rockWeightAcc = materialWeightAccumulators[ROCK];
+            MaterialWeightAccumulator &stoneWeightAcc = materialWeightAccumulators[STONE];
 
             grassWeightAcc.addWeight(grassWeight);
             dirtWeightAcc.addWeight(dirtWeight);
+            rockWeightAcc.addWeight(rockWeight);
+            stoneWeightAcc.addWeight(stoneWeight);
 
             totalMaterialFactors += grassWeight;
             totalMaterialFactors += dirtWeight;
+            totalMaterialFactors += rockWeight;
+            totalMaterialFactors += stoneWeight;
 
             break;
         }
@@ -3541,11 +3919,11 @@ void PGInstance::trackerUpdateAsync(
         maxLod,
         lod1Range
     ]() -> void {
-        const TrackerUpdate &trackerUpdate = tracker->update(position, minLod, maxLod, lod1Range);
+        const TrackerUpdate &trackerUpdate = tracker->update(this, position, minLod, maxLod, lod1Range);
         uint8_t *buffer = trackerUpdate.getBuffer();
         // std::cout << "trakcer update buffer address" << (void *)buffer << std::endl;
         if (!promise->resolve(buffer)) {
-          free(buffer);
+            free(buffer);
         }
     });
     ProcGen::taskQueue.pushTask(trackerUpdateTask);

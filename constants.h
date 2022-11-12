@@ -9,8 +9,22 @@ constexpr int MIN_WORLD_HEIGHT = 0;
 constexpr int MAX_WORLD_HEIGHT = 2048;
 
 // * Terrain parameters
-constexpr float OCEAN_THRESHOLD = 0.85f;
+constexpr int MAX_NUM_GRASSES_PER_CHUNK = 2048;
+constexpr float GRASS_THRESHOLD = 0.1f;
+constexpr int MAX_NUM_VEGGIES_PER_CHUNK = 8;
+constexpr float VEGGIE_THRESHOLD = 0.4f;
+constexpr float OCEAN_THRESHOLD = 0.5f;
+constexpr float ROCK_THRESHOLD = 0.5f;
+constexpr int NUM_STONES_AROUND_ROCK = 1;
 constexpr int WATER_BASE_HEIGHT = WORLD_BASE_HEIGHT;
+constexpr int NUM_BUSHES_AROUND_TREE = 1;
+constexpr float BUSH_AROUND_TREE_BASE_OFFSET = 2.f;
+constexpr float BUSH_AROUND_TREE_OFFSET_RANGE = 3.f;
+constexpr float GRASS_HEIGHT_VARIATION_RANGE = 0.3f;
+constexpr float GRASS_COLOR_VARIATION_BASE = 1.f;
+constexpr float GRASS_COLOR_VARIATION_RANGE = 0.2f;
+constexpr float CRUSHED_GRASS_THRESHOLD = 1.f - ROCK_THRESHOLD;
+constexpr float GRASS_MODEL_BASE_HEIGHT = 1.2f;
 
 //
 

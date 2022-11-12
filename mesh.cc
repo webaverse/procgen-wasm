@@ -202,6 +202,128 @@ uint8_t *SplatInstanceGeometry::getBuffer() const {
   return buffer;
 }
 
+uint8_t *MaterialAwareSplatInstanceGeometry::getBuffer() const {
+  // serialize
+  size_t size = sizeof(uint32_t); // numInstances
+  for (auto &iter : instances) {
+      const MaterialAwareSplatInstance &instance = iter.second;
+
+      size += sizeof(int); // instanceId
+      
+      size += sizeof(uint32_t); // numPs
+      size += sizeof(float) * instance.ps.size(); // ps
+      
+      size += sizeof(uint32_t); // numQs
+      size += sizeof(float) * instance.qs.size(); // qs
+
+      size += sizeof(uint32_t); // num materials
+      size += sizeof(instance.materials[0]) * instance.materials.size(); // materials
+
+      size += sizeof(uint32_t); // num materials weights
+      size += sizeof(instance.materialsWeights[0]) * instance.materialsWeights.size(); // materials weights
+  }
+
+  uint8_t *buffer = (uint8_t *)malloc(size);
+  int index = 0;
+
+  *((uint32_t *)(buffer + index)) = instances.size();
+  index += sizeof(uint32_t);
+  
+  for (auto &iter : instances) {
+      const MaterialAwareSplatInstance &instance = iter.second;
+
+      *((int *)(buffer + index)) = instance.instanceId;
+      index += sizeof(int);
+
+      *((uint32_t *)(buffer + index)) = instance.ps.size();
+      index += sizeof(uint32_t);
+      memcpy(buffer + index, instance.ps.data(), sizeof(float) * instance.ps.size());
+      index += sizeof(float) * instance.ps.size();
+
+      *((uint32_t *)(buffer + index)) = instance.qs.size();
+      index += sizeof(uint32_t);
+      memcpy(buffer + index, instance.qs.data(), sizeof(float) * instance.qs.size());
+      index += sizeof(float) * instance.qs.size();
+
+      *((uint32_t *)(buffer + index)) = instance.materials.size();
+      index += sizeof(uint32_t);
+      memcpy(buffer + index, instance.materials.data(), sizeof(instance.materials[0]) * instance.materials.size());
+      index += sizeof(instance.materials[0]) * instance.materials.size();
+      
+      *((uint32_t *)(buffer + index)) = instance.materialsWeights.size();
+      index += sizeof(uint32_t);
+      memcpy(buffer + index, instance.materialsWeights.data(), sizeof(instance.materialsWeights[0]) * instance.materialsWeights.size());
+      index += sizeof(instance.materialsWeights[0]) * instance.materialsWeights.size();
+  }
+
+  return buffer;
+}
+
+uint8_t *GrassGeometry::getBuffer() const {
+  // serialize
+  size_t size = sizeof(uint32_t); // numInstances
+  for (auto &iter : instances) {
+      const GrassSplatInstance &instance = iter.second;
+
+      size += sizeof(int); // instanceId
+      
+      size += sizeof(uint32_t); // numPs
+      size += sizeof(float) * instance.ps.size(); // ps
+      
+      size += sizeof(uint32_t); // numQs
+      size += sizeof(float) * instance.qs.size(); // qs
+
+      size += sizeof(uint32_t); // num materials
+      size += sizeof(instance.materials[0]) * instance.materials.size(); // materials
+
+      size += sizeof(uint32_t); // num materials weights
+      size += sizeof(instance.materialsWeights[0]) * instance.materialsWeights.size(); // materials weights
+
+      size += sizeof(uint32_t); // num grass props
+      size += sizeof(instance.grassProps[0]) * instance.grassProps.size(); // grass props
+  }
+
+  uint8_t *buffer = (uint8_t *)malloc(size);
+  int index = 0;
+
+  *((uint32_t *)(buffer + index)) = instances.size();
+  index += sizeof(uint32_t);
+  
+  for (auto &iter : instances) {
+      const GrassSplatInstance &instance = iter.second;
+
+      *((int *)(buffer + index)) = instance.instanceId;
+      index += sizeof(int);
+
+      *((uint32_t *)(buffer + index)) = instance.ps.size();
+      index += sizeof(uint32_t);
+      memcpy(buffer + index, instance.ps.data(), sizeof(float) * instance.ps.size());
+      index += sizeof(float) * instance.ps.size();
+
+      *((uint32_t *)(buffer + index)) = instance.qs.size();
+      index += sizeof(uint32_t);
+      memcpy(buffer + index, instance.qs.data(), sizeof(float) * instance.qs.size());
+      index += sizeof(float) * instance.qs.size();
+
+      *((uint32_t *)(buffer + index)) = instance.materials.size();
+      index += sizeof(uint32_t);
+      memcpy(buffer + index, instance.materials.data(), sizeof(instance.materials[0]) * instance.materials.size());
+      index += sizeof(instance.materials[0]) * instance.materials.size();
+      
+      *((uint32_t *)(buffer + index)) = instance.materialsWeights.size();
+      index += sizeof(uint32_t);
+      memcpy(buffer + index, instance.materialsWeights.data(), sizeof(instance.materialsWeights[0]) * instance.materialsWeights.size());
+      index += sizeof(instance.materialsWeights[0]) * instance.materialsWeights.size();
+
+      *((uint32_t *)(buffer + index)) = instance.grassProps.size();
+      index += sizeof(uint32_t);
+      memcpy(buffer + index, instance.grassProps.data(), sizeof(instance.grassProps[0]) * instance.grassProps.size());
+      index += sizeof(instance.grassProps[0]) * instance.grassProps.size();
+  }
+
+  return buffer;
+}
+
 //
 
 uint8_t *PoiGeometry::getBuffer() const {

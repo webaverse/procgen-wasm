@@ -27,22 +27,17 @@ class OctreeContext;
 
 class ChunkResult {
 public:
-    uint8_t *terrainMeshBuffer;
-    uint8_t *waterMeshBuffer;
-    uint8_t *vegetationInstancesBuffer;
-    uint8_t *grassInstancesBuffer;
-    uint8_t *poiInstancesBuffer;
-    uint8_t *heightfieldsBuffer;
+    uint8_t *terrainMeshBuffer = nullptr;
+    uint8_t *waterMeshBuffer = nullptr;
+    uint8_t *treeInstancesBuffer = nullptr;
+    uint8_t *bushInstancesBuffer = nullptr;
+    uint8_t *rockInstancesBuffer = nullptr;
+    uint8_t *stoneInstancesBuffer = nullptr;
+    uint8_t *grassInstancesBuffer = nullptr;
+    uint8_t *poiInstancesBuffer = nullptr;
+    uint8_t *heightfieldsBuffer = nullptr;
 
-    void free() {
-        std::free(terrainMeshBuffer);
-        std::free(waterMeshBuffer);
-        std::free(vegetationInstancesBuffer);
-        std::free(grassInstancesBuffer);
-        std::free(poiInstancesBuffer);
-        std::free(heightfieldsBuffer);
-        std::free(this);
-    }
+    void free(PGInstance *inst);
 };
 
 class SeedNoise {
@@ -99,14 +94,14 @@ public:
     uint8_t getBiome(float bx, float bz);
     // SeedNoise getSeedNoise(int bx, int bz);
 
-    void getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfield);
+    void getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfields);
     void getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, int rowSize, std::vector<Heightfield> &heightfieldSeams);
     Heightfield getHeightField(float bx, float bz);
     float getHeight(float bx, float bz);
     
-    void getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfield);
-    void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, int rowSize, std::vector<Waterfield> &waterfieldSeams);
-    Waterfield getWaterField(int bx, int bz, int lod);
+    // void getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfields);
+    // void getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, int rowSize, std::vector<Waterfield> &waterfieldSeams);
+    // Waterfield getWaterField(int bx, int bz, int lod);
 
     // void getCaveFieldCenter(int bx, int bz, int lod, std::vector<Cavefield> &cavefields);
     // void getCaveFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, std::vector<Cavefield> &cavefields);
@@ -117,6 +112,13 @@ public:
     // float getSeed(int bx, int bz);
 
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
+
+    // materials
+    void setHeightfieldMaterial(Heightfield &localHeightfield, const vm::vec2 &position);
+    void applyCenterMaterials(const int &bx, const int &bz, const int &lod, std::vector<Heightfield> &heightfields);
+    void applySeamMaterials(const int &bx, const int &bz, const int &lod, const std::array<int, 2> &lodArray, const int &rowSize, std::vector<Heightfield> &heightfieldSeams);
+    void applyMaterials(const int &x, const int &z, const int &lod, const std::array<int, 2> &lodArray, std::vector<Heightfield> &heightfields);
+    // void getTerrainMaterialBuffer(std::vector<Heightfield> &heightfields);
     void getComputedMaterials(Heightfield &localHeightfield, std::vector<MaterialWeightAccumulator> &materialsCounts, float &totalMaterialFactors, const vm::vec2 &worldPosition);
 
     //
@@ -160,12 +162,14 @@ public:
     
     //
     
-    ChunkResult *createChunkMesh(
+   void createChunkMesh(
+        ChunkResult *result,
         const vm::ivec2 &worldPosition,
         int lod,
         const std::array<int, 2> &lodArray,
         int generateFlags,
         int numVegetationInstances,
+        int numRockInstances,
         int numGrassInstances,
         int numPoiInstances
     );
@@ -209,6 +213,7 @@ public:
         const std::array<int, 2> &lodArray,
         int generateFlags,
         int numVegetationInstances,
+        int numRockInstances,
         int numGrassInstances,
         int numPoiInstances
     );

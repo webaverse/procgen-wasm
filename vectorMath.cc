@@ -246,12 +246,44 @@ float vm::distance(const vm::ivec2 &v, const vm::ivec2 &o)
 	return std::sqrt(dx * dx + dy * dy);
 }
 
-float vm::dot(const vm::vec2 &v, const vm::vec2 &o) {
+float vm::dot(const vm::vec2 &v, const vm::vec2 &o)
+{
     return v.x * o.x + v.y * o.y;
 }
-float vm::dot(const vm::vec3 &v, const vm::vec3 &o) {
+float vm::dot(const vm::vec3 &v, const vm::vec3 &o)
+{
     return v.x * o.x + v.y * o.y + v.z * o.z;
 }
+
+vm::vec2 vm::sin(const vm::vec2 &v)
+{
+    return vm::vec2{std::sin(v.x), std::sin(v.y)};
+};
+
+vm::vec3 vm::sin(const vm::vec3 &v)
+{
+    return vm::vec3{std::sin(v.x), std::sin(v.y), std::sin(v.z)};
+};
+
+vm::vec4 vm::sin(const vm::vec4 &v)
+{
+    return vm::vec4{std::sin(v.x), std::sin(v.y), std::sin(v.z), std::sin(v.w)};
+};
+
+vm::vec2 vm::sin(const vm::ivec2 &v)
+{
+    return vm::vec2{std::sin((float)v.x), std::sin((float)v.y)};
+};
+
+vm::vec3 vm::sin(const vm::ivec3 &v)
+{
+    return vm::vec3{std::sin((float)v.x), std::sin((float)v.y), std::sin((float)v.z)};
+};
+
+vm::vec4 vm::sin(const vm::ivec4 &v)
+{
+    return vm::vec4{std::sin((float)v.x), std::sin((float)v.y), std::sin((float)v.z), std::sin((float)v.w)};
+};
 
 vm::vec2 vm::mod(const vec2 v, const float m) {
     return vm::vec2{(float)((int)v.x % (int)m), (float)((int)v.y % (int)m)};
@@ -305,6 +337,9 @@ vm::vec4 vm::floor(const vm::vec4 v){
     return vm::vec4{std::floor(v.x), std::floor(v.y), std::floor(v.z), std::floor(v.w)};
 };
 
+float vm::fract(const float v){
+    return v - std::floor(v);
+};
 vm::vec2 vm::fract(const vm::vec2 v){
     return vm::vec2{v.x - std::floor(v.x), v.y - std::floor(v.y)};
 };

@@ -19,12 +19,11 @@ public:
   // Noise riverNoise;
   // Noise lavaNoise;
 
-  // TODO : use the wetnessNoise for grass placement
-  Noise grassSeedNoise;
-  Noise grassNoise;
+  // Noise grassSeedNoise;
+  // Noise grassNoise;
   Noise poiSeedNoise;
   Noise poiNoise;
-  Noise vegetationSeedNoise;
+  // Noise vegetationSeedNoise;
   Noise mobNoise;
   
   Noise numSplitsNoise;
@@ -52,9 +51,9 @@ public:
     // oceanNoise(rng(), 0.001, 4),
     // riverNoise(rng(), 0.001, 4),
     // lavaNoise(rng(), 0.01, 4),
-    grassSeedNoise(rng(), 0.01, 4),
-    grassNoise(rng(), 0.01, 4),
-    vegetationSeedNoise(rng(), 0.1, 4),
+    // grassSeedNoise(rng(), 0.01, 4),
+    // grassNoise(rng(), 0.01, 4),
+    // vegetationSeedNoise(rng(), 0.1, 4),
     mobNoise(rng(), 2, 4),
     numSplitsNoise(rng(), 0.01, 4),
     splitLodNoise(rng(), 0.01, 4),
