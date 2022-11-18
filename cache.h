@@ -30,7 +30,8 @@ public:
     std::array<unsigned char, 4> biomesVectorField;
     std::array<unsigned char, 4> biomesWeightsVectorField;
 
-    float waterHeight;
+    float waterHeight = MIN_WORLD_HEIGHT;
+    float waterFactor = 0.f;
 
     vm::vec3 normal{0.f, 1.f, 0.f};
 
@@ -55,7 +56,7 @@ public:
       return waterHeight;
     }
     bool acceptIndex() const {
-      return waterHeight + WATER_CUTOFF > height;
+      return waterFactor > 0.f;
     }
     static bool acceptIndices(
       const Waterfield &a,

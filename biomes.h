@@ -83,6 +83,7 @@ enum class BIOME : unsigned char {
   biMesaPlateauFM,
   biMesaPlateauM,
   biLava,
+  biFlowingRiver,
 
   NUM_BIOMES,
 };

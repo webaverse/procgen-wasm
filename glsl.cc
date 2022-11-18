@@ -98,49 +98,61 @@ vec2 hash2D_2(vec2 p)
 	p = vec2(dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)));
 	return vec2(-1.f, -1.f) + fract(sin(p)*43758.5453123) * 2.f;
 }
-float lerp(float a, float b, float t)
-{
-	return a + t * (b - a);
-}
 float snoise(vec2 p)
 {
-	vec2 i = floor(p);
-	vec2 f = fract(p);
-    
-    //grid points
-    vec2 p0 = vec2(0.0, 0.0);
-    vec2 p1 = vec2(1.0, 0.0);
-    vec2 p2 = vec2(0.0, 1.0);
-    vec2 p3 = vec2(1.0, 1.0);
-    
-    //distance vectors to each grid point
-    vec2 s0 = f - p0;
-    vec2 s1 = f - p1;
-    vec2 s2 = f - p2;
-    vec2 s3 = f - p3;
-    
-    //random gradient vectors on each grid point
-    vec2 g0 = hash2D_2(i + p0);
-    vec2 g1 = hash2D_2(i + p1);
-    vec2 g2 = hash2D_2(i + p2);
-    vec2 g3 = hash2D_2(i + p3);
-    
-    //gradient values
-    float q0 = dot(s0, g0);
-    float q1 = dot(s1, g1);
-    float q2 = dot(s2, g2);
-    float q3 = dot(s3, g3);
-    
-    //interpolant weights
-    vec2 u = f * f * (vec2(-f.x, -f.y) * 2.0 + 3.0);
-    
-    //bilinear interpolation
-    float l0 = lerp(q0, q1, u.x);
-    float l1 = lerp(q2, q3, u.x);
-    float l2 = lerp(l0, l1, u.y);
-    
-    return clamp(l2 * 1.5f, 0.f, 1.f);
+	vec2  i = floor(p + (p.x+p.y)*C.y);
+    vec2  a = p - i + (i.x+i.y)*C.x;
+    float m = step(a.y,a.x); 
+    vec2  o = vec2(m,1.f - m);
+    vec2  b = a - o + C.x;
+	vec2  c = a - 1.0 + 2.0*C.x;
+    vec3  h = max(vec3(-dot(a,a), -dot(b,b), -dot(c,c)) + 0.5f, 0.f);
+	vec3  n = h*h*h*h*vec3( dot(a,hash2D_2(i+0.f)), dot(b,hash2D_2(i+o)), dot(c,hash2D_2(i+1.f)));
+    return clamp(dot(n, vec3(70.f, 70.f, 70.f)), 0.f, 1.f);
 }
+// float lerp(float a, float b, float t)
+// {
+// 	return a + t * (b - a);
+// }
+// float snoise(vec2 p)
+// {
+// 	vec2 i = floor(p);
+// 	vec2 f = fract(p);
+    
+//     //grid points
+//     vec2 p0 = vec2(0.0, 0.0);
+//     vec2 p1 = vec2(1.0, 0.0);
+//     vec2 p2 = vec2(0.0, 1.0);
+//     vec2 p3 = vec2(1.0, 1.0);
+    
+//     //distance vectors to each grid point
+//     vec2 s0 = f - p0;
+//     vec2 s1 = f - p1;
+//     vec2 s2 = f - p2;
+//     vec2 s3 = f - p3;
+    
+//     //random gradient vectors on each grid point
+//     vec2 g0 = hash2D_2(i + p0);
+//     vec2 g1 = hash2D_2(i + p1);
+//     vec2 g2 = hash2D_2(i + p2);
+//     vec2 g3 = hash2D_2(i + p3);
+    
+//     //gradient values
+//     float q0 = dot(s0, g0);
+//     float q1 = dot(s1, g1);
+//     float q2 = dot(s2, g2);
+//     float q3 = dot(s3, g3);
+    
+//     //interpolant weights
+//     vec2 u = f * f * (vec2(-f.x, -f.y) * 2.0 + 3.0);
+    
+//     //bilinear interpolation
+//     float l0 = lerp(q0, q1, u.x);
+//     float l1 = lerp(q2, q3, u.x);
+//     float l2 = lerp(l0, l1, u.y);
+    
+//     return clamp(l2 * 1.5f, 0.f, 1.f);
+// }
 
 
 float simplex(vec2 position)
@@ -312,18 +324,14 @@ float getOceanNoise(vec2 position)
 {
     return clamp(simplex(position / 8.f) * 2.f, 0.f, 1.f);
 }
+
 float getRiverNoise(vec2 position, float ocean)
 {
-    float oceanNoise = 0.3f + ocean;
-    float riverNoise = 0.3f + FBM_2(position * 0.8f);
-    float waterAmount = riverNoise * oceanNoise;
-    
-    const float RIVER_BASE = TERRAIN_RIVER_THRESHOLD;
-    float closeToOcean = (waterAmount - RIVER_BASE) / (1.0 - RIVER_BASE);
-    float edge = (64.f * RIVER_BASE) * closeToOcean;
-    float water = (1.f - smoothClamp(oceanNoise, edge, 1.f));
-   
-    return clamp(water, 0.f, 1.f);
+    float connectOceans = (1. - ocean);
+    float riverNoise = simplex(position/2.);
+    float river = 1.0 - abs(riverNoise * 8.f * connectOceans - 0.5);
+    float smoothRiver = smoothEdge(river, 0.6);
+    return clamp(smoothRiver, 0.f, 1.f);
 }
 
 bool getOceanVisibility(vec2 position)
