@@ -926,8 +926,6 @@ DataRequestUpdate Tracker::updateDataRequests(
   DataRequestUpdate dataRequestUpdate;
   dataRequestUpdate.dataRequests = dataRequests;
 
-  // std::cout << dataRequestUpdate.dataRequests.size() << std::endl;
-
   // cancel old data requests
   for (auto iter = dataRequestUpdate.dataRequests.begin(); iter != dataRequestUpdate.dataRequests.end();) {
     const uint64_t &hash = iter->first;
