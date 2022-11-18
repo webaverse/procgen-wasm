@@ -21,79 +21,70 @@ public:
 constexpr float waterBaseHeight = 64.0f;
 
 enum class BIOME : unsigned char {
-  biOcean = 0,
-  biPlains = 1,
-  biDesert = 2,
-  biExtremeHills = 3,
-  biForest = 4,
-  biTaiga = 5,
-  biSwampland = 6,
-  biRiver = 7,
-  biNether = 8,
-  biEnd = 9,
-  biFrozenOcean = 10,
-  biFrozenRiver = 11,
-  biTundra = 12,
-  biIceMountains = 13,
-  biMushroomIsland = 14,
-  biMushroomShore = 15,
-  biBeach = 16,
-  biDesertHills = 17,
-  biForestHills = 18,
-  biTaigaHills = 19,
-  biExtremeHillsEdge = 20,
-  biJungle = 21,
-  biJungleHills = 22,
-  biJungleEdge = 23,
-  biDeepOcean = 24,
-  biStoneBeach = 25,
-  biColdBeach = 26,
-  biBirchForest = 27,
-  biBirchForestHills = 28,
-  biRoofedForest = 29,
-  biColdTaiga = 30,
-  biColdTaigaHills = 31,
-  biMegaTaiga = 32,
-  biMegaTaigaHills = 33,
-  biExtremeHillsPlus = 34,
-  biSavanna = 35,
-  biSavannaPlateau = 36,
-  biMesa = 37,
-  biMesaPlateauF = 38,
-  biMesaPlateau = 39,
-  biSunflowerPlains = 40,
-  biDesertM = 41,
-  biExtremeHillsM = 42,
-  biFlowerForest = 43,
-  biTaigaM = 44,
-  biSwamplandM = 45,
-  biIcePlainsSpikes = 46,
-  biJungleM = 47,
-  biJungleEdgeM = 48,
-  biBirchForestM = 49,
-  biBirchForestHillsM = 50,
-  biRoofedForestM = 51,
-  biColdTaigaM = 52,
-  biMegaSpruceTaiga = 53,
-  biMegaSpruceTaigaHills = 54,
-  biExtremeHillsPlusM = 55,
-  biSavannaM = 56,
-  biSavannaPlateauM = 57,
-  biMesaBryce = 58,
-  biMesaPlateauFM = 59,
-  biMesaPlateauM = 60,
+  biOcean,
+  biPlains,
+  biDesert,
+  biExtremeHills,
+  biForest,
+  biTaiga,
+  biSwampland,
+  biRiver,
+  biNether,
+  biEnd,
+  biFrozenOcean,
+  biFrozenRiver,
+  biTundra,
+  biIceMountains,
+  biMushroomIsland,
+  biMushroomShore,
+  biBeach,
+  biDesertHills,
+  biForestHills,
+  biTaigaHills,
+  biExtremeHillsEdge,
+  biJungle,
+  biJungleHills,
+  biJungleEdge,
+  biDeepOcean,
+  biStoneBeach,
+  biColdBeach,
+  biBirchForest,
+  biBirchForestHills,
+  biRoofedForest,
+  biColdTaiga,
+  biColdTaigaHills,
+  biMegaTaiga,
+  biMegaTaigaHills,
+  biExtremeHillsPlus,
+  biSavanna,
+  biSavannaPlateau,
+  biMesa,
+  biMesaPlateauF,
+  biMesaPlateau,
+  biSunflowerPlains,
+  biDesertM,
+  biExtremeHillsM,
+  biFlowerForest,
+  biTaigaM,
+  biSwamplandM,
+  biIcePlainsSpikes,
+  biJungleM,
+  biJungleEdgeM,
+  biBirchForestM,
+  biBirchForestHillsM,
+  biRoofedForestM,
+  biColdTaigaM,
+  biMegaSpruceTaiga,
+  biMegaSpruceTaigaHills,
+  biExtremeHillsPlusM,
+  biSavannaM,
+  biSavannaPlateauM,
+  biMesaBryce,
+  biMesaPlateauFM,
+  biMesaPlateauM,
+  biLava,
 
-  teDirt = 61,
-  teStone = 62,
-  
-  waterRiver = 63,
-  waterOcean = 64,
-  waterRiverFrozen = 65,
-  waterOceanFrozen = 66,
-
-  liLava = 67,
-
-  NUM_BIOMES = 68,
+  NUM_BIOMES,
 };
 
 class Biome {
@@ -1381,7 +1372,7 @@ const Biome BIOMES[] {
     66
   },
 
-  { // liLava
+  { // biLava
     0,
     {	   
       {
@@ -1491,7 +1482,7 @@ const UV BIOME_UVS[] {
   {0.14285714285714285, 0.7142857142857143}, // liWaterOcean
   {0.2857142857142857, 0.7142857142857143}, // liWaterRiverFrozen
   {0.42857142857142855, 0.7142857142857143}, // liWaterOceanFrozen
-  {0.5714285714285714, 0.7142857142857143}, // liLava
+  {0.5714285714285714, 0.7142857142857143}, // biLava
 };
 
 // struct MaterialInfo {
@@ -1513,6 +1504,6 @@ enum class MATERIAL : uint8_t {
 //   {vm::vec3{1.0, 1.0, 1.0}}, // STONE
 // };
 
-bool isWaterBiome(unsigned char b);
+bool isLiquidBiome(unsigned char b);
 
 #endif // _BIOMES_H_

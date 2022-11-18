@@ -78,7 +78,7 @@ void PGInstance::getHeightfieldRange(const vm::ivec2 &worldPositionXZ, const vm:
 
             int ax = worldPositionXZ.x + x;
             int az = worldPositionXZ.y + z;
-            heights[index2D] = cachedHeightField.get(ax, az).heightField;
+            heights[index2D] = cachedHeightField.get(ax, az).height;
         }
     }
 }
@@ -116,7 +116,7 @@ float *PGInstance::getChunkHeightfield(const vm::ivec2 &worldPositionXZ, int lod
 
             int ax = worldPositionXZ.x + x;
             int az = worldPositionXZ.y + z;
-            heights[index2D] = cachedHeightField.get(ax, az).heightField;
+            heights[index2D] = cachedHeightField.get(ax, az).height;
         }
     }
     
@@ -1773,7 +1773,7 @@ public:
     float get(int x, int z)
     {
         const Heightfield heightfield = getHeightfieldByLocalPosition(x, z);
-        const float &height = heightfield.heightField;
+        const float &height = heightfield.height;
         return height;
     }
 
@@ -2303,8 +2303,8 @@ void generateGridHeightfield(
             const Heightfield &heightfield = heightfields[srcIndex];
 
             heightfieldGeometry.heightfieldImage[dstIndex++] = vm::vec4{
-                heightfield.heightField,
-                heightfield.waterFactor,
+                heightfield.height,
+                heightfield.waterHeight,
                 0,
                 0
             };
@@ -3055,49 +3055,43 @@ void PGInstance::getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, in
 NoiseField PGInstance::getNoise(float bx, float bz) {
     float tNoise = (float)noises.uberNoise.temperatureNoise(bx, bz);
     float hNoise = (float)noises.uberNoise.humidityNoise(bx, bz);
-    bool oNoise = noises.uberNoise.oceanNoise(bx, bz);
+    float oNoise = noises.uberNoise.oceanNoise(bx, bz);
+    float rNoise = noises.uberNoise.riverNoise(bx, bz, oNoise);
 
     return NoiseField{
         tNoise,
         hNoise,
-        oNoise
+        oNoise,
+        rNoise
     };
 }
+
+bool getNoiseVisibility(float value, float threshold) {
+    return value >= threshold;
+}
+
 uint8_t PGInstance::getBiome(float bx, float bz) {
     unsigned char biome = 0xFF;
 
     const auto &noise = getNoise(bx, bz);
     float temperatureNoise = noise.temperature;
     float humidityNoise = noise.humidity;
-    bool oceanNoise = noise.ocean;
+    float oceanNoise = noise.ocean;
+    float riverNoise = noise.river;
 
-    if (oceanNoise)
+    bool oceanVisibility = getNoiseVisibility(oceanNoise, WATER_THRESHOLD);
+    bool riverVisibility = getNoiseVisibility(riverNoise, WATER_THRESHOLD);
+
+    if (oceanVisibility)
     {
         biome = (unsigned char)BIOME::biOcean;
     }
 
+    if(riverVisibility) {
+        biome = (unsigned char)BIOME::biRiver;
+    }
+
     // TODO : the biome picker logic needs rethinking ?
-
-    // if (biome == 0xFF)
-    // {
-    //     const float range = 0.022f;
-    //     if (riverNoise > 0.5f - range && riverNoise < 0.5f + range)
-    //     {
-    //         biome = (unsigned char)BIOME::biRiver;
-    //     }
-    // }
-
-    // if (std::pow(temperatureNoise, 1.3f) < ((4.0f * 16.0f) / 255.0f))
-    // {
-    //     if (biome == (unsigned char)BIOME::biOcean)
-    //     {
-    //         biome = (unsigned char)BIOME::biFrozenOcean;
-    //     }
-    //     else if (biome == (unsigned char)BIOME::biRiver)
-    //     {
-    //         biome = (unsigned char)BIOME::biFrozenRiver;
-    //     }
-    // }
 
     if (biome == 0xFF)
     {
@@ -3197,9 +3191,10 @@ Heightfield PGInstance::getHeightField(float bx, float bz)
     // acc height
     std::vector<float> biomeCounts(numBiomes);
     float totalHeightFactors = 0;
+
     // acc water
-    float sumWaterFactor = 0;
     float totalWaterFactors = 0;
+
     // loop
     for (float dz = -halfChunkSizeF; dz <= halfChunkSizeF; dz++) {
         for (float dx = -halfChunkSizeF; dx <= halfChunkSizeF; dx++) {
@@ -3220,25 +3215,10 @@ Heightfield PGInstance::getHeightField(float bx, float bz)
 
                 biomeCounts[b] += heightFactor;
                 totalHeightFactors += heightFactor;
-            }
-
-            if (distance < maxWaterDistance) {
-                if (!hasBiome) {
-                    b = getBiome(ax, az);
-                    hasBiome = true;
-                }
-
-                float waterFactor = 1.f - (distance / maxWaterDistance);
-                waterFactor = baseWaterFactor + (1.f - baseWaterFactor) * waterFactor;
-
-                if (isWaterBiome(b)) {
-                    sumWaterFactor += waterFactor;
-                }
-                totalWaterFactors += waterFactor;
+                totalWaterFactors += heightFactor;
             }
         }
     }
-    sumWaterFactor /= totalWaterFactors;
 
     // postprocess height
     {
@@ -3280,26 +3260,29 @@ Heightfield PGInstance::getHeightField(float bx, float bz)
         }
 
         float elevationSum = 0.f;
+        float waterElevationSum = 0.f;
+
         vm::vec2 fWorldPosition{bx, bz};
         for (size_t i = 0; i < biomeCounts.size(); i++)
         {
             const uint8_t biome = (uint8_t)i;
             const float &biomeWeight = biomeCounts[biome];
             if (biomeWeight > 0.f) {
-                elevationSum += biomeWeight * getComputedBiomeHeight(biome, fWorldPosition);
+                const float computedBiomeHeight = getComputedBiomeHeight(biome, fWorldPosition);
+                const float computedTerrainHeight = getComputedTerrainHeight(computedBiomeHeight, fWorldPosition);
+                const float computedWaterHeight = getComputedWaterHeight(computedBiomeHeight, biome);
+
+                elevationSum += biomeWeight * computedTerrainHeight;
+                waterElevationSum += biomeWeight * computedWaterHeight;
             }
         }
 
-        float elevation = elevationSum / totalHeightFactors;
-        localHeightfield.heightField = elevation;
+        elevationSum /= totalHeightFactors;
+        waterElevationSum /= totalWaterFactors;
+
+        localHeightfield.height = elevationSum;
+        localHeightfield.waterHeight = waterElevationSum;
     }
-
-
-    // postprocess water
-    {
-        localHeightfield.waterFactor = sumWaterFactor;
-    }
-
 
     return localHeightfield;
 }
@@ -3338,335 +3321,12 @@ float PGInstance::getHeight(float bx, float bz) {
     return elevation;
 }
 
-//
-
-/* void PGInstance::getWaterFieldCenter(int bx, int bz, int lod, std::vector<Waterfield> &waterfields) {
-    for (int z = 0; z < chunkSize; z++)
-    {
-        for (int x = 0; x < chunkSize; x++)
-        {
-            const int index = x + z * chunkSize;
-            Waterfield &localWaterfield = waterfields[index];
-            localWaterfield = getWaterField(bx + x * lod, bz + z * lod, lod);
-        }
-    }
-}
-void PGInstance::getWaterFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, int rowSize, std::vector<Waterfield> &waterfields) {
-    const int &bottomLod = lodArray[0];
-    const int &rightLod = lodArray[1];
-
-    const int gridWidth = chunkSize * lod / bottomLod;
-    const int gridWidthP1 = gridWidth + 1;
-
-    const int gridHeight = chunkSize * lod / rightLod;
-    const int gridHeightP1 = gridHeight + 1;
-
-    const int waterfieldsCenterDataOffset = rowSize * rowSize;
-
-    // bottom
-    int index = waterfieldsCenterDataOffset;
-    {
-        for (int dz = 0; dz < 1; dz++) {
-            for (int dx = 0; dx < gridWidthP1; dx++) {
-                const int z = dz;
-                const int x = dx;
-
-                Waterfield &localWaterfieldSeam = waterfields[index];
-                
-                const int ax = bx + x * bottomLod;
-                const int az = bz + chunkSize * lod + z * bottomLod;
-                localWaterfieldSeam = getWaterField(ax, az, lod);
-
-                index++;
-            }
-        }
-    }
-    // right
-    {
-        for (int dx = 0; dx < 1; dx++) {
-            for (int dz = 0; dz < gridHeightP1; dz++) {
-                const int z = dz;
-                const int x = dx;
-                
-                Waterfield &localWaterfieldSeam = waterfields[index];
-
-                const int ax = bx + chunkSize * lod + x * rightLod;
-                const int az = bz + z * rightLod;
-                localWaterfieldSeam = getWaterField(ax, az, lod);
-
-                index++;
-            }
-        }
-    }
-} */
-
-//
-
-/* Waterfield PGInstance::getWaterField(int bx, int bz, int lod) {
-    constexpr int waterRange = 4;
-    const float maxWaterDistance = (float)std::sqrt((float)waterRange * (float)waterRange);
-    constexpr float baseWaterFactor = 0.25;
-
-    float waterFactor = 0;
-    float maxWaterFactor = 0;
-    for (int dz = -waterRange; dz <= waterRange; dz++) {
-        const int az = bz + dz * lod;
-
-        for (int dx = -waterRange; dx <= waterRange; dx++) {
-            const int ax = bx + dx * lod;
-
-            const float distance = (float)std::sqrt((float)dx * (float)dx + (float)dz * (float)dz);
-            const float localFactor =
-              baseWaterFactor +
-              (1.f - baseWaterFactor) * (1. - distance / maxWaterDistance);
-
-            unsigned char b = getBiome(ax, az);
-            if (isWaterBiome(b)) {
-                waterFactor += localFactor;
-            }
-            maxWaterFactor += localFactor;
-        }
-    }
-    waterFactor /= maxWaterFactor;
-
-    return Waterfield{
-        waterFactor
-    };
-} */
-
-//
-
-/* float PGInstance::getSeed(int x, int z) {
-    constexpr int maxLod = 7;
-    constexpr int maxLodRange = 1 << (maxLod - 1);
-    vm::ivec2 basePosition{
-        (x / maxLodRange) * maxLodRange,
-        (z / maxLodRange) * maxLodRange
-    };
-    const SeedNoise &seedNoise = getSeedNoise(
-        basePosition.x,
-        basePosition.y
-    );
-    const float seedNoiseFloat = (float)std::abs(seedNoise.seed);
-    uint32_t seedNoiseHash;
-    MurmurHash3_x86_32(&seedNoiseFloat, sizeof(seedNoiseFloat), 0, &seedNoiseHash);
-    const int seedLod = (int)((float)seedNoiseHash / (float)0xFFFFFFFF * (float)maxLod);
-    const int seedLodRange = 1 << seedLod;
-    return seedNoiseFloat;
-} */
-
-//
-
-// 3d caches
-
-/* uint8_t PGInstance::initSkylightField(PGInstance *inst, int x, int y, int z) {
-    constexpr uint8_t maxSkyLightu8 = 8;
-    constexpr int maxSkyLighti = (int)maxSkyLightu8;
-    constexpr float maxSkyLightf = (float)maxSkyLighti;
-
-    skylight = std::min(std::max(skylight, (uint8_t)0), maxSkyLightu8);
-
-    // should flood fill the light
-
-    return skylight;
-}
-uint8_t PGInstance::initAoField(PGInstance *inst, int x, int y, int z) {
-    const int &size = chunkSize;
-
-    unsigned char numOpens = 0;
-    for (int dy = -1; dy <= 1; dy++)
-    {
-        for (int dz = -1; dz <= 1; dz++)
-        {
-            for (int dx = -1; dx <= 1; dx++)
-            {
-                // int sdfIndex = (lx + dx) + (lz + dz) * gridPoints + (ly + dy) * gridPoints * gridPoints;
-                numOpens += (unsigned char)(inst->cachedSdf.get(x + dx, y + dy, z + dz) >= 0.f);
-            }
-        }
-    }
-
-    return numOpens;
-} */
 float randomFromPoint(int x, int y, int z) {
     uint64_t hash = hashOctreeMin(vm::ivec3{x, y, z});
     uint32_t hash32 = (uint32_t)hash ^ (uint32_t)(hash >> 32);
     float f = (float)hash32 / (float)UINT32_MAX;
     return f;
 }
-/* float PGInstance::initSdf(PGInstance *inst, int x, int y, int z) {
-    float height = inst->cachedHeightField.get(x, z).heightField;
-
-    float heightValue = (float)y - height;
-    heightValue = std::min(
-        std::max(
-            heightValue,
-            (float)-1),
-        (float)1);
-
-    float caveValue = inst->cachedCaveField.get(x, y, z);
-    float f = heightValue + caveValue * 1.1f + randomFromPoint(x, y, z) * 0.0001f;
-
-    return f;
-} */
-/* float PGInstance::initWaterSdf(PGInstance *inst, int x, int y, int z) {
-    const float fSize = (float)chunkSize;
-
-    float waterValue = -inst->cachedWaterField.get(x, z) / fSize;
-
-    float heightValue = (float)y - waterBaseHeight;
-    heightValue = std::min(
-        std::max(
-            heightValue,
-            -1.f
-        ),
-        1.f
-    );
-    
-    float value = std::max(waterValue, heightValue);
-
-    return value;
-} */
-
-//
-
-// biomes
-/* void PGInstance::getCachedBiome2D(const vm::ivec2 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 2> &biomeUvs1, std::array<UV, 2> &biomeUvs2) {
-    const auto &heightfield = cachedHeightField.get(worldPosition.x, worldPosition.y);
-    biome.x = heightfield.biomesVectorField[0];
-    biome.y = heightfield.biomesVectorField[1];
-    biome.z = heightfield.biomesVectorField[2];
-    biome.w = heightfield.biomesVectorField[3];
-
-    biomeWeights.x = heightfield.biomesWeightsVectorField[0];
-    biomeWeights.y = heightfield.biomesWeightsVectorField[1];
-    biomeWeights.z = heightfield.biomesWeightsVectorField[2];
-    biomeWeights.w = heightfield.biomesWeightsVectorField[3];
-
-    biomeUvs1[0] = BIOME_UVS[(int)biome.x];
-    biomeUvs1[1] = BIOME_UVS[(int)biome.y];
-    biomeUvs2[0] = BIOME_UVS[(int)biome.z];
-    biomeUvs2[1] = BIOME_UVS[(int)biome.w];
-}
-inline void shiftOverrideBiome(vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 2> &biomeUvs1, std::array<UV, 2> &biomeUvs2, BIOME b) {
-    // move the biomes to make room
-    biome.w = biome.z;
-    biome.z = biome.y;
-    biome.y = biome.x;
-    biome.x = (unsigned char)b;
-
-    biomeWeights.x = 1;
-    biomeWeights.y = 0;
-    biomeWeights.z = 0;
-    biomeWeights.w = 0;
-
-    biomeUvs1[0] = BIOME_UVS[(int)b];
-    biomeUvs1[1] = {0, 0};
-    biomeUvs2[0] = {0, 0};
-    biomeUvs2[1] = {0, 0};
-}
-void PGInstance::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 2> &biomeUvs1, std::array<UV, 2> &biomeUvs2) {
-    vm::ivec3 iWorldPosition{(int)worldPosition.x, (int)worldPosition.y, (int)worldPosition.z};
-    vm::ivec2 iWorldPositionXZ{(int)worldPosition.x, (int)worldPosition.z};
-
-    const int &x = iWorldPosition.x;
-    const int &y = iWorldPosition.y;
-    const int &z = iWorldPosition.z;
-
-    getCachedBiome2D(iWorldPositionXZ, biome, biomeWeights, biomeUvs1, biomeUvs2);
-
-    float heightValue = cachedHeightField.get(x, z).heightField;
-    float sdfValue = cachedSdf.get(x, y, z);
-
-    bool neighborHeightsValid = true;
-    for (int dx = -1; dx <= 1; dx += 2)
-    {
-        for (int dz = -1; dz <= 1; dz += 2)
-        {
-            int lx2 = x + dx;
-            int lz2 = z + dz;
-            float heightValue = cachedHeightField.get(lx2, lz2).heightField;
-            if (y + 3 > heightValue)
-            {
-                neighborHeightsValid = false;
-                break;
-            }
-        }
-        if (!neighborHeightsValid)
-        {
-            break;
-        }
-    }
-
-    if (neighborHeightsValid)
-    {
-        if (y < heightValue - 12)
-        {
-            shiftOverrideBiome(biome, biomeWeights, biomeUvs1, biomeUvs2, BIOME::teStone);
-        }
-        else if (y < heightValue - 2)
-        {
-            shiftOverrideBiome(biome, biomeWeights, biomeUvs1, biomeUvs2, BIOME::teDirt);
-        }
-    }
-} */
-
-// lighting
-/* void PGInstance::getCachedInterpolatedLight(const vm::vec3 &worldPosition, uint8_t &skylight, uint8_t &ao) {
-    vm::ivec3 iWorldPosition{(int)worldPosition.x, (int)worldPosition.y, (int)worldPosition.z};
-
-    const int &x = iWorldPosition.x;
-    const int &y = iWorldPosition.y;
-    const int &z = iWorldPosition.z;
-
-    skylight = cachedSkylightField.get(x, y, z);
-    ao = cachedAoField.get(x, y, z);
-} */
-
-// heightfield
-
-/* float heightfieldLens(const Heightfield &heightfield) {
-    return heightfield.heightField;
-}
-float PGInstance::getCachedInterpolatedHeightfield(const vm::vec2 &worldPosition, const int lod) {
-    return bilinearMap<
-        decltype(cachedHeightField),
-        float,
-        decltype(heightfieldLens)
-    >(
-        worldPosition,
-        lod,
-        cachedHeightField,
-        heightfieldLens
-    );
-} */
-
-//
-
-// signed distance field function for a box at the origin
-// returns negative for points inside the box, zero at the box's surface, and positive for points outside the box
-// sx sy sz is the size of the box. the box goes from -sx/2 to sx/2, -sy/2 to sy/2, -sz/2 to sz/2
-// px py pz is the point to check
-/* float PGInstance::signedDistanceToBox(float sx, float sy, float sz, float px, float py, float pz)
-{
-    float dx = std::abs(px) - sx / 2;
-    float dy = std::abs(py) - sy / 2;
-    float dz = std::abs(pz) - sz / 2;
-    float d = std::max(std::max(dx, dy), dz);
-    return d;
-}
-
-// signed distance to sphere
-// returns negative for points inside the sphere, zero at the sphere's surface, and positive for points outside the sphere
-// cx, cy, cz is the center of the sphere. r is the radius. px, py, pz is the point to check
-float PGInstance::signedDistanceToSphere(float cx, float cy, float cz, float r, float px, float py, float pz)
-{
-    float dx = px - cx;
-    float dy = py - cy;
-    float dz = pz - cz;
-    float d = sqrt(dx * dx + dy * dy + dz * dz);
-    return d - r;
-} */
 
 // biomes
 float PGInstance::getComputedBiomeHeight(uint8_t b, const vm::vec2 &worldPosition)
@@ -3702,6 +3362,44 @@ float PGInstance::getComputedBiomeHeight(uint8_t b, const vm::vec2 &worldPositio
         return noises.uberNoise.iceMountainNoise(ax, az);
     default:
         return noises.uberNoise.mountainNoise(ax, az);
+    }
+}
+
+float PGInstance::getComputedTerrainHeight(const float &height, const vm::vec2 &worldPosition) {
+    const float &ax = worldPosition.x;
+    const float &az = worldPosition.y;
+
+    return vm::clamp(height - noises.uberNoise.waterDepthNoise(ax, az), (float)MIN_WORLD_HEIGHT, (float)MAX_WORLD_HEIGHT);
+}
+
+float PGInstance::getComputedWaterHeight(const float &height, uint8_t b)
+{
+    float waterHeight = height;
+
+    std::function onTopOfTerrain = [&]() {
+        return vm::clamp(waterHeight - WATER_HEIGHT_DIFFERENCE, (float)WATER_BASE_HEIGHT, (float)MAX_WORLD_HEIGHT);
+    };
+
+    // handle the height differently based on different biomes
+    switch (b)
+    {
+    case (int)BIOME::biRiver:
+        waterHeight = onTopOfTerrain();
+        break;
+    case (int)BIOME::biLava:
+        waterHeight = onTopOfTerrain();
+        break;
+    default:
+        waterHeight = (float)WATER_BASE_HEIGHT;
+        break;
+    }
+
+    if(isLiquidBiome(b)) {
+        return waterHeight;
+    }
+    else
+    {
+        return waterHeight - WATER_CUTOFF;
     }
 }
 

@@ -273,11 +273,6 @@ bool equalsNodeLodArray(const OctreeNode &node, const OctreeNode &other) {
     ) {
       return false;
     }
-    /* for (size_t i = 0; i < node.lodArray.size(); i++) {
-      if (node.lodArray[i] != other.lodArray[i]) {
-        return false;
-      }
-    } */
     return true;
   } else {
     return false;
@@ -931,6 +926,8 @@ DataRequestUpdate Tracker::updateDataRequests(
   DataRequestUpdate dataRequestUpdate;
   dataRequestUpdate.dataRequests = dataRequests;
 
+  // std::cout << dataRequestUpdate.dataRequests.size() << std::endl;
+
   // cancel old data requests
   for (auto iter = dataRequestUpdate.dataRequests.begin(); iter != dataRequestUpdate.dataRequests.end();) {
     const uint64_t &hash = iter->first;
@@ -1042,21 +1039,6 @@ TrackerUpdate Tracker::update(PGInstance *inst, const vm::vec3 &position, int mi
   sortNodes(octreeLeafNodes);
 
   DataRequestUpdate dataRequestUpdate = updateDataRequests(this->dataRequests, octreeLeafNodes);
-
-  //
-
-  // new rendered chunks come from the data requests
-  std::vector<OctreeNodePtr> newRenderedChunks(dataRequests.size());
-  std::transform(
-    dataRequests.begin(),
-    dataRequests.end(),
-    newRenderedChunks.begin(),
-    [](const auto &iter) -> const auto & {
-      return iter.second->node;
-    }
-  );
-
-  //
 
   dataRequests = std::move(dataRequestUpdate.dataRequests);
 

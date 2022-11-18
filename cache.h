@@ -25,12 +25,12 @@ typedef std::array<float, 4> MaterialsWeightsArray;
 
 class Heightfield {
 public:
-    float heightField;
+    float height;
 
     std::array<unsigned char, 4> biomesVectorField;
     std::array<unsigned char, 4> biomesWeightsVectorField;
 
-    float waterFactor;
+    float waterHeight;
 
     vm::vec3 normal{0.f, 1.f, 0.f};
 
@@ -38,7 +38,7 @@ public:
     MaterialsWeightsArray materialsWeights;
 
     float getHeight() const {
-      return heightField;
+      return height;
     }
     static bool acceptIndices(
       const Heightfield &a,
@@ -52,10 +52,10 @@ public:
 class Waterfield : public Heightfield {
 public:
     float getHeight() const {
-      return WATER_BASE_HEIGHT;
+      return waterHeight;
     }
     bool acceptIndex() const {
-      return waterFactor > 0;
+      return waterHeight + WATER_CUTOFF > height;
     }
     static bool acceptIndices(
       const Waterfield &a,
@@ -70,7 +70,8 @@ class NoiseField {
 public:
     float temperature;
     float humidity;
-    bool ocean;
+    float ocean;
+    float river;
 };
 
 //
@@ -179,7 +180,7 @@ private:
 //       }
 //   }
 //   void set(uint32_t hash, const Heightfield &value) {
-//     HashValue<float> localHashValue1{hash, value.heightField};
+//     HashValue<float> localHashValue1{hash, value.height};
 //     HashValue<std::array<unsigned char, 4>> localHashValue2{hash, value.biomesVectorField};
 //     HashValue<std::array<unsigned char, 4>> localHashValue3{hash, value.biomesWeightsVectorField};
 

@@ -112,6 +112,8 @@ public:
     // float getSeed(int bx, int bz);
 
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
+    float getComputedWaterHeight(const float &height, unsigned char b);
+    float getComputedTerrainHeight(const float &height, const vm::vec2 &worldPosition);
 
     // materials
     void setHeightfieldMaterial(Heightfield &localHeightfield, const vm::vec2 &position);
