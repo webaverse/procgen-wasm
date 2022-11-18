@@ -3413,7 +3413,7 @@ float PGInstance::getComputedWaterHeight(const float &height, const float &realH
         waterHeight = belowTerrainHeight;
         break;
     case (int)BIOME::biFlowingRiver:
-        waterHeight = realHeight;
+        waterHeight = realHeight + WATER_OFFSET;
         break;
     default:
         waterHeight = belowTerrainHeight;
