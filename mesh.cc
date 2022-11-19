@@ -110,7 +110,7 @@ uint8_t *TerrainGeometry::getBuffer() const {
 //
 
 void WaterGeometry::pushPointMetadata(const Waterfield &fieldValue) {
-  factors.push_back(fieldValue.waterFactor);
+  factors.push_back(fieldValue.waterHeight);
 }
 uint8_t *WaterGeometry::getBuffer() const {
   // calculate size
