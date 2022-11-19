@@ -23,7 +23,6 @@ emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=100MB -pthr
   octree.cc \
   mesh.cc \
   util.cc \
-  biomes.cc \
   MurmurHash3.cpp \
   Worley.cpp \
   NoiseTools.cpp \

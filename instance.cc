@@ -3220,7 +3220,7 @@ Heightfield PGInstance::getHeightField(float bx, float bz)
                 totalHeightFactors += heightFactor;
                 totalWaterFactors += heightFactor;
 
-                if(isLiquidBiome(b)) {
+                if(BiomeHelper::isLiquidBiome(b)) {
                     sumWaterFactors += heightFactor;
                 }
             }
