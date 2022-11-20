@@ -6,18 +6,20 @@ constexpr int numThreads = NUM_THREADS;
 constexpr int WORLD_BASE_HEIGHT = 128;
 
 constexpr int MIN_WORLD_HEIGHT = 0;
-constexpr int MAX_WORLD_HEIGHT = 2048;
+constexpr int MAX_WORLD_HEIGHT = 1024;
 
 // * Terrain parameters
+constexpr float COLD_WARM_BORDER = 0.5f;
+constexpr float WARM_HOT_BORDER = 0.1f;
 constexpr int MAX_NUM_GRASSES_PER_CHUNK = 2048;
-constexpr float GRASS_THRESHOLD = 0.1f;
+constexpr float GRASS_THRESHOLD = 0.3f;
 constexpr int MAX_NUM_VEGGIES_PER_CHUNK = 8;
-constexpr float VEGGIE_THRESHOLD = 0.3f;
-constexpr float OCEAN_THRESHOLD = 0.5f;
-constexpr float RIVER_THRESHOLD = 0.5f;
+constexpr float VEGGIE_THRESHOLD = 0.65;
+constexpr float OCEAN_THRESHOLD = 0.85f;
+constexpr float RIVER_THRESHOLD = 0.85f;
 constexpr float RIVER_BASE = 0.3f;
 constexpr float WATER_THRESHOLD = OCEAN_THRESHOLD;
-constexpr float ROCK_THRESHOLD = 0.5f;
+constexpr float ROCK_THRESHOLD = 0.92f;
 constexpr int NUM_STONES_AROUND_ROCK = 2;
 constexpr int WATER_BASE_HEIGHT = WORLD_BASE_HEIGHT;
 constexpr int OCEAN_DEPTH = WATER_BASE_HEIGHT * 8;

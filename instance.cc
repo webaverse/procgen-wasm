@@ -256,52 +256,6 @@ uint8_t *PGInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int 
     }
 }
 
-//
-
-/* std::vector<vm::ivec3> getChunkRangeInclusive(const vm::ivec3 &worldPosition, int minChunkDelta, int maxChunkDelta, int chunkSize) {
-    std::vector<vm::ivec3> result;
-    for (int dy = minChunkDelta; dy <= maxChunkDelta; dy++)
-    {
-        for (int dz = minChunkDelta; dz <= maxChunkDelta; dz++)
-        {
-            for (int dx = minChunkDelta; dx <= maxChunkDelta; dx++)
-            {
-                result.push_back(vm::ivec3{
-                    worldPosition.x + dx * chunkSize,
-                    worldPosition.y + dy * chunkSize,
-                    worldPosition.z + dz * chunkSize
-                });
-            }
-        }
-    }
-    return result;
-}
-std::vector<vm::ivec2> getChunkRangeInclusive(const vm::ivec2 &worldPosition, int minChunkDelta, int maxChunkDelta, int chunkSize) {
-    std::vector<vm::ivec2> result;
-    for (int dz = minChunkDelta; dz <= maxChunkDelta; dz++)
-    {
-        for (int dx = minChunkDelta; dx <= maxChunkDelta; dx++)
-        {
-            result.push_back(vm::ivec2{
-                worldPosition.x + dx * chunkSize,
-                worldPosition.y + dz * chunkSize
-            });
-        }
-    }
-    return result;
-} */
-
-//
-
-/* class Geometry {
-public:
-    std::vector<float> positions;
-    std::vector<float> normals;
-    // std::vector<float> uvs;
-    std::vector<uint32_t> indices;
-
-    // Geometry() {}
-}; */
 void normalizeNormals(std::vector<vm::vec3> &normals) {
     for (size_t i = 0, il = normals.size(); i < il; i++) {
         Vec vec{
@@ -3072,21 +3026,24 @@ NoiseField PGInstance::getNoise(float bx, float bz) {
     };
 }
 
-bool getNoiseVisibility(float value, float threshold) {
-    return value >= threshold;
+bool getNoiseVisibility(float value, float min, float max) {
+    return value >= min && value <= max;
 }
 
 uint8_t PGInstance::getBiome(float bx, float bz) {
-    unsigned char biome = 0xFF;
-
+    uint8_t biome = 0xFF;
+    
     const auto &noise = getNoise(bx, bz);
-    float temperatureNoise = noise.temperature;
-    float humidityNoise = noise.humidity;
-    float oceanNoise = noise.ocean;
-    float riverNoise = noise.river;
+    const float heat = noise.heat;
+    const float cold = 1.f - heat;
+    const float humidity = noise.humidity;
+    const float ocean = noise.ocean;
+    const float river = noise.river;
 
-    bool oceanVisibility = getNoiseVisibility(oceanNoise, OCEAN_THRESHOLD);
-    bool riverVisibility = getNoiseVisibility(riverNoise, RIVER_THRESHOLD);
+    const float biomeFactor = cold * humidity;
+
+    const bool oceanVisibility = getNoiseVisibility(ocean, OCEAN_THRESHOLD, 1.f);
+    const bool riverVisibility = getNoiseVisibility(river, RIVER_THRESHOLD, 1.f);
 
     if (oceanVisibility)
     {
@@ -3104,17 +3061,20 @@ uint8_t PGInstance::getBiome(float bx, float bz) {
         }
     }
 
-    // TODO : the biome picker logic needs rethinking ?
-
-    if (biome == 0xFF)
+    const bool isCold = getNoiseVisibility(biomeFactor, COLD_WARM_BORDER, 1.);
+    if (isCold)
     {
-        float temperatureNoise2 = vm::clamp(temperatureNoise, 0.f, 1.f);
-        float humidityNoise2 = vm::clamp(humidityNoise, 0.f, 1.f);
-
-        int t = (int)std::floor(temperatureNoise2 * 16.0f);
-        int h = (int)std::floor(humidityNoise2 * 16.0f);
-
-        biome = (uint8_t)BIOMES_TEMPERATURE_HUMIDITY[t + 16 * h];
+        biome = (uint8_t)BIOME::biIceMountains;
+    }
+    const bool isWarm = getNoiseVisibility(biomeFactor, WARM_HOT_BORDER, COLD_WARM_BORDER);
+    if (isWarm)
+    {
+        biome = (uint8_t)BIOME::biJungleHills;
+    }
+    const bool isHot = getNoiseVisibility(biomeFactor, 0., WARM_HOT_BORDER);
+    if (isHot)
+    {
+        biome = (uint8_t)BIOME::biDesert;
     }
 
     return biome;
@@ -3355,27 +3315,9 @@ float PGInstance::getComputedBiomeHeight(uint8_t b, const vm::vec2 &worldPositio
     {
     case (int)BIOME::biDesert: 
         return noises.uberNoise.desertNoise(ax, az);
-    case (int)BIOME::biDesertHills: 
-        return noises.uberNoise.desertNoise(ax, az);
-    case (int)BIOME::biDesertM: 
-        return noises.uberNoise.desertNoise(ax, az);
-    case (int)BIOME::biColdBeach:
-        return noises.uberNoise.desertNoise(ax, az);
-    case (int)BIOME::biMegaTaigaHills:
-        return noises.uberNoise.mountainNoise(ax, az);
-    case (int)BIOME::biForestHills:
-        return noises.uberNoise.mountainNoise(ax, az);
     case (int)BIOME::biJungleHills:
         return noises.uberNoise.mountainNoise(ax, az);
     case (int)BIOME::biIceMountains:
-        return noises.uberNoise.iceMountainNoise(ax, az);
-    case (int)BIOME::biIcePlainsSpikes:
-        return noises.uberNoise.iceMountainNoise(ax, az);
-    case (int)BIOME::biColdTaigaHills:
-        return noises.uberNoise.iceMountainNoise(ax, az);
-    case (int)BIOME::biColdTaigaM:
-        return noises.uberNoise.iceMountainNoise(ax, az);
-    case (int)BIOME::biColdTaiga:
         return noises.uberNoise.iceMountainNoise(ax, az);
     default:
         return noises.uberNoise.mountainNoise(ax, az);

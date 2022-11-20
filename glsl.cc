@@ -19,6 +19,9 @@ const float TERRAIN_OCEAN_THRESHOLD = OCEAN_THRESHOLD;
 const float TERRAIN_RIVER_THRESHOLD = RIVER_BASE;
 const float TERRAIN_WATER_THRESHOLD = WATER_THRESHOLD;
 const float TERRAIN_STONE_THRESHOLD = ROCK_THRESHOLD;
+const float TERRAIN_COLD_WARM_BORDER = COLD_WARM_BORDER;
+const float TERRAIN_WARM_HOT_BORDER = WARM_HOT_BORDER;
+
 
 // ----------------------------------
 
@@ -100,15 +103,20 @@ vec2 hash2D_2(vec2 p)
 }
 float snoise(vec2 p)
 {
-	vec2  i = floor(p + (p.x+p.y)*C.y);
-    vec2  a = p - i + (i.x+i.y)*C.x;
-    float m = step(a.y,a.x); 
-    vec2  o = vec2(m,1.f - m);
+	vec2  i = floor(p + (p.x + p.y) * C.y);
+    vec2  a = p - i + (i.x + i.y) * C.x;
+    float m = step(a.y, a.x); 
+    vec2  o = vec2(m, 1.f - m);
     vec2  b = a - o + C.x;
-	vec2  c = a - 1.0 + 2.0*C.x;
-    vec3  h = max(vec3(-dot(a,a), -dot(b,b), -dot(c,c)) + 0.5f, 0.f);
-	vec3  n = h*h*h*h*vec3( dot(a,hash2D_2(i+0.f)), dot(b,hash2D_2(i+o)), dot(c,hash2D_2(i+1.f)));
-    return clamp(dot(n, vec3(70.f, 70.f, 70.f)), 0.f, 1.f);
+	vec2  c = a - 1.f + 2.f * C.x;
+    vec3  h = max(vec3(-dot(a, a), -dot(b, b), -dot(c, c)) + 0.5f, 0.f);
+	vec3  n = h * h* h* h* vec3(dot(a, hash2D_2(i)), dot(b,hash2D_2(i + o)), dot(c,hash2D_2(i + 1.f)));
+
+    // ? Original Implementation
+    // return dot(n, vec3(70.f, 70.f, 70.f)); 
+
+    // ? Modified Implementation for better results
+    return clamp((dot(n, vec3(140.f, 140.f, 140.f)) + 0.85f) / 2.f, 0.f, 1.f); 
 }
 // float lerp(float a, float b, float t)
 // {
@@ -210,7 +218,7 @@ float FBM_8(vec2 position)
         amplitude *= persistence;
     }
 
-    return (noise + 0.5f) * 0.5f;
+    return noise;
 }
 
 float FBM_4(vec2 position)
@@ -235,7 +243,7 @@ float FBM_4(vec2 position)
         amplitude *= persistence;
     }
 
-    return (noise + 0.5f) * 0.5f;
+    return noise;
 }
 
 float FBM_2(vec2 position)
@@ -260,7 +268,7 @@ float FBM_2(vec2 position)
         amplitude *= persistence;
     }
 
-    return (noise + 0.5f) * 0.5f;
+    return noise;
 }
 
 // custom noise functions
@@ -313,12 +321,6 @@ float warpNoise2Layer_4(vec2 position)
 }
 
 // terrain noises
-float flattenerNoise(vec2 position) 
-{
-    float simd5 = simplex(position/5.f);
-    float flatAreas = (clamp(simd5, 0.f, 0.5f) * 2.f) * TERRAIN_FLATTENER_DEPTH;
-    return flatAreas;
-}
 
 float getOceanNoise(vec2 position)
 {
@@ -328,7 +330,7 @@ float getOceanNoise(vec2 position)
 float getRiverNoise(vec2 position, float ocean)
 {
     float connectOceans = (1. - ocean);
-    float riverNoise = simplex(position/3.);
+    float riverNoise = simplex(position/2.);
     float river = 1.0 - abs(riverNoise * 8.f * connectOceans - 0.5);
     float smoothRiver = smoothEdge(river, 0.6);
     return clamp(smoothRiver, 0.f, 1.f);
@@ -369,7 +371,7 @@ float getWaterDepth(vec2 position){
 
 float getWetness(vec2 position)
 {
-    return clamp(simplex(position / 2.f) * 2.f + 0.75f, 0.f, 1.f);
+    return clamp(simplex(position / 2.f) * 2.f + 0.15f, 0.f, 1.f);
 }
 
 float getGrassObject(vec2 position)
@@ -392,44 +394,72 @@ float getTreeObject(vec2 position)
 
 float getGrassMaterial(vec2 position)
 {
-    float wetness = clamp(getWetness(position) + 0.25f, 0.f, 1.f);
+    float wetness = getWetness(position);
     float noise = warpNoise1Layer_2(position * 10.f) * wetness;
-    return clamp(noise * 2.f - 0.5f, 0.f, 1.f);
+    return clamp(noise - 0.25f, 0.f, 1.f);
 }
 
 bool getStoneVisibility(vec2 position)
 {
     if(getWaterVisibility(position)) {
-        return 0.f;
+        return false;
     }
     const float edge = TERRAIN_STONE_THRESHOLD;
-    float dryness = 1.f - (getWetness(position) - 0.5f);
-    float stone = clamp(simplex(position * 6.f) * dryness, 0.f, 1.f);
+    float drynessFactor = 1.f - getWetness(position) / 8.f;
+    float stone = clamp(simplex(position / 3.f) * drynessFactor, 0.f, 1.f);
     bool visibility = bool(step(edge, stone));
     return visibility;
 }
 
 float getStiffness(vec2 position)
 {
-    return warpNoise1Layer_1(position * 5.f);
+    return warpNoise1Layer_1(position * 5.f) / 2.f;
 }
 
 float getHumidity(vec2 position)
 {
-    float noise = simplex(position/18.f);
-    return clamp(noise + 0.15f, 0.f, 1.f);
+    float noise = simplex(position/15.f);
+    return noise;
 }
 
 float getHeat(vec2 position)
 {
-    return simplex(position/30.f);
+    return simplex(position/60.f);
+}
+
+float getSmoothBorder(float biomeFactor, float border) {
+    const float delta = 0.1;
+    return 1. - (smoothClamp(biomeFactor, border, border + delta) - smoothClamp(biomeFactor, border - delta, border)) * pow(delta, 2.f) * 1000.f;
+}
+
+float getBiomeFactor(vec2 position) {
+    float cold = 1.f - getHeat(position);
+    float humidity = getHumidity(position);
+    return cold * humidity;
+}
+
+float getBiomeBorders(vec2 position) {
+    float biomeFactor = getBiomeFactor(position);
+    float coldWarmBorder = getSmoothBorder(biomeFactor, TERRAIN_COLD_WARM_BORDER);
+    float warmHotBorder = getSmoothBorder(biomeFactor, TERRAIN_WARM_HOT_BORDER);
+    return coldWarmBorder + warmHotBorder;
+}
+
+float getFlattenerNoise(vec2 position) 
+{
+    float simd5clamped = clamp(simplex(position/5.f) - 0.2f, 0.f, 1.f);
+    // making sure the transitions between biomes are smooth
+    float biomeBorders = getBiomeBorders(position);
+    float flattener = simd5clamped + biomeBorders;
+    float flatAreas = flattener * TERRAIN_FLATTENER_DEPTH;
+    return flatAreas;
 }
 
 // terrain height noises
 
 float terrainHeightWrapper(vec2 position, float height)
 {
-    float flatAreas = flattenerNoise(position);
+    float flatAreas = getFlattenerNoise(position);
     float flattenedHeight = TERRAIN_BASE_HEIGHT + height - flatAreas;
     return clamp(flattenedHeight, TERRAIN_BASE_HEIGHT, MAX_TERRAIN_HEIGHT);
 }
@@ -491,8 +521,8 @@ float getMountainHillsHeight(vec2 position)
 {
     // defining terrain height parameters
     const float highMountainsHeight = MAX_TERRAIN_HEIGHT;
-    const float lowMountainsHeight = MAX_TERRAIN_HEIGHT / 1.5f;
-    const float smallHillsHeight = MAX_TERRAIN_HEIGHT / 2.f;
+    const float lowMountainsHeight = MAX_TERRAIN_HEIGHT / 4.f;
+    const float smallHillsHeight = MAX_TERRAIN_HEIGHT / 6.5f;
 
     // calculating noises
     float fbm2d2 = FBM_2(position/2.f);

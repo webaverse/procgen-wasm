@@ -73,7 +73,7 @@ public:
 
 class NoiseField {
 public:
-    float temperature;
+    float heat;
     float humidity;
     float ocean;
     float river;
@@ -254,7 +254,7 @@ private:
 //         }
 //     }
 //     void set(uint32_t hash, const NoiseField &value) {
-//         HashValue<float> localHashValue1{hash, value.temperature};
+//         HashValue<float> localHashValue1{hash, value.heat};
 //         HashValue<float> localHashValue2{hash, value.humidity};
 //         HashValue<float> localHashValue3{hash, value.ocean};
 //         HashValue<float> localHashValue4{hash, value.river};
