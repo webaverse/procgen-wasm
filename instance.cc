@@ -1893,18 +1893,17 @@ void generateVegetationInstances(
 
             for (int i = 0; i < MAX_NUM_VEGGIES_PER_CHUNK; i++)
             {
-                float chunkOffsetX = dis(rng) * (float)chunkSize;
-                float chunkOffsetZ = dis(rng) * (float)chunkSize;
-                float rot = dis(rng) * 2.0f * M_PI;
-                int instanceId = (int)std::round(dis(rng) * (float)(numVegetationInstances - 1));
+                const float chunkOffsetX = dis(rng) * (float)chunkSize;
+                const float chunkOffsetZ = dis(rng) * (float)chunkSize;
+                const float rot = dis(rng) * 2.0f * M_PI;
+                const int instanceId = (int)std::round(dis(rng) * (float)(numVegetationInstances - 1));
 
-                float ax = (float)chunkMinX + chunkOffsetX;
-                float az = (float)chunkMinZ + chunkOffsetZ;
+                const float ax = (float)chunkMinX + chunkOffsetX;
+                const float az = (float)chunkMinZ + chunkOffsetZ;
 
                 const Heightfield &heightfield = heightfieldSampler.getHeightfield(ax, az);
-                const vm::vec3 &normal = heightfield.normal;
 
-                float slope = std::max(0.f, 1.f - normal.y);
+                const float slope = heightfield.getSlope();
 
                 if (slope < 0.1f)
                 {
@@ -1946,28 +1945,28 @@ void generateRocksInstances(
     {
         for (int dx = 0; dx < lod; dx++)
         {
-            int chunkMinX = baseMinX + dx * chunkSize;
-            int chunkMinZ = baseMinZ + dz * chunkSize;
+            const int chunkMinX = baseMinX + dx * chunkSize;
+            const int chunkMinZ = baseMinZ + dz * chunkSize;
 
-            float chunkSeed = noises.uberNoise.stoneNoise(chunkMinX, chunkMinZ);
+            const float chunkSeed = noises.uberNoise.stoneNoise(chunkMinX, chunkMinZ);
             unsigned int seedInt = *(unsigned int *)&chunkSeed;
             std::mt19937 rng(seedInt);
             std::uniform_real_distribution<float> dis(0.f, 1.f);
 
             for (int i = 0; i < MAX_NUM_VEGGIES_PER_CHUNK; i++)
             {
-                float chunkOffsetX = dis(rng) * (float)chunkSize;
-                float chunkOffsetZ = dis(rng) * (float)chunkSize;
-                float rot = dis(rng) * 2.0f * M_PI;
-                int instanceId = (int)std::round(dis(rng) * (float)(numRockInstances - 1));
+                const float chunkOffsetX = dis(rng) * (float)chunkSize;
+                const float chunkOffsetZ = dis(rng) * (float)chunkSize;
+                const float rot = dis(rng) * 2.0f * M_PI;
+                const int instanceId = (int)std::round(dis(rng) * (float)(numRockInstances - 1));
 
-                float ax = (float)chunkMinX + chunkOffsetX;
-                float az = (float)chunkMinZ + chunkOffsetZ;
+                const float ax = (float)chunkMinX + chunkOffsetX;
+                const float az = (float)chunkMinZ + chunkOffsetZ;
 
                 const Heightfield &heightfield = heightfieldSampler.getHeightfield(ax, az);
                 const vm::vec3 &normal = heightfield.normal;
 
-                float slope = std::max(0.f, 1.f - normal.y);
+                const float slope = heightfield.getSlope();
 
                 if (slope < 0.1f)
                 {
@@ -2062,29 +2061,28 @@ void generateGrassInstances(
     {
         for (int dx = 0; dx < lod; dx++)
         {
-            int chunkMinX = baseMinX + dx * chunkSize;
-            int chunkMinZ = baseMinZ + dz * chunkSize;
+            const int chunkMinX = baseMinX + dx * chunkSize;
+            const int chunkMinZ = baseMinZ + dz * chunkSize;
 
-            float chunkSeed = noises.uberNoise.grassObjectNoise(chunkMinX, chunkMinZ);
+            const float chunkSeed = noises.uberNoise.grassObjectNoise(chunkMinX, chunkMinZ);
             unsigned int seedInt = *(unsigned int *)&chunkSeed;
             std::mt19937 rng(seedInt);
             std::uniform_real_distribution<float> dis(0.f, 1.f);
 
             for (int i = 0; i < MAX_NUM_GRASSES_PER_CHUNK; i++)
             {
-                float throwNoise = dis(rng);
-                float chunkOffsetX = dis(rng) * (float)chunkSize;
-                float chunkOffsetZ = dis(rng) * (float)chunkSize;
-                float rot = dis(rng) * 2.0f * M_PI;
-                int instanceId = (int)std::round(dis(rng) * (float)(numGrassInstances - 1));
+                const float throwNoise = dis(rng);
+                const float chunkOffsetX = dis(rng) * (float)chunkSize;
+                const float chunkOffsetZ = dis(rng) * (float)chunkSize;
+                const float rot = dis(rng) * 2.0f * M_PI;
+                const int instanceId = (int)std::round(dis(rng) * (float)(numGrassInstances - 1));
 
-                float ax = (float)chunkMinX + chunkOffsetX;
-                float az = (float)chunkMinZ + chunkOffsetZ;
+                const float ax = (float)chunkMinX + chunkOffsetX;
+                const float az = (float)chunkMinZ + chunkOffsetZ;
 
                 const Heightfield &heightfield = heightfieldSampler.getHeightfield(ax, az);
-                const vm::vec3 &normal = heightfield.normal;
 
-                float slope = std::max(0.f, 1.f - normal.y);
+                const float slope = heightfield.getSlope();
 
                 if (slope < 0.1f)
                 {
@@ -2332,6 +2330,8 @@ void PGInstance::createChunkMesh(
     int numGrassInstances,
     int numPoiInstances
 ) {
+    uint8_t dominantChunkBiome = BIOME::NUM_BIOMES;
+
     // heightfield
     std::vector<Heightfield> heightfields;
     if (
@@ -2346,6 +2346,12 @@ void PGInstance::createChunkMesh(
         heightfields = getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
         calculateSurfaceNormals(heightfields, lod, lodArray, chunkSize);
         applyMaterials(worldPosition.x, worldPosition.y, lod, lodArray, heightfields);
+        dominantChunkBiome = calculateDominantBiome(heightfields);
+
+        // sanity check
+        if(dominantChunkBiome == BIOME::NUM_BIOMES) {
+            std::cerr << "ERROR: dominantChunkBiome == BIOME::NUM_BIOMES" << std::endl;
+        }
     }
 
     // terrain
@@ -3256,13 +3262,13 @@ Heightfield PGInstance::getHeightField(float bx, float bz)
             if (i < seenBiomes.size())
             {
                 const uint8_t &biome = seenBiomes[i];
-                localHeightfield.biomesVectorField[i] = biome;
-                localHeightfield.biomesWeightsVectorField[i] = biomeCounts[biome] / totalHeightFactors * biomeWeightFitter;
+                localHeightfield.biomes[i] = biome;
+                localHeightfield.biomeWeights[i] = biomeCounts[biome] / totalHeightFactors * biomeWeightFitter;
             }
             else
             {
-                localHeightfield.biomesVectorField[i] = 0;
-                localHeightfield.biomesWeightsVectorField[i] = 0;
+                localHeightfield.biomes[i] = 0;
+                localHeightfield.biomeWeights[i] = 0;
             }
         }
 
@@ -3559,14 +3565,32 @@ void PGInstance::applyMaterials(const int &x, const int &z, const int &lod, cons
     applyCenterMaterials(x, z, lod, heightfields);
     applySeamMaterials(x, z, lod, lodArray, chunkSizeP2, heightfields);
 }
+
+uint8_t PGInstance::calculateDominantBiome(const std::vector<Heightfield> &heightfields)
+{
+    std::vector<int> biomeCounts(BIOME::NUM_BIOMES);
+
+    for (size_t i = 0; i < heightfields.size(); i++)
+    {
+        const heightfield_t &heightfield = heightfields[i];
+        for (size_t j = 0; j < 4; j++)
+        {
+            const uint8_t &biome = heightfield.biomes[j];
+            biomeCounts[biome]++;
+        }
+    }
+
+    int mostCommonBiomeIndex = std::max_element(biomeCounts.begin(),biomeCounts.end()) - biomeCounts.begin();
+    return (uint8_t)mostCommonBiomeIndex;
+}
 // void PGInstance::getTerrainMaterialBuffer(std::vector<Heightfield> &heightfields){
 
 // }
 
 void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::vector<MaterialWeightAccumulator> &materialWeightAccumulators, float &totalMaterialFactors, const vm::vec2 &worldPosition)
 {
-    const std::array<uint8_t, 4> &biomes = localHeightfield.biomesVectorField;
-    const std::array<uint8_t, 4> &biomesWeights = localHeightfield.biomesWeightsVectorField;
+    const std::array<uint8_t, 4> &biomes = localHeightfield.biomes;
+    const std::array<uint8_t, 4> &biomesWeights = localHeightfield.biomeWeights;
 
     const int GRASS = (int)MATERIAL::GRASS;
     const int DIRT = (int)MATERIAL::DIRT;
@@ -3585,8 +3609,9 @@ void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::vector
             const float wetness = noises.uberNoise.grassMaterialNoise(worldPosition.x, worldPosition.y);
             const float stiffness = noises.uberNoise.stiffnessNoise(worldPosition.x, worldPosition.y);
 
-            const float slope = std::max(0.f, 1.f - localHeightfield.normal.y);
-            const float mountainAndGroundBlend = vm::clamp(slope * 3.f, 0.f, 1.f);
+            // amplifying the slope of the terrain to blend between ground and cliffs
+            const float SLOPE_AMPLIFIER = 2.5f;
+            const float mountainAndGroundBlend = vm::clamp(localHeightfield.getSlope() * SLOPE_AMPLIFIER, 0.f, 1.f);
 
             const float grassWeight = (wetness) * bw * (1.f - mountainAndGroundBlend);
             const float dirtWeight = (1.f - wetness) * bw * (1.f - mountainAndGroundBlend);

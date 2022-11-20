@@ -27,8 +27,8 @@ class Heightfield {
 public:
     float height;
 
-    std::array<unsigned char, 4> biomesVectorField;
-    std::array<unsigned char, 4> biomesWeightsVectorField;
+    std::array<unsigned char, 4> biomes;
+    std::array<unsigned char, 4> biomeWeights;
 
     float waterHeight = MIN_WORLD_HEIGHT;
     float waterFactor = 0.f;
@@ -40,6 +40,10 @@ public:
 
     float getHeight() const {
       return height;
+    }
+    float getSlope() const
+    {
+      return std::max(0.f, 1.f - normal.y);
     }
     static bool acceptIndices(
       const Heightfield &a,
@@ -182,8 +186,8 @@ private:
 //   }
 //   void set(uint32_t hash, const Heightfield &value) {
 //     HashValue<float> localHashValue1{hash, value.height};
-//     HashValue<std::array<unsigned char, 4>> localHashValue2{hash, value.biomesVectorField};
-//     HashValue<std::array<unsigned char, 4>> localHashValue3{hash, value.biomesWeightsVectorField};
+//     HashValue<std::array<unsigned char, 4>> localHashValue2{hash, value.biomes};
+//     HashValue<std::array<unsigned char, 4>> localHashValue3{hash, value.biomeWeights};
 
 //     uint64_t &localData1 = *((uint64_t *)&localHashValue1);
 //     uint64_t &localData2 = *((uint64_t *)&localHashValue2);

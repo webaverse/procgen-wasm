@@ -123,6 +123,7 @@ public:
     // void getTerrainMaterialBuffer(std::vector<Heightfield> &heightfields);
     void getComputedMaterials(Heightfield &localHeightfield, std::vector<MaterialWeightAccumulator> &materialsCounts, float &totalMaterialFactors, const vm::vec2 &worldPosition);
 
+    uint8_t calculateDominantBiome(const std::vector<Heightfield> &heightfields);
     //
 
     PGInstance(int seed, int chunkSize);

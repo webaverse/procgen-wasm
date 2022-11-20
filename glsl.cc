@@ -328,7 +328,7 @@ float getOceanNoise(vec2 position)
 float getRiverNoise(vec2 position, float ocean)
 {
     float connectOceans = (1. - ocean);
-    float riverNoise = simplex(position/2.);
+    float riverNoise = simplex(position/3.);
     float river = 1.0 - abs(riverNoise * 8.f * connectOceans - 0.5);
     float smoothRiver = smoothEdge(river, 0.6);
     return clamp(smoothRiver, 0.f, 1.f);
@@ -491,18 +491,18 @@ float getMountainHillsHeight(vec2 position)
 {
     // defining terrain height parameters
     const float highMountainsHeight = MAX_TERRAIN_HEIGHT;
-    const float lowMountainsHeight = MAX_TERRAIN_HEIGHT / 2.f;
-    const float smallHillsHeight = MAX_TERRAIN_HEIGHT / 3.f;
+    const float lowMountainsHeight = MAX_TERRAIN_HEIGHT / 1.5f;
+    const float smallHillsHeight = MAX_TERRAIN_HEIGHT / 2.f;
 
     // calculating noises
     float fbm2d2 = FBM_2(position/2.f);
     float fbm2d2clamped = clamp(fbm2d2 , 0.f, 1.f);
 
-    float fbm2d4 = FBM_2(position/4.f);
+    float fbm2d3 = FBM_2(position/3.f);
 
-    float fbm2d6 = FBM_2(position/6.f);
-    float fbm2d6clamped = clamp(fbm2d6, 0.f, 1.f);
-    float fbm2d6clampedm2  = clamp(fbm2d6, 0.f, 0.5f) * 2.f;
+    float fbm2d4 = FBM_2(position/4.f);
+    float fbm2d4clamped = clamp(fbm2d4, 0.f, 1.f);
+    float fbm2d4clampedm2  = clamp(fbm2d4, 0.f, 0.5f) * 2.f;
 
     float warp2d4 = warpNoise1Layer_1(position/4.f);
 
@@ -510,20 +510,20 @@ float getMountainHillsHeight(vec2 position)
 
     float smallHills = clamp(fbm2d2 * 2.f - fbm2d2clamped  / 5.f + 0.7f, 0.f, 1.f);
     float smallHillsLayer = smallHills * smallHillsHeight;
-    float lowMountains = (fbm2d6 + warp2d4 / 5.f) * lowMountainsHeight;
+    float lowMountains = (fbm2d4 + warp2d4 / 5.f) * lowMountainsHeight;
 
-    float smallHillsMountainsBlender = clamp(fbm2d4 * 5.f, 0.f, 1.f);
+    float smallHillsMountainsBlender = clamp(fbm2d3 * 5.f, 0.f, 1.f);
     float lowMountainsLayer = mix(smallHillsLayer, lowMountains, smallHillsMountainsBlender);
 
     float flatAreaSmallHills = clamp(fbm2d2, 0.f, 0.4f);
     float flatAreaLayer = flatAreaSmallHills * (lowMountainsHeight / 2.f);
 
-    float lowAndHighMountainsBlender = fbm2d6clamped ;
-    float highMountainsLayer = (fbm2d4 - warp2d4 / 7.f) * highMountainsHeight;
+    float lowAndHighMountainsBlender = fbm2d4clamped ;
+    float highMountainsLayer = (fbm2d3 - warp2d4 / 7.f) * highMountainsHeight;
     float highAreasHeight = mix(highMountainsLayer, lowMountainsLayer, lowAndHighMountainsBlender);
     float highAreaLayer = highAreasHeight;
 
-    float highAndFlatAreaBlender = fbm2d6clampedm2;
+    float highAndFlatAreaBlender = fbm2d4clampedm2;
     float mountainHeight = mix(highAreaLayer, flatAreaLayer, highAndFlatAreaBlender);
     
     return terrainHeightWrapper(position, mountainHeight);
