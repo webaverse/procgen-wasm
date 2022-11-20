@@ -76,6 +76,8 @@ enum class BIOME : uint8_t {
   biLava,
   biFlowingRiver,
 
+  NULL_BIOME,
+
   // ! Num Biomes should be the last element in the list since it represents the total number of biomes
   NUM_BIOMES,
 };

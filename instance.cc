@@ -2330,7 +2330,7 @@ void PGInstance::createChunkMesh(
     int numGrassInstances,
     int numPoiInstances
 ) {
-    uint8_t dominantChunkBiome = BIOME::NUM_BIOMES;
+    uint8_t dominantChunkBiome = (uint8_t)BIOME::NUM_BIOMES;
 
     // heightfield
     std::vector<Heightfield> heightfields;
@@ -2349,7 +2349,7 @@ void PGInstance::createChunkMesh(
         dominantChunkBiome = calculateDominantBiome(heightfields);
 
         // sanity check
-        if(dominantChunkBiome == BIOME::NUM_BIOMES) {
+        if(dominantChunkBiome == (uint8_t)BIOME::NUM_BIOMES) {
             std::cerr << "ERROR: dominantChunkBiome == BIOME::NUM_BIOMES" << std::endl;
         }
     }
@@ -3267,8 +3267,8 @@ Heightfield PGInstance::getHeightField(float bx, float bz)
             }
             else
             {
-                localHeightfield.biomes[i] = 0;
-                localHeightfield.biomeWeights[i] = 0;
+                localHeightfield.biomes[i] = (uint8_t)BIOME::NULL_BIOME;
+                localHeightfield.biomeWeights[i] = (uint8_t)BIOME::NULL_BIOME;
             }
         }
 
@@ -3276,17 +3276,6 @@ Heightfield PGInstance::getHeightField(float bx, float bz)
         float waterElevationSum = 0.f;
 
         vm::vec2 fWorldPosition{bx, bz};
-
-        // find dominant biome
-        // uint8_t dominantBiomeIndex = 0;
-        // for (size_t i = 0; i < biomeCounts.size(); i++)
-        // {
-        //     const uint8_t biome = (uint8_t)i;
-        //     const float &biomeWeight = biomeCounts[biome];
-        //     if(biomeWeight > biomeCounts[dominantBiomeIndex]) {
-        //         dominantBiomeIndex = i;
-        //     }
-        // }
 
         for (size_t i = 0; i < biomeCounts.size(); i++)
         {
@@ -3568,24 +3557,29 @@ void PGInstance::applyMaterials(const int &x, const int &z, const int &lod, cons
 
 uint8_t PGInstance::calculateDominantBiome(const std::vector<Heightfield> &heightfields)
 {
-    std::vector<int> biomeCounts(BIOME::NUM_BIOMES);
+    std::vector<int> biomeCounts((int)BIOME::NUM_BIOMES, 0);
 
     for (size_t i = 0; i < heightfields.size(); i++)
     {
-        const heightfield_t &heightfield = heightfields[i];
+        const Heightfield &heightfield = heightfields[i];
         for (size_t j = 0; j < 4; j++)
         {
             const uint8_t &biome = heightfield.biomes[j];
-            biomeCounts[biome]++;
+            if(biome == (uint8_t)BIOME::NULL_BIOME) 
+            {
+                // breaking out of the inner loop because we've sorted the biomes
+                // if the first biome is null, then the rest will be null
+                break;
+            }
+
+            biomeCounts[(int)biome]++;
         }
     }
 
     int mostCommonBiomeIndex = std::max_element(biomeCounts.begin(),biomeCounts.end()) - biomeCounts.begin();
+
     return (uint8_t)mostCommonBiomeIndex;
 }
-// void PGInstance::getTerrainMaterialBuffer(std::vector<Heightfield> &heightfields){
-
-// }
 
 void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::vector<MaterialWeightAccumulator> &materialWeightAccumulators, float &totalMaterialFactors, const vm::vec2 &worldPosition)
 {
