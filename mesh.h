@@ -102,6 +102,10 @@ class VegetationGeometry : public SplatInstanceGeometry {
     // nothing
 };
 
+class BuildingGeometry : public SplatInstanceGeometry {
+    // nothing
+};
+
 //
 
 class PoiGeometry {
@@ -111,8 +115,6 @@ public:
 
     uint8_t *getBuffer() const;
 };
-
-//
 
 class BarrierGeometry {
 public:

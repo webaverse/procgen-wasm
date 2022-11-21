@@ -1932,7 +1932,178 @@ void generatePoiInstances(
                     poiGeometry.ps.push_back(az);
 
                     poiGeometry.instances.push_back(instanceId);
+
                 }
+            }
+        }
+    }
+}
+
+void addBuildingPart(
+    const int partType,
+    float x, float y, float z,
+    Quat q,
+    BuildingGeometry &buildingGeometry
+) {
+    auto iterPair = buildingGeometry.instances.emplace(
+        std::make_pair(partType, SplatInstance{})
+    );
+    auto iter = iterPair.first;
+    const bool &inserted = iterPair.second;
+    SplatInstance &instance = iter->second;
+    if (inserted) {
+        instance.instanceId = partType;
+    }
+
+    instance.ps.push_back(x);
+    instance.ps.push_back(y);
+    instance.ps.push_back(z);
+
+    instance.qs.push_back(q.x);
+    instance.qs.push_back(q.y);
+    instance.qs.push_back(q.z);
+    instance.qs.push_back(q.w);
+}
+
+void generateBuildingInstances(
+    const vm::ivec2 &worldPositionXZ,
+    const int lod,
+    const int chunkSize,
+    const std::vector<Heightfield> &heightfields,
+    Noises &noises,
+    BuildingGeometry &buildingGeometry,
+    PGInstance* pgInstance
+) {
+    // only make building interiors for LOD 1
+    if (lod > 1) return;
+
+    int exploreArea = 1;
+
+    vm::vec2 worldPositionXZf{
+        (float)worldPositionXZ.x,
+        (float)worldPositionXZ.y
+    };
+    HeightfieldSampler heightfieldSampler(
+        worldPositionXZf,
+        1,
+        chunkSize,
+        heightfields
+    );
+
+    for (int offsetZ = -exploreArea; offsetZ <= exploreArea; offsetZ++) {
+        for (int offsetX = -exploreArea; offsetX <= exploreArea; offsetX++) {
+
+            int baseMinX = worldPositionXZ.x;
+            int baseMinZ = worldPositionXZ.y;
+
+            // the topleft of the cell we're examining
+            int currMinX = worldPositionXZ.x + (offsetX * chunkSize);
+            int currMinZ = worldPositionXZ.y + (offsetZ * chunkSize);
+
+            vm::vec2 worldPositionXZf{
+                (float)currMinX,
+                (float)currMinZ
+            };
+            HeightfieldSampler heightfieldSampler(
+                worldPositionXZf,
+                1,
+                chunkSize,
+                heightfields
+            );
+
+
+            float chunkSeed = noises.buildingSeedNoise.in2D(currMinX, currMinZ);
+            unsigned int seedInt = *(unsigned int*)&chunkSeed;
+            std::mt19937 rng(seedInt);
+            std::uniform_real_distribution<float> dis(0.f, 1.f);
+
+            float buildingChance = 0.1f;
+            float buildTest = dis(rng);
+            // make a building starting in this test cell
+            float originX = dis(rng) * (float)chunkSize;
+            float originZ = dis(rng) * (float)chunkSize;
+
+            int numW = (int)std::round(dis(rng) * 4.f) + 2;
+            int numD = (int)std::round(dis(rng) * 4.f) + 2;
+            int floors = (int)std::round(dis(rng) * 10.f) + 1;
+
+            float ax = currMinX + originX;
+            float az = currMinZ + originZ;
+            
+            float midPtX = ax + (numW * 2.f);
+            float midPtZ = az + (numD * 2.f);
+
+            // float height = heightfieldSampler.getHeight(currMinX, currMinZ) - (float)WORLD_BASE_HEIGHT;
+            // height = WORLD_BASE_HEIGHT;
+            float height = pgInstance->getHeight((float)midPtX, (float)midPtZ) - (float)WORLD_BASE_HEIGHT;
+
+            if (buildTest < buildingChance) {
+
+                Quat q0 = Quat().setFromAxisAngle(Vec{0, 1, 0}, 0.f);
+                Quat q90 = Quat().setFromAxisAngle(Vec{0, 1, 0}, M_PI * 0.5f);
+
+                float baseMaxX = baseMinX + chunkSize;
+                float baseMaxZ = baseMinZ + chunkSize;
+
+                for (int k=0; k < floors; k++) {
+                    float yPos = height + (k * 3.f);
+
+                    for (int j=0; j < numD; j++) {
+                        for (int i=0; i < numW; i++) {
+                            float currX = (i * 4.f) + ax;
+                            float currZ = (j * 4.f) + az;
+
+                            if (
+                                currX >= baseMinX &&
+                                currX < baseMaxX &&
+                                currZ >= baseMinZ &&
+                                currZ < baseMaxZ
+                            ) {
+
+                                // in bounds of current chunk, add stuff
+                                
+                                // floor
+                                addBuildingPart(
+                                    0,
+                                    currX + 2.f,
+                                    yPos,
+                                    currZ + 2.f,
+                                    q0,
+                                    buildingGeometry
+                                );
+
+                                if (j == 0 || j == (numD-1)) {
+                                    float z2 = currZ;
+                                    if (j== (numD-1)) z2 += 4.f;
+
+                                    addBuildingPart(
+                                        1,
+                                        currX + 2.f,
+                                        yPos,
+                                        z2,
+                                        q0,
+                                        buildingGeometry
+                                    );
+                                }
+
+                                if (i == 0 || i == (numW-1)) {
+                                    float x2 = currX;
+                                    if (i == (numW-1)) x2 += 4.f;
+                                    
+                                    addBuildingPart(
+                                        1,
+                                        x2,
+                                        yPos,
+                                        currZ + 2.f,
+                                        q90,
+                                        buildingGeometry
+                                    );                    
+                                }
+                            }
+                        }
+                    }
+                }
+            
             }
         }
     }
@@ -2091,7 +2262,8 @@ enum GenerateFlags {
     GF_VEGETATION = 1 << 2,
     GF_GRASS = 1 << 3,
     GF_POI = 1 << 4,
-    GF_HEIGHTFIELD = 1 << 5
+    GF_HEIGHTFIELD = 1 << 5,
+    GF_BUILDINGS = 1 << 6
 };
 ChunkResult *PGInstance::createChunkMesh(
     const vm::ivec2 &worldPosition,
@@ -2112,7 +2284,8 @@ ChunkResult *PGInstance::createChunkMesh(
         (generateFlags & GF_VEGETATION) |
         (generateFlags & GF_GRASS) |
         (generateFlags & GF_POI) |
-        (generateFlags & GF_HEIGHTFIELD)
+        (generateFlags & GF_HEIGHTFIELD) |
+        (generateFlags & GF_BUILDINGS)
     ) {
         heightfields = getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
     }
@@ -2205,6 +2378,22 @@ ChunkResult *PGInstance::createChunkMesh(
         result->poiInstancesBuffer = poiGeometry.getBuffer();
     } else {
         result->poiInstancesBuffer = nullptr;
+    }
+
+    if (generateFlags & GF_BUILDINGS) {
+       BuildingGeometry buildingGeometry;
+        generateBuildingInstances(
+            worldPosition,
+            lod,
+            chunkSize,
+            heightfields,
+            noises,
+            buildingGeometry,
+            this
+       );
+       result->buildingInstancesBuffer = buildingGeometry.getBuffer();
+    } else {
+        result->buildingInstancesBuffer = nullptr;
     }
 
     // poi

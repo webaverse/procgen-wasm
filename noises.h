@@ -25,6 +25,7 @@ public:
   Noise poiSeedNoise;
   Noise poiNoise;
   Noise vegetationSeedNoise;
+  Noise buildingSeedNoise;
   Noise mobNoise;
   
   Noise numSplitsNoise;
