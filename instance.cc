@@ -3041,7 +3041,7 @@ uint8_t PGInstance::getBiome(float bx, float bz)
     const float humidity = noise.humidity;
     const float biomeFactor = cold * humidity;
 
-    const bool isCold = getNoiseVisibility(biomeFactor, COLD_WARM_BORDER, 1.);
+    const bool isCold = getNoiseVisibility(biomeFactor, COLD_WARM_BORDER, BIOME_BORDER_MAX);
     if (isCold)
     {
         biome = (uint8_t)BIOME::ICE_MOUNTAINS;
@@ -3051,7 +3051,7 @@ uint8_t PGInstance::getBiome(float bx, float bz)
     {
         biome = (uint8_t)BIOME::FOREST_MOUNTAINS;
     }
-    const bool isHot = getNoiseVisibility(biomeFactor, 0., WARM_HOT_BORDER);
+    const bool isHot = getNoiseVisibility(biomeFactor, BIOME_BORDER_MIN, WARM_HOT_BORDER);
     if (isHot)
     {
         biome = (uint8_t)BIOME::DESERT_MOUNTAINS;
@@ -3060,7 +3060,7 @@ uint8_t PGInstance::getBiome(float bx, float bz)
     return biome;
 }
 
-uint8_t PGInstance::getLiquid(float bx, float bz)
+uint8_t PGInstance::getLiquid(float bx, float bz, uint8_t biome)
 {
     uint8_t liquid = (uint8_t)LIQUID::NULL_LIQUID;
 
@@ -3078,6 +3078,11 @@ uint8_t PGInstance::getLiquid(float bx, float bz)
 
     if (riverVisibility)
     {
+        if (biome == (uint8_t)BIOME::DESERT_MOUNTAINS)
+        {
+            return liquid;
+        }
+
         if (liquid == (uint8_t)LIQUID::OCEAN)
         {
             liquid = (uint8_t)LIQUID::FLOWING_RIVER;
@@ -3216,7 +3221,7 @@ Heightfield PGInstance::getHeightField(float bx, float bz)
             if (distance < maxDistance)
             {
                 uint8_t b = getBiome(ax, az);
-                uint8_t l = getLiquid(ax, az);
+                uint8_t l = getLiquid(ax, az, b);
 
                 float heightFactor = 1.f - (distance / maxDistance);
 

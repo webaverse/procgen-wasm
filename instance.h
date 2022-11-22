@@ -93,7 +93,7 @@ public:
     BiomeNoiseField getBiomeNoiseField(float bx, float by);
     LiquidNoiseField getLiquidNoiseField(float bx, float by);
     uint8_t getBiome(float bx, float bz);
-    uint8_t getLiquid(float bx, float bz);
+    uint8_t getLiquid(float bx, float bz, uint8_t biome);
     // SeedNoise getSeedNoise(int bx, int bz);
 
     void getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfields);
