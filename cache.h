@@ -27,16 +27,17 @@ class Heightfield {
 public:
     float height;
 
-    std::array<uint8_t, 4> biomes;
-    std::array<uint8_t, 4> biomesWeights;
-
-    std::array<uint8_t, 4> liquids;
-    std::array<uint8_t, 4> liquidsWeights;
-
     float liquidHeight = MIN_WORLD_HEIGHT;
     float liquidFactor = 0.f;
 
     vm::vec3 normal{0.f, 1.f, 0.f};
+
+    std::array<uint8_t, 4> biomes;
+    std::array<uint8_t, 4> biomesWeights;
+
+    // TODO : send these to the shader for blending liquid shaders
+    std::array<uint8_t, 4> liquids;
+    std::array<uint8_t, 4> liquidsWeights;
 
     MaterialsArray materials;
     MaterialsWeightsArray materialsWeights;

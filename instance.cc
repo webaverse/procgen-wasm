@@ -3163,6 +3163,31 @@ void PGInstance::getHeightFieldSeams(int bx, int bz, int lod, const std::array<i
     }
 }
 
+std::vector<uint8_t> sortWeightedTypes(const std::vector<float> &weights)
+{
+    std::vector<uint8_t> seenTypes;
+    for (size_t i = 0; i < weights.size(); i++)
+    {
+        const uint8_t biome = (uint8_t)i;
+        const float &biomeWeight = weights[biome];
+        if (biomeWeight > 0.f)
+        {
+            seenTypes.push_back(biome);
+        }
+    }
+
+    // sort by increasing occurrence count of the type
+    std::sort(
+        seenTypes.begin(),
+        seenTypes.end(),
+        [&](uint8_t b1, uint8_t b2) -> bool
+        {
+            return weights[b1] > weights[b2];
+        });
+
+    return seenTypes;
+}
+
 Heightfield PGInstance::getHeightField(float bx, float bz) 
 {
     Heightfield localHeightfield;
@@ -3219,44 +3244,8 @@ Heightfield PGInstance::getHeightField(float bx, float bz)
 
     // postprocess height
     {
-        std::vector<uint8_t> seenBiomes;
-        for (size_t i = 0; i < biomeWeights.size(); i++)
-        {
-            const uint8_t biome = (uint8_t)i;
-            const float &biomeWeight = biomeWeights[biome];
-            if (biomeWeight > 0.f) {
-                seenBiomes.push_back(biome);
-            }
-        }
-        
-        // sort by increasing occurrence count of the biome
-        std::sort(
-            seenBiomes.begin(),
-            seenBiomes.end(),
-            [&](uint8_t b1, uint8_t b2) -> bool {
-                return biomeWeights[b1] > biomeWeights[b2];
-            }
-        );
-
-        std::vector<uint8_t> seenLiquids;
-
-        for (size_t i = 0; i < liquidWeights.size(); i++)
-        {
-            const uint8_t liquid = (uint8_t)i;
-            const float &liquidWeight = liquidWeights[liquid];
-            if (liquidWeight > 0.f) {
-                seenLiquids.push_back(liquid);
-            }
-        }
-
-        // sort by increasing occurrence count of the biome
-        std::sort(
-            seenLiquids.begin(),
-            seenLiquids.end(),
-            [&](uint8_t b1, uint8_t b2) -> bool {
-                return seenLiquids[b1] > seenLiquids[b2];
-            }
-        );
+        const std::vector<uint8_t> &seenBiomes = sortWeightedTypes(biomeWeights);
+        const std::vector<uint8_t> &seenLiquids = sortWeightedTypes(liquidWeights);
 
         // letting the biome weight fit in an uint8_t
         const float WEIGHT_FITTER = 255.f;
