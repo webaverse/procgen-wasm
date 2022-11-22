@@ -1987,8 +1987,72 @@ void pushGrassInstances(const float &ax, const float &az, const float &rot, Gras
 
     instance.grassProps.push_back(grassProps);
 }
-void generateGrassInstances(
-    const vm::ivec2 &worldPositionXZ,
+
+template <typename G>
+void generateInstances( const vm::ivec2 &worldPositionXZ,
+    const int lod,
+    const int chunkSize,
+    const int numInstances,
+    const std::vector<Heightfield> &heightfields,
+    Noises &noises,
+    G &geometry)
+{
+    int baseMinX = worldPositionXZ.x;
+    int baseMinZ = worldPositionXZ.y;
+
+    vm::vec2 worldPositionXZf{
+        (float)worldPositionXZ.x,
+        (float)worldPositionXZ.y};
+
+    HeightfieldSampler heightfieldSampler(
+        worldPositionXZf,
+        lod,
+        chunkSize,
+        heightfields);
+
+    for (int dz = 0; dz < lod; dz++)
+    {
+        for (int dx = 0; dx < lod; dx++)
+        {
+            const int chunkMinX = baseMinX + dx * chunkSize;
+            const int chunkMinZ = baseMinZ + dz * chunkSize;
+
+            const float chunkSeed = noises.uberNoise.grassObjectNoise(chunkMinX, chunkMinZ);
+            unsigned int seedInt = *(unsigned int *)&chunkSeed;
+            std::mt19937 rng(seedInt);
+            std::uniform_real_distribution<float> dis(0.f, 1.f);
+
+            for (int i = 0; i < MAX_NUM_GRASSES_PER_CHUNK; i++)
+            {
+                const float chunkOffsetX = dis(rng) * (float)chunkSize;
+                const float chunkOffsetZ = dis(rng) * (float)chunkSize;
+                const float rot = dis(rng) * 2.0f * M_PI;
+                const int instanceId = (int)std::round(dis(rng) * (float)(numGrassInstances - 1));
+
+                const float ax = (float)chunkMinX + chunkOffsetX;
+                const float az = (float)chunkMinZ + chunkOffsetZ;
+
+                const Heightfield &heightfield = heightfieldSampler.getHeightfield(ax, az);
+
+                const float slope = heightfield.getSlope();
+
+                if (slope < 0.1f)
+                {
+                    float noiseValue = noises.uberNoise.grassObjectNoise(ax, az);
+                    if (noiseValue > GRASS_THRESHOLD)
+                    {
+                        const float crushedGrassNoise = 1.f - noises.uberNoise.stoneNoise(ax, az);
+                        if(crushedGrassNoise > CRUSHED_GRASS_THRESHOLD) {
+                            pushGrassInstances(ax, az, rot, grassGeometry, instanceId, heightfieldSampler, heightfield, noises, crushedGrassNoise);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void generateGrassInstances( const vm::ivec2 &worldPositionXZ,
     const int lod,
     const int chunkSize,
     const int numGrassInstances,
@@ -1996,10 +2060,6 @@ void generateGrassInstances(
     Noises &noises,
     GrassGeometry &grassGeometry)
 {
-    // const float GRASS_THRESHOLD = maxGrassRate / (float)(lod * lod);
-    // const float grassThrowRate = 1.f / (float)lod;
-    // const float GRASS_THRESHOLD = maxGrassRate;
-
     int baseMinX = worldPositionXZ.x;
     int baseMinZ = worldPositionXZ.y;
 
@@ -2026,7 +2086,6 @@ void generateGrassInstances(
 
             for (int i = 0; i < MAX_NUM_GRASSES_PER_CHUNK; i++)
             {
-                const float throwNoise = dis(rng);
                 const float chunkOffsetX = dis(rng) * (float)chunkSize;
                 const float chunkOffsetZ = dis(rng) * (float)chunkSize;
                 const float rot = dis(rng) * 2.0f * M_PI;
@@ -2041,7 +2100,7 @@ void generateGrassInstances(
 
                 if (slope < 0.1f)
                 {
-                    float noiseValue = noises.uberNoise.grassObjectNoise(ax, az) / lod;
+                    float noiseValue = noises.uberNoise.grassObjectNoise(ax, az);
                     if (noiseValue > GRASS_THRESHOLD)
                     {
                         const float crushedGrassNoise = 1.f - noises.uberNoise.stoneNoise(ax, az);

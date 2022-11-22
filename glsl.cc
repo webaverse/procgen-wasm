@@ -19,6 +19,8 @@ const float TERRAIN_OCEAN_THRESHOLD = OCEAN_THRESHOLD;
 const float TERRAIN_RIVER_THRESHOLD = RIVER_BASE;
 const float TERRAIN_WATER_THRESHOLD = WATER_THRESHOLD;
 const float TERRAIN_STONE_THRESHOLD = ROCK_THRESHOLD;
+const float TERRAIN_TREE_THRESHOLD = VEGGIE_THRESHOLD;
+const float TERRAIN_GRASS_THRESHOLD = GRASS_THRESHOLD;
 const float TERRAIN_BIOME_BORDER_MIN = BIOME_BORDER_MIN;
 const float TERRAIN_BIOME_BORDER_MAX = BIOME_BORDER_MAX;
 const float TERRAIN_COLD_WARM_BORDER = COLD_WARM_BORDER;
@@ -388,6 +390,12 @@ float getGrassObject(vec2 position)
     return clamp(simplex(position * 40.f) * wetness, 0.f, 1.f);
 }
 
+bool getGrassVisibility(vec2 position)
+{
+    float grass = getGrassObject(position);
+    return grass >= TERRAIN_GRASS_THRESHOLD;
+}
+
 float getTreeObject(vec2 position)
 {
     if (getWaterVisibility(position))
@@ -396,6 +404,12 @@ float getTreeObject(vec2 position)
     }
     float wetness = getWetness(position);
     return clamp(simplex(position * 20.f) * wetness, 0.f, 1.f);
+}
+
+bool getTreeVisibility(vec2 position)
+{
+    float tree = getTreeObject(position);
+    return tree >= TERRAIN_TREE_THRESHOLD; 
 }
 
 float getGrassMaterial(vec2 position)

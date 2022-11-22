@@ -89,6 +89,7 @@ public:
     int instanceId;
     std::vector<float> ps;
     std::vector<float> qs;
+    uint8_t instanceType = INSTANCE::NULL_INSTANCE;
 };
 class SplatInstanceGeometry {
 public:
@@ -106,11 +107,8 @@ class RockGeometry : public SplatInstanceGeometry {
 };
 //
 
-class MaterialAwareSplatInstance {
+class MaterialAwareSplatInstance : public SplatInstance {
 public:
-    int instanceId;
-    std::vector<float> ps;
-    std::vector<float> qs;
     // terrain materials
     MaterialsSplatBuffer materials; 
     MaterialsSplatBuffer materialsWeights; 

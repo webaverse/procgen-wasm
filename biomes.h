@@ -20,7 +20,7 @@ enum class BIOME : uint8_t {
   FOREST_MOUNTAINS,
   ICE_MOUNTAINS,
 
-  // ! Num Biomes should be the last element in the list since it represents the total number of biomes
+  // Num Biomes should be the last element in the list since it represents the total number of biomes
   NUM_BIOMES,
 };
 
@@ -35,7 +35,7 @@ enum class LIQUID : uint8_t {
 
   // Swamp
 
-  // ! Num Liquids should be the last element in the list since it represents the total number of biomes
+  // Num Liquids should be the last element in the list since it represents the total number of biomes
   NUM_LIQUIDS,
 };
 
@@ -45,8 +45,32 @@ enum class MATERIAL : uint8_t {
   ROCK,
   STONE,
 
-  // ! Num Materials should be the last element in the enum since it is used to determine the number of materials
+  // Num Materials should be the last element in the enum since it is used to determine the number of materials
   NUM_MATERIALS,
+};
+
+enum class INSTANCE : uint8_t {
+  NULL_INSTANCE,
+
+  TREE,
+  BUSH,
+  ROCK,
+  STONE,
+  GRASS,
+
+  // Num Instances should be the last element in the list since it represents the total number of biomes
+  NUM_INSTANCES,
+};
+
+enum class TREE : uint8_t {
+  NULL_TREE,
+
+  SHORT_TREE,
+  MEDIUM_TREE,
+  TALL_TREE,
+
+  // Num Trees should be the last element in the list since it represents the total number of biomes
+  NUM_TREES,
 };
 
 // class Biome {
@@ -115,7 +139,7 @@ enum class MATERIAL : uint8_t {
 
 //   NULL,
 
-//   // ! Num Biomes should be the last element in the list since it represents the total number of biomes
+//   // Num Biomes should be the last element in the list since it represents the total number of biomes
 //   NUM_BIOMES,
 // };
 
