@@ -2256,7 +2256,7 @@ void generateGridHeightfield(
 
             heightfieldGeometry.heightfieldImage[dstIndex++] = vm::vec4{
                 heightfield.height,
-                heightfield.waterHeight,
+                heightfield.liquidHeight,
                 0,
                 0
             };
@@ -3012,72 +3012,89 @@ void PGInstance::getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, in
 
 // 2d caches
 
-NoiseField PGInstance::getNoise(float bx, float bz) {
-    float tNoise = (float)noises.uberNoise.temperatureNoise(bx, bz);
-    float hNoise = (float)noises.uberNoise.humidityNoise(bx, bz);
+BiomeNoiseField PGInstance::getBiomeNoiseField(float bx, float bz)
+{
+    float tNoise = noises.uberNoise.temperatureNoise(bx, bz);
+    float hNoise = noises.uberNoise.humidityNoise(bx, bz);
+
+    return BiomeNoiseField{
+        tNoise,
+        hNoise};
+}
+
+LiquidNoiseField PGInstance::getLiquidNoiseField(float bx, float bz)
+{
     float oNoise = noises.uberNoise.oceanNoise(bx, bz);
     float rNoise = noises.uberNoise.riverNoise(bx, bz, oNoise);
 
-    return NoiseField{
-        tNoise,
-        hNoise,
+    return LiquidNoiseField{
         oNoise,
-        rNoise
-    };
+        rNoise};
 }
 
-bool getNoiseVisibility(float value, float min, float max) {
+bool getNoiseVisibility(float value, float min, float max)
+{
     return value >= min && value <= max;
 }
 
-uint8_t PGInstance::getBiome(float bx, float bz) {
+uint8_t PGInstance::getBiome(float bx, float bz)
+{
     uint8_t biome = 0xFF;
-    
-    const auto &noise = getNoise(bx, bz);
+
+    const auto &noise = getBiomeNoiseField(bx, bz);
     const float heat = noise.heat;
     const float cold = 1.f - heat;
     const float humidity = noise.humidity;
+    const float biomeFactor = cold * humidity;
+
+    const bool isCold = getNoiseVisibility(biomeFactor, COLD_WARM_BORDER, 1.);
+    if (isCold)
+    {
+        biome = (uint8_t)BIOME::ICE_MOUNTAINS;
+    }
+    const bool isWarm = getNoiseVisibility(biomeFactor, WARM_HOT_BORDER, COLD_WARM_BORDER);
+    if (isWarm)
+    {
+        biome = (uint8_t)BIOME::FOREST_MOUNTAINS;
+    }
+    const bool isHot = getNoiseVisibility(biomeFactor, 0., WARM_HOT_BORDER);
+    if (isHot)
+    {
+        biome = (uint8_t)BIOME::DESERT_MOUNTAINS;
+    }
+
+    return biome;
+}
+
+uint8_t PGInstance::getLiquid(float bx, float bz)
+{
+    uint8_t liquid = (uint8_t)LIQUID::NULL_LIQUID;
+
+    const auto &noise = getLiquidNoiseField(bx, bz);
     const float ocean = noise.ocean;
     const float river = noise.river;
-
-    const float biomeFactor = cold * humidity;
 
     const bool oceanVisibility = getNoiseVisibility(ocean, OCEAN_THRESHOLD, 1.f);
     const bool riverVisibility = getNoiseVisibility(river, RIVER_THRESHOLD, 1.f);
 
     if (oceanVisibility)
     {
-        biome = (uint8_t)BIOME::biOcean;
+        liquid = (uint8_t)LIQUID::OCEAN;
     }
 
-    if(riverVisibility) {
-        if(biome == (uint8_t)BIOME::biOcean) 
+    if (riverVisibility)
+    {
+        if (liquid == (uint8_t)LIQUID::OCEAN)
         {
-            biome = (uint8_t)BIOME::biFlowingRiver;
+            liquid = (uint8_t)LIQUID::FLOWING_RIVER;
         }
         else
         {
-            biome = (uint8_t)BIOME::biRiver;
+            liquid = (uint8_t)LIQUID::RIVER;
         }
     }
 
-    const bool isCold = getNoiseVisibility(biomeFactor, COLD_WARM_BORDER, 1.);
-    if (isCold)
-    {
-        biome = (uint8_t)BIOME::biIceMountains;
-    }
-    const bool isWarm = getNoiseVisibility(biomeFactor, WARM_HOT_BORDER, COLD_WARM_BORDER);
-    if (isWarm)
-    {
-        biome = (uint8_t)BIOME::biJungleHills;
-    }
-    const bool isHot = getNoiseVisibility(biomeFactor, 0., WARM_HOT_BORDER);
-    if (isHot)
-    {
-        biome = (uint8_t)BIOME::biDesert;
-    }
-
-    return biome;
+    return liquid;
 }
 
 //
@@ -3161,13 +3178,13 @@ Heightfield PGInstance::getHeightField(float bx, float bz)
     const float maxWaterDistance = (float)std::sqrt((float)waterRange * (float)waterRange);
     constexpr float baseWaterFactor = 0.25;
 
-    // acc height
-    std::vector<float> biomeCounts(numBiomes);
+    // accumulators
     float totalHeightFactors = 0;
+    float sumLiquidFactors = 0;
 
-    // acc water
-    float totalWaterFactors = 0;
-    float sumWaterFactors = 0;
+    // weights
+    std::vector<float> biomeWeights(numBiomes, 0.f);
+    std::vector<float> liquidWeights(numLiquids, 0.f);
 
     // loop
     for (float dz = -halfChunkSizeF; dz <= halfChunkSizeF; dz++) {
@@ -3177,45 +3194,72 @@ Heightfield PGInstance::getHeightField(float bx, float bz)
             float ax = bx + dx;
             float az = bz + dz;
 
-            if (distance < maxDistance) {
+            if (distance < maxDistance)
+            {
                 uint8_t b = getBiome(ax, az);
+                uint8_t l = getLiquid(ax, az);
 
                 float heightFactor = 1.f - (distance / maxDistance);
 
-                biomeCounts[b] += heightFactor;
+                biomeWeights[b] += heightFactor;
+                liquidWeights[l] += heightFactor;
                 totalHeightFactors += heightFactor;
-                totalWaterFactors += heightFactor;
 
-                if(BiomeHelper::isLiquidBiome(b)) {
-                    sumWaterFactors += heightFactor;
+                if (l != (uint8_t)LIQUID::NULL_LIQUID)
+                {
+                    sumLiquidFactors += heightFactor;
                 }
             }
         }
     }
 
+    // liquid factor
+    sumLiquidFactors /= totalHeightFactors;
+    localHeightfield.liquidFactor = sumLiquidFactors;
+
     // postprocess height
     {
         std::vector<uint8_t> seenBiomes;
-        for (size_t i = 0; i < biomeCounts.size(); i++)
+        for (size_t i = 0; i < biomeWeights.size(); i++)
         {
             const uint8_t biome = (uint8_t)i;
-            const float &biomeWeight = biomeCounts[biome];
+            const float &biomeWeight = biomeWeights[biome];
             if (biomeWeight > 0.f) {
                 seenBiomes.push_back(biome);
             }
         }
         
-        // sort by increasing occurence count of the biome
+        // sort by increasing occurrence count of the biome
         std::sort(
             seenBiomes.begin(),
             seenBiomes.end(),
             [&](uint8_t b1, uint8_t b2) -> bool {
-                return biomeCounts[b1] > biomeCounts[b2];
+                return biomeWeights[b1] > biomeWeights[b2];
             }
         );
 
-        // letting the biome weight fit in an unsigned char
-        const float biomeWeightFitter = 255.f;
+        std::vector<uint8_t> seenLiquids;
+
+        for (size_t i = 0; i < liquidWeights.size(); i++)
+        {
+            const uint8_t liquid = (uint8_t)i;
+            const float &liquidWeight = liquidWeights[liquid];
+            if (liquidWeight > 0.f) {
+                seenLiquids.push_back(liquid);
+            }
+        }
+
+        // sort by increasing occurrence count of the biome
+        std::sort(
+            seenLiquids.begin(),
+            seenLiquids.end(),
+            [&](uint8_t b1, uint8_t b2) -> bool {
+                return seenLiquids[b1] > seenLiquids[b2];
+            }
+        );
+
+        // letting the biome weight fit in an uint8_t
+        const float WEIGHT_FITTER = 255.f;
 
         for (size_t i = 0; i < 4; i++)
         {
@@ -3223,42 +3267,58 @@ Heightfield PGInstance::getHeightField(float bx, float bz)
             {
                 const uint8_t &biome = seenBiomes[i];
                 localHeightfield.biomes[i] = biome;
-                localHeightfield.biomeWeights[i] = biomeCounts[biome] / totalHeightFactors * biomeWeightFitter;
+                localHeightfield.biomesWeights[i] = biomeWeights[biome] / totalHeightFactors * WEIGHT_FITTER;
             }
             else
             {
                 localHeightfield.biomes[i] = (uint8_t)BIOME::NULL_BIOME;
-                localHeightfield.biomeWeights[i] = (uint8_t)BIOME::NULL_BIOME;
+                localHeightfield.biomesWeights[i] = (uint8_t)BIOME::NULL_BIOME;
+            }
+
+            if (i < seenLiquids.size())
+            {
+                const uint8_t &liquid = seenLiquids[i];
+                localHeightfield.liquids[i] = liquid;
+                localHeightfield.liquidsWeights[i] = liquidWeights[liquid] / totalHeightFactors * WEIGHT_FITTER;
+            }
+            else
+            {
+                localHeightfield.liquids[i] = (uint8_t)LIQUID::NULL_LIQUID;
+                localHeightfield.liquidsWeights[i] = (uint8_t)LIQUID::NULL_LIQUID;
             }
         }
 
         float elevationSum = 0.f;
-        float waterElevationSum = 0.f;
+        float liquidElevationSum = 0.f;
 
         vm::vec2 fWorldPosition{bx, bz};
 
-        for (size_t i = 0; i < biomeCounts.size(); i++)
+        for (size_t i = 0; i < biomeWeights.size(); i++)
         {
             const uint8_t biome = (uint8_t)i;
-            const float &biomeWeight = biomeCounts[biome];
+            const float &biomeWeight = biomeWeights[biome] / totalHeightFactors;
+
             if (biomeWeight > 0.f) {
                 const float computedBiomeHeight = getComputedBiomeHeight(biome, fWorldPosition);
                 const float computedTerrainHeight = getComputedTerrainHeight(computedBiomeHeight, fWorldPosition);
-                const float computedWaterHeight = getComputedWaterHeight(computedBiomeHeight, computedTerrainHeight, biome);
 
                 elevationSum += biomeWeight * computedTerrainHeight;
-                waterElevationSum += biomeWeight * computedWaterHeight;
+
+                for (size_t j = 0; j < liquidWeights.size(); j++)
+                {
+                    const uint8_t liquid = (uint8_t)j;
+                    const float &liquidWeight = liquidWeights[liquid] / totalHeightFactors;
+
+                    if(liquidWeight > 0.f) {
+                        const float computedLiquidHeight = getComputedWaterHeight(computedBiomeHeight, computedTerrainHeight, liquid);
+                        liquidElevationSum += biomeWeight * liquidWeight * computedLiquidHeight;
+                    }
+                }
             }
         }
 
-        elevationSum /= totalHeightFactors;
-        waterElevationSum /= totalWaterFactors;
-
-        sumWaterFactors /= totalWaterFactors;
-
         localHeightfield.height = elevationSum;
-        localHeightfield.waterHeight = waterElevationSum;
-        localHeightfield.waterFactor = sumWaterFactors;
+        localHeightfield.liquidHeight = liquidElevationSum;
     }
 
     return localHeightfield;
@@ -3313,11 +3373,13 @@ float PGInstance::getComputedBiomeHeight(uint8_t b, const vm::vec2 &worldPositio
 
     switch (b)
     {
-    case (int)BIOME::biDesert: 
+    case (int)BIOME::NULL_BIOME: 
+        return 0.f;
+    case (int)BIOME::DESERT_MOUNTAINS: 
         return noises.uberNoise.desertNoise(ax, az);
-    case (int)BIOME::biJungleHills:
+    case (int)BIOME::FOREST_MOUNTAINS:
         return noises.uberNoise.mountainNoise(ax, az);
-    case (int)BIOME::biIceMountains:
+    case (int)BIOME::ICE_MOUNTAINS:
         return noises.uberNoise.iceMountainNoise(ax, az);
     default:
         return noises.uberNoise.mountainNoise(ax, az);
@@ -3331,33 +3393,38 @@ float PGInstance::getComputedTerrainHeight(const float &height, const vm::vec2 &
     return vm::clamp(height - noises.uberNoise.waterDepthNoise(ax, az), (float)MIN_WORLD_HEIGHT, (float)MAX_WORLD_HEIGHT);
 }
 
-float PGInstance::getComputedWaterHeight(const float &height, const float &realHeight, uint8_t b)
+float PGInstance::getComputedWaterHeight(const float &biomeHeight, const float &terrainHeight, uint8_t liquid)
 {
-    float waterHeight = height;
 
-    const float belowTerrainHeight = waterHeight - WATER_HEIGHT_DIFFERENCE;
+    const float belowBiomeHeight = biomeHeight - WATER_HEIGHT_DIFFERENCE;
+    const float belowTerrainHeight = terrainHeight - WATER_HEIGHT_DIFFERENCE;
+
+    float liquidHeight = 0.f;
 
     // * handle the height of water differently based on different biomes
-    switch (b)
+    switch (liquid)
     {
-    case (int)BIOME::biOcean:
-        waterHeight = (float)WATER_BASE_HEIGHT;
+    case (int)LIQUID::NULL_LIQUID:
+        liquidHeight = belowTerrainHeight;
         break;
-    case (int)BIOME::biRiver:
-        waterHeight = belowTerrainHeight;
+    case (int)LIQUID::OCEAN:
+        liquidHeight = (float)WATER_BASE_HEIGHT;
         break;
-    case (int)BIOME::biLava:
-        waterHeight = belowTerrainHeight;
+    case (int)LIQUID::RIVER:
+        liquidHeight = belowBiomeHeight;
         break;
-    case (int)BIOME::biFlowingRiver:
-        waterHeight = realHeight + WATER_OFFSET;
+    case (int)LIQUID::LAVA:
+        liquidHeight = belowBiomeHeight;
+        break;
+    case (int)LIQUID::FLOWING_RIVER:
+        liquidHeight = terrainHeight + WATER_OFFSET;
         break;
     default:
-        waterHeight = belowTerrainHeight;
+        liquidHeight = belowBiomeHeight;
         break;
     }
 
-    return vm::clamp(waterHeight, (float)WATER_BASE_HEIGHT, (float)MAX_WORLD_HEIGHT);
+    return vm::clamp(liquidHeight, (float)WATER_BASE_HEIGHT, (float)MAX_WORLD_HEIGHT);
 }
 
 
@@ -3526,7 +3593,7 @@ uint8_t PGInstance::calculateDominantBiome(const std::vector<Heightfield> &heigh
 void PGInstance::getComputedMaterials(Heightfield &localHeightfield, std::vector<MaterialWeightAccumulator> &materialWeightAccumulators, float &totalMaterialFactors, const vm::vec2 &worldPosition)
 {
     const std::array<uint8_t, 4> &biomes = localHeightfield.biomes;
-    const std::array<uint8_t, 4> &biomesWeights = localHeightfield.biomeWeights;
+    const std::array<uint8_t, 4> &biomesWeights = localHeightfield.biomesWeights;
 
     const int GRASS = (int)MATERIAL::GRASS;
     const int DIRT = (int)MATERIAL::DIRT;

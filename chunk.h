@@ -21,6 +21,7 @@
 //
 
 constexpr int numBiomes = (int)BIOME::NUM_BIOMES;
+constexpr int numLiquids = (int)LIQUID::NUM_LIQUIDS;
 constexpr int numMaterials = (int)MATERIAL::NUM_MATERIALS;
 
 /* enum GenerateFlags : int {
@@ -86,7 +87,7 @@ public:
     // void generate(DCInstance *inst, int flags);
 
     // biomes
-    // void getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights) const;
+    // void getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomesWeights) const;
 
     // lighting
 
