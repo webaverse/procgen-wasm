@@ -9,33 +9,33 @@ constexpr int MIN_WORLD_HEIGHT = 0;
 constexpr int MAX_WORLD_HEIGHT = 1024;
 
 // * Terrain parameters
-constexpr float BIOME_BORDERS_FLATTENER_DELTA = 0.04f;
-constexpr float COLD_WARM_BORDER = 0.35f;
-constexpr float WARM_HOT_BORDER = 0.05f;
+constexpr float BIOME_BORDERS_FLATTENER_DELTA = 0.04;
+constexpr float COLD_WARM_BORDER = 0.35;
+constexpr float WARM_HOT_BORDER = 0.05;
 constexpr int MAX_NUM_GRASSES_PER_CHUNK = 2048;
-constexpr float GRASS_THRESHOLD = 0.3f;
+constexpr float GRASS_THRESHOLD = 0.2;
 constexpr int MAX_NUM_VEGGIES_PER_CHUNK = 8;
-constexpr float VEGGIE_THRESHOLD = 0.6;
-constexpr float OCEAN_THRESHOLD = 0.55f;
-constexpr float RIVER_THRESHOLD = 0.55f;
-constexpr float RIVER_BASE = 0.3f;
+constexpr float VEGGIE_THRESHOLD = 0.5;
+constexpr float OCEAN_THRESHOLD = 0.5;
+constexpr float RIVER_THRESHOLD = 0.5;
+constexpr float RIVER_BASE = 0.3;
 constexpr float WATER_THRESHOLD = OCEAN_THRESHOLD;
-constexpr float ROCK_THRESHOLD = 0.92f;
+constexpr float ROCK_THRESHOLD = 0.65;
 constexpr int NUM_STONES_AROUND_ROCK = 2;
 constexpr int WATER_BASE_HEIGHT = WORLD_BASE_HEIGHT;
 constexpr int OCEAN_DEPTH = WATER_BASE_HEIGHT * 8;
 constexpr int RIVER_DEPTH = WATER_BASE_HEIGHT / 6;
 constexpr int WATER_BASE_DEPTH = 8;
-constexpr float WATER_OFFSET = 1.5f;
-constexpr float WATER_HEIGHT_DIFFERENCE = 3.f;
+constexpr float WATER_OFFSET = 1.5;
+constexpr float WATER_HEIGHT_DIFFERENCE = 3.;
 constexpr int NUM_BUSHES_AROUND_TREE = 2;
-constexpr float BUSH_AROUND_TREE_BASE_OFFSET = 2.f;
-constexpr float BUSH_AROUND_TREE_OFFSET_RANGE = 3.f;
-constexpr float GRASS_HEIGHT_VARIATION_RANGE = 0.3f;
-constexpr float GRASS_COLOR_VARIATION_BASE = 1.f;
-constexpr float GRASS_COLOR_VARIATION_RANGE = 0.2f;
+constexpr float BUSH_AROUND_TREE_BASE_OFFSET = 2.;
+constexpr float BUSH_AROUND_TREE_OFFSET_RANGE = 3.;
+constexpr float GRASS_HEIGHT_VARIATION_RANGE = 0.3;
+constexpr float GRASS_COLOR_VARIATION_BASE = 1.;
+constexpr float GRASS_COLOR_VARIATION_RANGE = 0.2;
 constexpr float CRUSHED_GRASS_THRESHOLD = 1.f - ROCK_THRESHOLD;
-constexpr float GRASS_MODEL_BASE_HEIGHT = 1.2f;
+constexpr float GRASS_MODEL_BASE_HEIGHT = 1.2;
 
 //
 

@@ -371,7 +371,7 @@ float getWaterDepth(vec2 position){
 
 float getWetness(vec2 position)
 {
-    return clamp(simplex(position / 2.f) * 2.f + 0.15f, 0.f, 1.f);
+    return clamp(simplex(position / 2.f) + 0.25f, 0.f, 1.f);
 }
 
 float getGrassObject(vec2 position)
@@ -396,7 +396,7 @@ float getGrassMaterial(vec2 position)
 {
     float wetness = getWetness(position);
     float noise = warpNoise1Layer_2(position * 5.f) * wetness;
-    return clamp(noise - 0.1f, 0.f, 1.f);
+    return clamp(noise, 0.f, 1.f);
 }
 
 bool getStoneVisibility(vec2 position)
