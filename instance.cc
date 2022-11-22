@@ -1841,7 +1841,7 @@ void generateVegetationInstances(
             int chunkMinX = baseMinX + dx * chunkSize;
             int chunkMinZ = baseMinZ + dz * chunkSize;
 
-            float chunkSeed = noises.uberNoise.treeObjectNoise(chunkMinX, chunkMinZ);
+            float chunkSeed = noises.uberNoise.hashNoise(chunkMinX, chunkMinZ);
             unsigned int seedInt = *(unsigned int *)&chunkSeed;
             std::mt19937 rng(seedInt);
             std::uniform_real_distribution<float> dis(0.f, 1.f);
@@ -1903,7 +1903,7 @@ void generateRocksInstances(
             const int chunkMinX = baseMinX + dx * chunkSize;
             const int chunkMinZ = baseMinZ + dz * chunkSize;
 
-            const float chunkSeed = noises.uberNoise.stoneNoise(chunkMinX, chunkMinZ);
+            const float chunkSeed = noises.uberNoise.hashNoise(chunkMinX, chunkMinZ);
             unsigned int seedInt = *(unsigned int *)&chunkSeed;
             std::mt19937 rng(seedInt);
             std::uniform_real_distribution<float> dis(0.f, 1.f);
@@ -2019,8 +2019,8 @@ void generateGrassInstances(
             const int chunkMinX = baseMinX + dx * chunkSize;
             const int chunkMinZ = baseMinZ + dz * chunkSize;
 
-            const float chunkSeed = noises.uberNoise.grassObjectNoise(chunkMinX, chunkMinZ);
-            unsigned int seedInt = *(unsigned int *)&chunkSeed;
+            const float chunkSeed = noises.uberNoise.hashNoise(chunkMinX, chunkMinZ);
+            const uint32_t seedInt = *(uint32_t *)&chunkSeed;
             std::mt19937 rng(seedInt);
             std::uniform_real_distribution<float> dis(0.f, 1.f);
 
