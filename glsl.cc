@@ -8,21 +8,33 @@ using namespace GLSL;
 
 const float MAX_TERRAIN_HEIGHT = float(MAX_WORLD_HEIGHT);
 const float MIN_TERRAIN_HEIGHT = float(MIN_WORLD_HEIGHT);
+
+// mountains heights
+const float TERRAIN_SHORT_HILLS_HEIGHT = SHORT_HILLS_HEIGHT;
+const float TERRAIN_SHORT_MOUNTAIN_HEIGHT = SHORT_MOUNTAIN_HEIGHT;
+const float TERRAIN_FLAT_SHORT_HILLS_HEIGHT = FLAT_SHORT_HILLS_HEIGHT;
+const float TERRAIN_TALL_MOUNTAIN_HEIGHT = TALL_MOUNTAIN_HEIGHT;
+const float TERRAIN_ICE_MOUNTAIN_HEIGHT = ICE_MOUNTAIN_HEIGHT;
+const float TERRAIN_SAND_MOUNTAIN_HEIGHT = SAND_MOUNTAIN_HEIGHT;
+// biomes borders
+const float TERRAIN_BIOME_BORDER_MIN = BIOME_BORDER_MIN;
+const float TERRAIN_BIOME_BORDER_MAX = BIOME_BORDER_MAX;
+const float TERRAIN_COLD_WARM_BORDER = COLD_WARM_BORDER;
+const float TERRAIN_WARM_HOT_BORDER = WARM_HOT_BORDER;
+// water
 const float WATER_SURROUNDING_HEIGHT = float(WORLD_BASE_HEIGHT / 4);
 const float TERRAIN_OCEAN_DEPTH = float(OCEAN_DEPTH);
 const float TERRAIN_MAX_WATER_DEPTH = TERRAIN_OCEAN_DEPTH;
 const float TERRAIN_RIVER_DEPTH = float(RIVER_DEPTH);
 // ? making sure the terrain surface is above water before water depth subtraction
 const float TERRAIN_BASE_HEIGHT = float(WATER_SURROUNDING_HEIGHT + WATER_BASE_HEIGHT);
-const float TERRAIN_FLATTENER_DEPTH = float(WATER_BASE_HEIGHT * 2);
 const float TERRAIN_OCEAN_THRESHOLD = OCEAN_THRESHOLD;
 const float TERRAIN_RIVER_THRESHOLD = RIVER_BASE;
 const float TERRAIN_WATER_THRESHOLD = WATER_THRESHOLD;
-const float TERRAIN_STONE_THRESHOLD = ROCK_THRESHOLD;
-const float TERRAIN_BIOME_BORDER_MIN = BIOME_BORDER_MIN;
-const float TERRAIN_BIOME_BORDER_MAX = BIOME_BORDER_MAX;
-const float TERRAIN_COLD_WARM_BORDER = COLD_WARM_BORDER;
-const float TERRAIN_WARM_HOT_BORDER = WARM_HOT_BORDER;
+// rocks
+const float TERRAIN_ROCK_THRESHOLD = ROCK_THRESHOLD;
+// flattener
+const float TERRAIN_FLATTENER_DEPTH = float(WATER_BASE_HEIGHT * 2);
 
 // ----------------------------------
 
@@ -411,7 +423,7 @@ bool getStoneVisibility(vec2 position)
     {
         return false;
     }
-    const float edge = TERRAIN_STONE_THRESHOLD;
+    const float edge = TERRAIN_ROCK_THRESHOLD;
     float drynessFactor = 1.f - getWetness(position) / 8.f;
     float stone = clamp(simplex(position / 3.f) * drynessFactor, 0.f, 1.f);
     bool visibility = bool(step(edge, stone));
@@ -429,7 +441,7 @@ float getHumidity(vec2 position)
     return noise;
 }
 
-float getHeat(vec2 position)
+float getTemperature(vec2 position)
 {
     return simplex(position / 65.f);
 }
@@ -443,7 +455,7 @@ float getSmoothBorder(float biomeFactor, float border)
 
 float getBiomeFactor(vec2 position)
 {
-    float cold = 1.f - getHeat(position);
+    float cold = 1.f - getTemperature(position);
     float humidity = getHumidity(position);
     return cold * humidity;
 }
@@ -477,8 +489,6 @@ float terrainHeightWrapper(vec2 position, float height)
 
 float getSandMountainHeight(vec2 position)
 {
-    const float SAND_MOUNTAIN_HEIGHT = MAX_TERRAIN_HEIGHT / 8.f;
-
     // calculating noises
     float warp1l1 = warpNoise1Layer_1(position);
     float fbm4d3 = FBM_4(position / 3.f);
@@ -487,51 +497,27 @@ float getSandMountainHeight(vec2 position)
 
     // layering noises
     float sandNoise = clamp(vorphalf - subtract, 0.f, 1.f);
-    float sandMountain = sandNoise * SAND_MOUNTAIN_HEIGHT;
+    float sandMountain = sandNoise * TERRAIN_SAND_MOUNTAIN_HEIGHT;
 
     return terrainHeightWrapper(position, sandMountain);
 }
 
 float getIceMountainHeight(vec2 position)
 {
-    const float ICE_MOUNTAIN_HEIGHT = MAX_TERRAIN_HEIGHT / 2.f;
-
     // calculating noises
     float fbm4d3 = FBM_4(position / 3.f);
     float fbm8d3 = FBM_8(position / 3.f);
     float fbm2d6 = FBM_2(position / 6.f);
-
     float vord3 = voronoiNoise(position / 3.f);
 
     // layering noises
-    float snowMountains = clamp(((2.f - (fbm4d3 + fbm8d3 + fbm2d6) * 2.f) + vord3) / 4.f, 0.f, 1.f) * ICE_MOUNTAIN_HEIGHT;
-    return terrainHeightWrapper(position, snowMountains);
+    float snowMountains = clamp(((2.f - (fbm4d3 + fbm8d3 + fbm2d6) * 2.f) + vord3) / 4.f, 0.f, 1.f);
+    float snowMountainsLayer = snowMountains * TERRAIN_ICE_MOUNTAIN_HEIGHT;
+    return terrainHeightWrapper(position, snowMountainsLayer);
 }
-
-// float valleyNoise(vec2 position)
-// {
-//     // calculating noises
-//     float fbm2d2 = FBM_4(position);
-//     float fbm8d2 = FBM_8(position / 2.f);
-//     float fbm8d4 = FBM_8(position / 4.f);
-
-//     float vord300 = voronoi(position / 150.f);
-
-//     // layering noises
-//     float snowMountains = (3.f - (fbm2d2 + fbm8d2 + fbm8d4)) + vord300/2.f;
-
-//     float finalHeight = snowMountains * (MAX_TERRAIN_HEIGHT/4.f);
-
-//     return clamp(finalHeight, MIN_TERRAIN_HEIGHT, MAX_TERRAIN_HEIGHT);
-// }
 
 float getMountainHillsHeight(vec2 position)
 {
-    // defining terrain height parameters
-    const float TALL_MOUNTAIN_HEIGHT = MAX_TERRAIN_HEIGHT / 3.0;
-    const float SHORT_MOUNTAIN_HEIGHT = MAX_TERRAIN_HEIGHT / 6.0;
-    const float SHORT_HILLS_HEIGHT = MAX_TERRAIN_HEIGHT / 12.0;
-
     // calculating noises
     float fbm2d2 = FBM_2(position / 2.f);
     float fbm2d2clamped = clamp(fbm2d2, 0.f, 1.f);
@@ -547,19 +533,22 @@ float getMountainHillsHeight(vec2 position)
     // layering noises
 
     float shortHills = clamp(fbm2d2 * 2.f - fbm2d2clamped / 5.f + 0.7f, 0.f, 1.f);
-    float shortHillsLayer = shortHills * SHORT_HILLS_HEIGHT;
-    float shortMountains = (fbm2d4 + warp2d4 / 5.f) * SHORT_MOUNTAIN_HEIGHT;
+
+    float shortHillsLayer = shortHills * TERRAIN_SHORT_HILLS_HEIGHT;
+
+    float shortMountains = (fbm2d4 + warp2d4 / 5.f) * TERRAIN_SHORT_MOUNTAIN_HEIGHT;
 
     float shortHillsMountainsBlender = clamp(fbm2d3 * 5.f, 0.f, 1.f);
     float shortMountainsLayer = mix(shortHillsLayer, shortMountains, shortHillsMountainsBlender);
 
     float flatAreaShortHills = clamp(fbm2d2, 0.f, 0.5f);
-    float flatAreaLayer = flatAreaShortHills * (SHORT_MOUNTAIN_HEIGHT / 2.f);
+    float flatAreaLayer = flatAreaShortHills * TERRAIN_FLAT_SHORT_HILLS_HEIGHT;
+
+    float tallMountains = (fbm2d3 - warp2d4 / 10.f);
+    float tallMountainsLayer = tallMountains * TERRAIN_TALL_MOUNTAIN_HEIGHT;
 
     float shortAndTallMountainsBlender = fbm2d2clamped;
-    float tallMountainsLayer = (fbm2d3 - warp2d4 / 10.f) * TALL_MOUNTAIN_HEIGHT;
-    float tallAreasHeight = mix(tallMountainsLayer, shortMountainsLayer, shortAndTallMountainsBlender);
-    float tallAreaLayer = tallAreasHeight;
+    float tallAreaLayer  = mix(tallMountainsLayer, shortMountainsLayer, shortAndTallMountainsBlender);
 
     float highAndFlatAreaBlender = fbm2d4clampedm2;
     float mountainHeight = mix(tallAreaLayer, flatAreaLayer, highAndFlatAreaBlender);
@@ -600,7 +589,7 @@ float GLSL::stiffnessNoise(const vec2 &position)
 
 float GLSL::temperatureNoise(const vec2 &position)
 {
-    return getHeat(position);
+    return getTemperature(position);
 }
 
 float GLSL::desertNoise(const vec2 &position)

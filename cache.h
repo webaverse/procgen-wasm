@@ -78,7 +78,7 @@ public:
 
 class BiomeNoiseField {
 public:
-    float heat;
+    float temperature;
     float humidity;
 };
 
@@ -263,7 +263,7 @@ private:
 //         }
 //     }
 //     void set(uint32_t hash, const BiomeNoiseField &value) {
-//         HashValue<float> localHashValue1{hash, value.heat};
+//         HashValue<float> localHashValue1{hash, value.temperature};
 //         HashValue<float> localHashValue2{hash, value.humidity};
 //         HashValue<float> localHashValue3{hash, value.ocean};
 //         HashValue<float> localHashValue4{hash, value.river};

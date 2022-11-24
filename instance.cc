@@ -3036,10 +3036,10 @@ uint8_t PGInstance::getBiome(float bx, float bz)
     uint8_t biome = 0xFF;
 
     const auto &noise = getBiomeNoiseField(bx, bz);
-    const float heat = noise.heat;
-    const float cold = 1.f - heat;
+    const float temperature = noise.temperature;
+    const float coldness = 1.f - temperature;
     const float humidity = noise.humidity;
-    const float biomeFactor = cold * humidity;
+    const float biomeFactor = coldness * humidity;
 
     const bool isCold = getNoiseVisibility(biomeFactor, COLD_WARM_BORDER, BIOME_BORDER_MAX);
     if (isCold)

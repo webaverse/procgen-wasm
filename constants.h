@@ -10,7 +10,15 @@ constexpr int MAX_WORLD_HEIGHT = 1024;
 
 // * Terrain Parameters
 
-// biomes
+// mountain heights
+constexpr float MAX_MOUNTAINS_HEIGHT = (float)MAX_WORLD_HEIGHT; 
+constexpr float SHORT_HILLS_HEIGHT = MAX_MOUNTAINS_HEIGHT / 12.0;
+constexpr float SHORT_MOUNTAIN_HEIGHT = MAX_MOUNTAINS_HEIGHT / 6.0;
+constexpr float FLAT_SHORT_HILLS_HEIGHT = MAX_MOUNTAINS_HEIGHT / 12.0;
+constexpr float TALL_MOUNTAIN_HEIGHT = MAX_MOUNTAINS_HEIGHT / 3.0;
+constexpr float ICE_MOUNTAIN_HEIGHT = MAX_MOUNTAINS_HEIGHT / 2.0;
+constexpr float SAND_MOUNTAIN_HEIGHT = MAX_MOUNTAINS_HEIGHT / 8.0;
+// biomes borders
 constexpr float BIOME_BORDER_MIN = 0.0;
 constexpr float BIOME_BORDER_MAX = 1.0;
 constexpr float COLD_WARM_BORDER = 0.35;
@@ -25,7 +33,7 @@ constexpr float GRASS_THRESHOLD = 0.15;
 constexpr float GRASS_HEIGHT_VARIATION_RANGE = 0.3;
 constexpr float GRASS_COLOR_VARIATION_BASE = 1.0;
 constexpr float GRASS_COLOR_VARIATION_RANGE = 0.2;
-constexpr float CRUSHED_GRASS_THRESHOLD = 1.f - ROCK_THRESHOLD;
+constexpr float CRUSHED_GRASS_THRESHOLD = 1.0 - ROCK_THRESHOLD;
 constexpr float GRASS_MODEL_BASE_HEIGHT = 1.2;
 // vegetation
 constexpr int MAX_NUM_VEGGIES_PER_CHUNK = 8;
