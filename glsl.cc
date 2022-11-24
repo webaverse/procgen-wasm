@@ -419,7 +419,7 @@ float getGrassMaterial(vec2 position)
     return clamp(noise, 0.f, 1.f);
 }
 
-bool getStoneVisibility(vec2 position)
+bool getRockVisibility(vec2 position)
 {
     if (getWaterVisibility(position))
     {
@@ -597,14 +597,14 @@ float GLSL::grassMaterialNoise(const vec2 &position)
     return getGrassMaterial(position);
 }
 
-float GLSL::grassObjectNoise(const vec2 &position)
+bool GLSL::grassVisibility(const vec2 &position)
 {
-    return getGrassObject(position);
+    return getGrassVisibility(position);
 }
 
-float GLSL::treeObjectNoise(const vec2 &position)
+bool GLSL::treeVisibility(const vec2 &position)
 {
-    return getTreeObject(position);
+    return getTreeVisibility(position);
 }
 
 float GLSL::stiffnessNoise(const vec2 &position)
@@ -657,7 +657,7 @@ bool GLSL::waterVisibilityNoise(const vec2 &position)
 {
     return getWaterVisibility(position);
 }
-bool GLSL::stoneNoise(const vec2 &position)
+bool GLSL::rockVisibility(const vec2 &position)
 {
-    return getStoneVisibility(position);
+    return getRockVisibility(position);
 }

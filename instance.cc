@@ -1862,7 +1862,7 @@ void generateVegetationInstances(
 
                 if (slope < 0.1f)
                 {
-                    float noiseValue = noises.uberNoise.treeObjectNoise(ax, az);
+                    float noiseValue = noises.uberNoise.treeVisibility(ax, az);
                     if (noiseValue > VEGGIE_THRESHOLD)
                     {
                         pushSplatInstances(ax, az, rot, treeGeometry, instanceId, heightfieldSampler);
@@ -1925,7 +1925,7 @@ void generateRocksInstances(
 
                 if (slope < 0.1f)
                 {
-                    float noiseValue = noises.uberNoise.stoneNoise(ax, az);
+                    float noiseValue = noises.uberNoise.rockVisibility(ax, az);
                     if (noiseValue > ROCK_THRESHOLD)
                     {
                         pushSplatInstances(ax, az, rot, rockGeometry, instanceId, heightfieldSampler);
@@ -2017,8 +2017,8 @@ void generateInstances( const vm::ivec2 &worldPositionXZ,
             const int chunkMinX = baseMinX + dx * chunkSize;
             const int chunkMinZ = baseMinZ + dz * chunkSize;
 
-            const float chunkSeed = noises.uberNoise.grassObjectNoise(chunkMinX, chunkMinZ);
-            unsigned int seedInt = *(unsigned int *)&chunkSeed;
+            const float chunkSeed = noises.uberNoise.hashNoise(chunkMinX, chunkMinZ);
+            uint32_t seedInt = *(uint32_t *)&chunkSeed;
             std::mt19937 rng(seedInt);
             std::uniform_real_distribution<float> dis(0.f, 1.f);
 
@@ -2038,10 +2038,11 @@ void generateInstances( const vm::ivec2 &worldPositionXZ,
 
                 if (slope < 0.1f)
                 {
-                    float noiseValue = noises.uberNoise.grassObjectNoise(ax, az);
-                    if (noiseValue > GRASS_THRESHOLD)
+                    const bool isVisible = noises.uberNoise.grassVisibility(ax, az);
+
+                    if (isVisible)
                     {
-                        const float crushedGrassNoise = 1.f - noises.uberNoise.stoneNoise(ax, az);
+                        const float crushedGrassNoise = 1.f - noises.uberNoise.rockVisibility(ax, az);
                         if(crushedGrassNoise > CRUSHED_GRASS_THRESHOLD) {
                             pushGrassInstances(ax, az, rot, grassGeometry, instanceId, heightfieldSampler, heightfield, noises, crushedGrassNoise);
                         }
@@ -2100,10 +2101,10 @@ void generateGrassInstances( const vm::ivec2 &worldPositionXZ,
 
                 if (slope < 0.1f)
                 {
-                    float noiseValue = noises.uberNoise.grassObjectNoise(ax, az);
+                    float noiseValue = noises.uberNoise.grassVisibility(ax, az);
                     if (noiseValue > GRASS_THRESHOLD)
                     {
-                        const float crushedGrassNoise = 1.f - noises.uberNoise.stoneNoise(ax, az);
+                        const float crushedGrassNoise = 1.f - noises.uberNoise.rockVisibility(ax, az);
                         if(crushedGrassNoise > CRUSHED_GRASS_THRESHOLD) {
                             pushGrassInstances(ax, az, rot, grassGeometry, instanceId, heightfieldSampler, heightfield, noises, crushedGrassNoise);
                         }

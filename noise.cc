@@ -47,13 +47,13 @@ float UberNoise::grassMaterialNoise(float x, float z)
 {
   return GLSL::grassMaterialNoise(vm::vec2(x, z));
 }
-float UberNoise::grassObjectNoise(float x, float z)
+bool UberNoise::grassVisibility(float x, float z)
 {
-  return GLSL::grassObjectNoise(vm::vec2(x, z));
+  return GLSL::grassVisibility(vm::vec2(x, z));
 }
-float UberNoise::treeObjectNoise(float x, float z)
+bool UberNoise::treeVisibility(float x, float z)
 {
-  return GLSL::treeObjectNoise(vm::vec2(x, z));
+  return GLSL::treeVisibility(vm::vec2(x, z));
 }
 float UberNoise::stiffnessNoise(float x, float z)
 {
@@ -95,7 +95,23 @@ bool UberNoise::waterVisibilityNoise(float x, float z)
 {
   return GLSL::waterVisibilityNoise(vm::vec2(x, z));
 }
-bool UberNoise::stoneNoise(float x, float z)
+template<typename T>
+bool UberNoise::instanceVisibility(float x, float z)
 {
-  return GLSL::stoneNoise(vm::vec2(x, z));
+  switch (T)
+  {
+  case INSTANCE::TREE:
+    return treeVisibility(x, z); 
+  case INSTANCE::ROCK:
+    return rockVisibility(x, z); 
+  case INSTANCE::GRASS:
+    return grassVisibility(x, z); 
+  default:
+    std::cerr << "Unknown instance type" << std::endl;
+    break;
+  }
+}
+bool UberNoise::rockVisibility(float x, float z)
+{
+  return GLSL::rockVisibility(vm::vec2(x, z));
 }

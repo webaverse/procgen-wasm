@@ -4,6 +4,8 @@
 #include "FastNoise.h"
 #include "Worley.hpp"
 #include "vectorMath.h"
+#include "biomes.h"
+#include <iostream>
 
 using namespace vm;
 
@@ -44,9 +46,12 @@ public:
   float riverNoise(float x, float z, float ocean);
   bool waterVisibilityNoise(float x, float z);
 
-  float grassObjectNoise(float x, float z);
-  float treeObjectNoise(float x, float z);
-  bool stoneNoise(float x, float z);
+  template<typename T>
+  bool instanceVisibility(float x, float z);
+
+  bool grassVisibility(float x, float z);
+  bool treeVisibility(float x, float z);
+  bool rockVisibility(float x, float z);
 };
 
 #endif

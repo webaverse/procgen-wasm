@@ -19,8 +19,6 @@ namespace GLSL
     float humidityNoise(const vec2 &position);
     float temperatureNoise(const vec2 &position);
     float grassMaterialNoise(const vec2 &position);
-    float grassObjectNoise(const vec2 &position);
-    float treeObjectNoise(const vec2 &position);
     float stiffnessNoise(const vec2 &position);
     float desertNoise(const vec2 &position);
     float mountainNoise(const vec2 &position);
@@ -30,8 +28,11 @@ namespace GLSL
     float waterDepthNoise(const vec2 &position);
     float oceanNoise(const vec2 &position);
     float riverNoise(const vec2 &position, const float &ocean);
+
+    bool grassVisibility(const vec2 &position);
+    bool treeVisibility(const vec2 &position);
     bool waterVisibilityNoise(const vec2 &position);
-    bool stoneNoise(const vec2 &position);
+    bool rockVisibility(const vec2 &position);
 };
 
 #endif // GLSL_H
