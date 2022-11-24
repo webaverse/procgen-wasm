@@ -95,16 +95,16 @@ bool UberNoise::waterVisibilityNoise(float x, float z)
 {
   return GLSL::waterVisibilityNoise(vm::vec2(x, z));
 }
-template<typename T>
+template<uint8_t T>
 bool UberNoise::instanceVisibility(float x, float z)
 {
-  switch (T)
+  switch ((int)T)
   {
-  case INSTANCE::TREE:
+  case (int)INSTANCE::TREE:
     return treeVisibility(x, z); 
-  case INSTANCE::ROCK:
+  case (int)INSTANCE::ROCK:
     return rockVisibility(x, z); 
-  case INSTANCE::GRASS:
+  case (int)INSTANCE::GRASS:
     return grassVisibility(x, z); 
   default:
     std::cerr << "Unknown instance type" << std::endl;

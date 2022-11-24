@@ -877,10 +877,10 @@ bool duplicateTask(const std::vector<TrackerTaskPtr> &tasks, const std::vector<T
 // dynamic methods
 // sort nodes by distance to world position of the central max lod node
 void Tracker::sortNodes(std::vector<OctreeNodePtr> &nodes) {
-  const vm::vec3 &worldPosition = inst->worldPosition;
-  const vm::vec3 &cameraPosition = inst->cameraPosition;
-  const Quat &cameraQuaternion = inst->cameraQuaternion;
-  std::array<float, 16> &projectionMatrix = inst->projectionMatrix;
+  const vm::vec3 &worldPosition = inst->renderingInfo.worldPosition;
+  const vm::vec3 &cameraPosition = inst->renderingInfo.cameraPosition;
+  const Quat &cameraQuaternion = inst->renderingInfo.cameraQuaternion;
+  std::array<float, 16> &projectionMatrix = inst->renderingInfo.projectionMatrix;
   
   // compute frustum
   Matrix matrixWorld(
@@ -1024,7 +1024,7 @@ TrackerUpdate Tracker::update(PGInstance *inst, const vm::vec3 &position, int mi
   std::lock_guard<std::mutex> lock(mutex);
   
   // new octrees
-  int chunkSize = this->inst->chunkSize;
+  const int chunkSize = this->inst->generator.getChunkSize();
   vm::ivec2 currentCoord = getCurrentCoord(position, chunkSize); // in chunk space
   // int minLodInt = 1 << (minLod - 1);
   // int maxLodInt = 1 << (maxLod - 1);

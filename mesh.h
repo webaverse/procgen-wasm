@@ -3,7 +3,7 @@
 
 #include "vectorMath.h"
 #include "biomes.h"
-#include "cache.h"
+#include "./generation/heightfield.h"
 
 #include <vector>
 #include <array>
@@ -89,7 +89,7 @@ public:
     int instanceId;
     std::vector<float> ps;
     std::vector<float> qs;
-    uint8_t instanceType = INSTANCE::NULL_INSTANCE;
+    // uint8_t instanceType = (uint8_t)INSTANCE::NULL_INSTANCE;
 };
 class SplatInstanceGeometry {
 public:

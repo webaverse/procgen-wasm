@@ -46,7 +46,7 @@ public:
   float riverNoise(float x, float z, float ocean);
   bool waterVisibilityNoise(float x, float z);
 
-  template<typename T>
+  template<uint8_t T>
   bool instanceVisibility(float x, float z);
 
   bool grassVisibility(float x, float z);

@@ -3,7 +3,6 @@
 
 // #include "vectorMath.h"
 // #include "sync.h"
-// #include "lock.h"
 // #include "vector.h"
 #include <array>
 #include <vector>

@@ -9,41 +9,17 @@ namespace vm
 {
     struct vec2
     {
-        // vec2()
-        // {
-        //     x = 0;
-        //     y = 0;
-        // }
-        // vec2(const float &_x, const float &_y) : x(_x), y(_y) {}
-        // vec2(const float &_v) : x(_v), y(_v) {}
         float x;
         float y;
     };
     struct vec3
     {
-        // vec3()
-        // {
-        //     x = 0;
-        //     y = 0;
-        //     z = 0;
-        // }
-        // vec3(const float &_x, const float &_y, const float &_z) : x(_x), y(_y), z(_z) {}
-        // vec3(const float &_v) : x(_v), y(_v), z(_v) {}
         float x;
         float y;
         float z;
     };
     struct vec4
     {
-        // vec4()
-        // {
-        //     x = 0;
-        //     y = 0;
-        //     z = 0;
-        //     w = 0;
-        // }
-        // vec4(const float &_x, const float &_y, const float &_z, const float &_w) : x(_x), y(_y), z(_z), w(_w) {}
-        // vec4(const float &_v) : x(_v), y(_v), z(_v), w(_v) {}
         float x;
         float y;
         float z;
@@ -51,41 +27,17 @@ namespace vm
     };
     struct ivec2
     {
-        // ivec2()
-        // {
-        //     x = 0;
-        //     y = 0;
-        // }
-        // ivec2(const int &_x, const int &_y) : x(_x), y(_y) {}
-        // ivec2(const int &_v) : x(_v), y(_v) {}
         int x;
         int y;
     };
     struct ivec3
     {
-        // ivec3()
-        // {
-        //     x = 0;
-        //     y = 0;
-        //     z = 0;
-        // }
-        // ivec3(const int &_x, const int &_y, const int &_z) : x(_x), y(_y), z(_z) {}
-        // ivec3(const int _v) : x(_v), y(_v), z(_v) {}
         int x;
         int y;
         int z;
     };
     struct ivec4
     {
-        // ivec4()
-        // {
-        //     x = 0;
-        //     y = 0;
-        //     z = 0;
-        //     w = 0;
-        // }
-        // ivec4(const int &_x, const int &_y, const int &_z, const int &_w) : x(_x), y(_y), z(_z), w(_w) {}
-        // ivec4(const int &_v) : x(_v), y(_v), z(_v), w(_v) {}
         int x;
         int y;
         int z;
