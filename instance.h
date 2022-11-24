@@ -90,8 +90,10 @@ public:
         const std::array<int, 2> &lodArray
     );
 
-    NoiseField getNoise(float bx, float by);
+    BiomeNoiseField getBiomeNoiseField(float bx, float by);
+    LiquidNoiseField getLiquidNoiseField(float bx, float by);
     uint8_t getBiome(float bx, float bz);
+    uint8_t getLiquid(float bx, float bz, uint8_t biome);
     // SeedNoise getSeedNoise(int bx, int bz);
 
     void getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfields);
@@ -112,7 +114,7 @@ public:
     // float getSeed(int bx, int bz);
 
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
-    float getComputedWaterHeight(const float &height, const float &realHeight, unsigned char b);
+    float getComputedWaterHeight(const float &height, const float &realHeight, uint8_t liquid);
     float getComputedTerrainHeight(const float &height, const vm::vec2 &worldPosition);
 
     // materials

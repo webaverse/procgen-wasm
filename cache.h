@@ -27,19 +27,27 @@ class Heightfield {
 public:
     float height;
 
-    std::array<unsigned char, 4> biomesVectorField;
-    std::array<unsigned char, 4> biomesWeightsVectorField;
-
-    float waterHeight = MIN_WORLD_HEIGHT;
-    float waterFactor = 0.f;
+    float liquidHeight = MIN_WORLD_HEIGHT;
+    float liquidFactor = 0.f;
 
     vm::vec3 normal{0.f, 1.f, 0.f};
+
+    std::array<uint8_t, 4> biomes;
+    std::array<uint8_t, 4> biomesWeights;
+
+    // TODO : send these to the shader for blending liquid shaders
+    std::array<uint8_t, 4> liquids;
+    std::array<uint8_t, 4> liquidsWeights;
 
     MaterialsArray materials;
     MaterialsWeightsArray materialsWeights;
 
     float getHeight() const {
       return height;
+    }
+    float getSlope() const
+    {
+      return std::max(0.f, 1.f - normal.y);
     }
     static bool acceptIndices(
       const Heightfield &a,
@@ -53,10 +61,11 @@ public:
 class Waterfield : public Heightfield {
 public:
     float getHeight() const {
-      return waterHeight;
+      return liquidHeight;
     }
     bool acceptIndex() const {
-      return waterFactor > 0.f;
+      // return true;
+      return liquidFactor > 0.f;
     }
     static bool acceptIndices(
       const Waterfield &a,
@@ -67,10 +76,14 @@ public:
     }
 };
 
-class NoiseField {
+class BiomeNoiseField {
 public:
     float temperature;
     float humidity;
+};
+
+class LiquidNoiseField {
+public:
     float ocean;
     float river;
 };
@@ -182,8 +195,8 @@ private:
 //   }
 //   void set(uint32_t hash, const Heightfield &value) {
 //     HashValue<float> localHashValue1{hash, value.height};
-//     HashValue<std::array<unsigned char, 4>> localHashValue2{hash, value.biomesVectorField};
-//     HashValue<std::array<unsigned char, 4>> localHashValue3{hash, value.biomesWeightsVectorField};
+//     HashValue<std::array<unsigned char, 4>> localHashValue2{hash, value.biomes};
+//     HashValue<std::array<unsigned char, 4>> localHashValue3{hash, value.biomesWeights};
 
 //     uint64_t &localData1 = *((uint64_t *)&localHashValue1);
 //     uint64_t &localData2 = *((uint64_t *)&localHashValue2);
@@ -196,7 +209,7 @@ private:
 // };
 
 // template<>
-// class ChunkCacheValue<NoiseField> {
+// class ChunkCacheValue<BiomeNoiseField> {
 // public:
 //     union {
 //         HashValue<float> hashValue1;
@@ -221,7 +234,7 @@ private:
 //     static_assert(sizeof(hashValue4) == sizeof(data4), "wrong size");
 
 //     ChunkCacheValue() : hashValue1(), hashValue2(), hashValue3(), hashValue4() {}
-//     HashValue<NoiseField> get() {
+//     HashValue<BiomeNoiseField> get() {
 //         uint64_t localData1 = data1.load();
 //         uint64_t localData2 = data2.load();
 //         uint64_t localData3 = data3.load();
@@ -238,18 +251,18 @@ private:
 //         HashValue<float> &hashValue4 = *((HashValue<float> *)localDataP4);
 
 //         if (hashValue1.hash == hashValue2.hash && hashValue1.hash == hashValue3.hash && hashValue1.hash == hashValue4.hash) {
-//             return HashValue<NoiseField>{
+//             return HashValue<BiomeNoiseField>{
 //                 hashValue1.hash,
-//                 NoiseField{hashValue1.value, hashValue2.value, hashValue3.value, hashValue4.value}
+//                 BiomeNoiseField{hashValue1.value, hashValue2.value, hashValue3.value, hashValue4.value}
 //             };
 //         } else {
-//             return HashValue<NoiseField>{
+//             return HashValue<BiomeNoiseField>{
 //                 0,
-//                 NoiseField()
+//                 BiomeNoiseField()
 //             };
 //         }
 //     }
-//     void set(uint32_t hash, const NoiseField &value) {
+//     void set(uint32_t hash, const BiomeNoiseField &value) {
 //         HashValue<float> localHashValue1{hash, value.temperature};
 //         HashValue<float> localHashValue2{hash, value.humidity};
 //         HashValue<float> localHashValue3{hash, value.ocean};
