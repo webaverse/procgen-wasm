@@ -1,6 +1,6 @@
-#include "generator.h"
+#include "heightfield-generator.h"
 
-BiomeNoiseField Generator::getBiomeNoiseField(float bx, float bz)
+BiomeNoiseField HeightfieldGenerator::getBiomeNoiseField(float bx, float bz)
 {
     float tNoise = noises.uberNoise.temperatureNoise(bx, bz);
     float hNoise = noises.uberNoise.humidityNoise(bx, bz);
@@ -10,7 +10,7 @@ BiomeNoiseField Generator::getBiomeNoiseField(float bx, float bz)
         hNoise};
 }
 
-LiquidNoiseField Generator::getLiquidNoiseField(float bx, float bz)
+LiquidNoiseField HeightfieldGenerator::getLiquidNoiseField(float bx, float bz)
 {
     float oNoise = noises.uberNoise.oceanNoise(bx, bz);
     float rNoise = noises.uberNoise.riverNoise(bx, bz, oNoise);
@@ -25,7 +25,7 @@ bool getNoiseVisibility(float value, float min, float max)
     return value >= min && value <= max;
 }
 
-uint8_t Generator::getBiome(float bx, float bz)
+uint8_t HeightfieldGenerator::getBiome(float bx, float bz)
 {
     uint8_t biome = 0xFF;
 
@@ -54,7 +54,7 @@ uint8_t Generator::getBiome(float bx, float bz)
     return biome;
 }
 
-uint8_t Generator::getLiquid(float bx, float bz, uint8_t biome)
+uint8_t HeightfieldGenerator::getLiquid(float bx, float bz, uint8_t biome)
 {
     uint8_t liquid = (uint8_t)LIQUID::NULL_LIQUID;
 
@@ -92,7 +92,7 @@ uint8_t Generator::getLiquid(float bx, float bz, uint8_t biome)
 
 //
 
-void Generator::getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfields)
+void HeightfieldGenerator::getHeightFieldCenter(int bx, int bz, int lod, std::vector<Heightfield> &heightfields)
 {
     const int chunkSizeP2 = settings.chunkSize + 2;
     for (int dz = 0; dz < chunkSizeP2; dz++)
@@ -110,7 +110,7 @@ void Generator::getHeightFieldCenter(int bx, int bz, int lod, std::vector<Height
         }
     }
 }
-void Generator::getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, int rowSize, std::vector<Heightfield> &heightfields)
+void HeightfieldGenerator::getHeightFieldSeams(int bx, int bz, int lod, const std::array<int, 2> &lodArray, int rowSize, std::vector<Heightfield> &heightfields)
 {
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
@@ -164,7 +164,7 @@ void Generator::getHeightFieldSeams(int bx, int bz, int lod, const std::array<in
     }
 }
 
-std::vector<Heightfield> Generator::getHeightfields(
+std::vector<Heightfield> HeightfieldGenerator::getHeightfields(
     int x,
     int z,
     int lod,
@@ -221,7 +221,7 @@ std::vector<uint8_t> sortWeightedTypes(const std::vector<float> &weights)
     return seenTypes;
 }
 
-Heightfield Generator::getHeightField(float bx, float bz)
+Heightfield HeightfieldGenerator::getHeightField(float bx, float bz)
 {
     Heightfield localHeightfield;
 
@@ -349,7 +349,7 @@ Heightfield Generator::getHeightField(float bx, float bz)
 
     return localHeightfield;
 }
-float Generator::getHeight(float bx, float bz)
+float HeightfieldGenerator::getHeight(float bx, float bz)
 {
     const float halfChunkSizeF = (float)settings.chunkSize / 2.f;
     const float maxDistance = std::sqrt(halfChunkSizeF + 1.f);
@@ -395,7 +395,7 @@ float Generator::getHeight(float bx, float bz)
 // }
 
 // biomes
-float Generator::getComputedBiomeHeight(uint8_t b, const vm::vec2 &worldPosition)
+float HeightfieldGenerator::getComputedBiomeHeight(uint8_t b, const vm::vec2 &worldPosition)
 {
     const float &ax = worldPosition.x;
     const float &az = worldPosition.y;
@@ -415,7 +415,7 @@ float Generator::getComputedBiomeHeight(uint8_t b, const vm::vec2 &worldPosition
     }
 }
 
-float Generator::getComputedTerrainHeight(const float &height, const vm::vec2 &worldPosition)
+float HeightfieldGenerator::getComputedTerrainHeight(const float &height, const vm::vec2 &worldPosition)
 {
     const float &ax = worldPosition.x;
     const float &az = worldPosition.y;
@@ -423,7 +423,7 @@ float Generator::getComputedTerrainHeight(const float &height, const vm::vec2 &w
     return vm::clamp(height - noises.uberNoise.waterDepthNoise(ax, az), (float)MIN_WORLD_HEIGHT, (float)MAX_WORLD_HEIGHT);
 }
 
-float Generator::getComputedWaterHeight(const float &biomeHeight, const float &terrainHeight, uint8_t liquid)
+float HeightfieldGenerator::getComputedWaterHeight(const float &biomeHeight, const float &terrainHeight, uint8_t liquid)
 {
 
     const float belowBiomeHeight = biomeHeight - WATER_HEIGHT_DIFFERENCE;
@@ -458,7 +458,7 @@ float Generator::getComputedWaterHeight(const float &biomeHeight, const float &t
 }
 
 // materials
-void Generator::setHeightfieldMaterial(Heightfield &localHeightfield, const vm::vec2 &position)
+void HeightfieldGenerator::setHeightfieldMaterial(Heightfield &localHeightfield, const vm::vec2 &position)
 {
     std::vector<MaterialWeightAccumulator> materialWeightAccumulators(numMaterials);
     float totalMaterialFactors = 0;
@@ -501,7 +501,7 @@ void Generator::setHeightfieldMaterial(Heightfield &localHeightfield, const vm::
         }
     }
 }
-void Generator::applyCenterMaterials(const int &bx, const int &bz, const int &lod, std::vector<Heightfield> &heightfields)
+void HeightfieldGenerator::applyCenterMaterials(const int &bx, const int &bz, const int &lod, std::vector<Heightfield> &heightfields)
 {
     const int chunkSizeP2 = settings.chunkSize + 2;
     for (int dz = 0; dz < chunkSizeP2; dz++)
@@ -522,7 +522,7 @@ void Generator::applyCenterMaterials(const int &bx, const int &bz, const int &lo
         }
     }
 }
-void Generator::applySeamMaterials(const int &bx, const int &bz, const int &lod, const std::array<int, 2> &lodArray, const int &rowSize, std::vector<Heightfield> &heightfields)
+void HeightfieldGenerator::applySeamMaterials(const int &bx, const int &bz, const int &lod, const std::array<int, 2> &lodArray, const int &rowSize, std::vector<Heightfield> &heightfields)
 {
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
@@ -580,7 +580,7 @@ void Generator::applySeamMaterials(const int &bx, const int &bz, const int &lod,
         }
     }
 }
-void Generator::applyMaterials(const int &x, const int &z, const int &lod, const std::array<int, 2> &lodArray, std::vector<Heightfield> &heightfields)
+void HeightfieldGenerator::applyMaterials(const int &x, const int &z, const int &lod, const std::array<int, 2> &lodArray, std::vector<Heightfield> &heightfields)
 {
     const int &bottomLod = lodArray[0];
     const int &rightLod = lodArray[1];
@@ -601,7 +601,7 @@ void Generator::applyMaterials(const int &x, const int &z, const int &lod, const
     applySeamMaterials(x, z, lod, lodArray, chunkSizeP2, heightfields);
 }
 
-void Generator::getComputedMaterials(Heightfield &localHeightfield, std::vector<MaterialWeightAccumulator> &materialWeightAccumulators, float &totalMaterialFactors, const vm::vec2 &worldPosition)
+void HeightfieldGenerator::getComputedMaterials(Heightfield &localHeightfield, std::vector<MaterialWeightAccumulator> &materialWeightAccumulators, float &totalMaterialFactors, const vm::vec2 &worldPosition)
 {
     const std::array<uint8_t, 4> &biomes = localHeightfield.biomes;
     const std::array<uint8_t, 4> &biomesWeights = localHeightfield.biomesWeights;
@@ -653,7 +653,7 @@ void Generator::getComputedMaterials(Heightfield &localHeightfield, std::vector<
     }
 }
 
-int Generator::getChunkSize()
+int HeightfieldGenerator::getChunkSize()
 {
     return settings.chunkSize;
 }

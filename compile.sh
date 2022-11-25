@@ -10,7 +10,7 @@ emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=100MB -pthr
   binding.cc \
   procgen.cc \
   instance.cc \
-  generation/generator.cc \
+  generation/heightfield-generator.cc \
   generation/instance-generator.cc \
   generation/noise.cc \
   generation/glsl.cc \

@@ -11,7 +11,7 @@
 
 #include "libs/vector.h"
 #include "generation/noises.h"
-#include "generation/generator.h"
+#include "generation/heightfield-generator.h"
 #include "generation/instance-generator.h"
 #include "polygonization/polygonizer.h"
 #include "polygonization/mesh.h"
@@ -48,9 +48,7 @@ public:
 class PGInstance
 {
 public:
-    std::unique_ptr<vm::box3> clipRange;
-
-    Generator generator;
+    HeightfieldGenerator heightfieldGenerator;
     InstanceGenerator instanceGenerator;
     Polygonizer polygonizer;
     RenderingInfo renderingInfo;
@@ -59,7 +57,6 @@ public:
     ~PGInstance();
 
     void setCamera(const vm::vec3 &worldPosition, const vm::vec3 &cameraPosition, const Quat &cameraQuaternion, const std::array<float, 16> &projectionMatrix);
-    void setClipRange(const vm::vec2 &min, const vm::vec2 &max);
 
     OctreeContext getChunkSeedOctree(
         const vm::ivec2 &worldPosition,

@@ -1,5 +1,5 @@
-#ifndef __GENERATOR_H__
-#define __GENERATOR_H__
+#ifndef __HEIGHTFIELD_GENERATOR_H__
+#define __HEIGHTFIELD_GENERATOR_H__
 
 #include "noises.h"
 #include "heightfield.h"
@@ -30,13 +30,13 @@ public:
     GenerationSettings(int seed, int chunkSize) : seed(seed), chunkSize(chunkSize){};
 };
 
-class Generator
+class HeightfieldGenerator
 {
 public:
     GenerationSettings settings;
     Noises noises;
 
-    Generator(int seed, int chunkSize) : noises(seed), settings(seed, chunkSize){};
+    HeightfieldGenerator(int seed, int chunkSize) : noises(seed), settings(seed, chunkSize){};
 
     int getChunkSize();
 
@@ -72,4 +72,4 @@ public:
     float getHumidity(const vm::vec2 &worldPosition, const int &lod);
 };
 
-#endif // __GENERATOR_H__
+#endif // __HEIGHTFIELD_GENERATOR_H__

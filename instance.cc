@@ -24,7 +24,7 @@ void ChunkResult::free(PGInstance *inst)
 }
 
 // constructor/destructor
-PGInstance::PGInstance(int seed, int chunkSize) : generator(seed, chunkSize)
+PGInstance::PGInstance(int seed, int chunkSize) : heightfieldGenerator(seed, chunkSize)
 
 {
     // std::cout << "new pg instance " << seed << " " << chunkSize << std::endl;
@@ -38,12 +38,12 @@ uint8_t *PGInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int 
     std::vector<float> instances;
     unsigned int count = 0;
 
-    const int chunkSize = generator.getChunkSize();
+    const int chunkSize = heightfieldGenerator.getChunkSize();
 
     int minX = worldPositionXZ.x / chunkSize * chunkSize;
     int minZ = worldPositionXZ.y / chunkSize * chunkSize;
 
-    float seed = generator.noises.mobNoise.in2D(minX, minZ);
+    float seed = heightfieldGenerator.noises.mobNoise.in2D(minX, minZ);
     unsigned int seedInt;
     memcpy(&seedInt, &seed, sizeof(unsigned int));
     std::mt19937 rng(seedInt);
@@ -58,11 +58,11 @@ uint8_t *PGInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int 
         float ax = (float)minX + dx;
         float az = (float)minZ + dz;
 
-        float noiseValue = generator.noises.mobNoise.in2D(ax, az);
+        float noiseValue = heightfieldGenerator.noises.mobNoise.in2D(ax, az);
 
         if (noiseValue < mobRate)
         {
-            const float height = generator.getHeight(ax, az);
+            const float height = heightfieldGenerator.getHeight(ax, az);
 
             ps.push_back(ax);
             ps.push_back(height);
@@ -167,7 +167,7 @@ OctreeContext PGInstance::getChunkSeedOctree(
     {
         const vm::ivec2 &baseNode = maxLodChunkPositions[i];
 
-        float chunkSeed = generator.noises.numSplitsNoise.in2D(baseNode.x, baseNode.y);
+        float chunkSeed = heightfieldGenerator.noises.numSplitsNoise.in2D(baseNode.x, baseNode.y);
         unsigned int seedInt = *(unsigned int *)&chunkSeed;
         std::mt19937 rng(seedInt);
         std::uniform_real_distribution<float> dis(0.f, 1.f);
@@ -239,7 +239,7 @@ void PGInstance::createChunkMesh(
     int numGrassInstances,
     int numPoiInstances)
 {
-    const int chunkSize = generator.getChunkSize();
+    const int chunkSize = heightfieldGenerator.getChunkSize();
 
     // heightfield
     std::vector<Heightfield> heightfields;
@@ -253,9 +253,9 @@ void PGInstance::createChunkMesh(
         (generateFlags & GF_POI) |
         (generateFlags & GF_HEIGHTFIELD))
     {
-        heightfields = generator.getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
+        heightfields = heightfieldGenerator.getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
         polygonizer.calculateSurfaceNormals(heightfields, lod, lodArray, chunkSize);
-        generator.applyMaterials(worldPosition.x, worldPosition.y, lod, lodArray, heightfields);
+        heightfieldGenerator.applyMaterials(worldPosition.x, worldPosition.y, lod, lodArray, heightfields);
     }
 
     // terrain
@@ -313,7 +313,7 @@ void PGInstance::createChunkMesh(
             chunkSize,
             numVegetationInstances,
             heightfields,
-            generator.noises,
+            heightfieldGenerator.noises,
             treeGeometry,
             bushGeometry);
 
@@ -338,7 +338,7 @@ void PGInstance::createChunkMesh(
             chunkSize,
             numRockInstances,
             heightfields,
-            generator.noises,
+            heightfieldGenerator.noises,
             rockGeometry,
             stoneGeometry);
 
@@ -366,7 +366,7 @@ void PGInstance::createChunkMesh(
                 chunkSize,
                 numGrassInstances,
                 heightfields,
-                generator.noises,
+                heightfieldGenerator.noises,
                 grassGeometry);
         }
 
@@ -388,7 +388,7 @@ void PGInstance::createChunkMesh(
             chunkSize,
             numPoiInstances,
             heightfields,
-            generator.noises,
+            heightfieldGenerator.noises,
             poiGeometry);
         result->poiInstancesBuffer = poiGeometry.getBuffer();
     }
@@ -439,7 +439,7 @@ uint8_t *PGInstance::createBarrierMesh(
     int minLod,
     int maxLod)
 {
-    const int chunkSize = generator.getChunkSize();
+    const int chunkSize = heightfieldGenerator.getChunkSize();
 
     OctreeContext octreeContext = getChunkSeedOctree(
         worldPosition,
@@ -469,7 +469,7 @@ void PGInstance::createBarrierMeshAsync(
     std::shared_ptr<Promise> promise = ProcGen::resultQueue.createPromise(id);
 
     // this is so the chunk center is roughly the center of the one used by createBarrierMesh
-    const int chunkSize = generator.getChunkSize();
+    const int chunkSize = heightfieldGenerator.getChunkSize();
 
     const int maxLodRange = getLodRange(maxLod, chunkSize);
     vm::vec3 basePositionF{
@@ -506,13 +506,6 @@ void PGInstance::setCamera(const vm::vec3 &worldPosition, const vm::vec3 &camera
     renderingInfo.projectionMatrix = projectionMatrix;
 
     ProcGen::taskQueue.setCamera(worldPosition, cameraPosition, cameraQuaternion, projectionMatrix);
-}
-
-void PGInstance::setClipRange(const vm::vec2 &min, const vm::vec2 &max)
-{
-    clipRange.reset(new vm::box3{
-        vm::vec3{min.x, min.y},
-        vm::vec3{max.x, max.y}});
 }
 
 //

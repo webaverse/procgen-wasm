@@ -1023,7 +1023,7 @@ TrackerUpdate Tracker::update(PGInstance *inst, const vm::vec3 &position, int mi
   std::lock_guard<std::mutex> lock(mutex);
   
   // new octrees
-  const int chunkSize = this->inst->generator.getChunkSize();
+  const int chunkSize = this->inst->heightfieldGenerator.getChunkSize();
   vm::ivec2 currentCoord = getCurrentCoord(position, chunkSize); // in chunk space
   // int minLodInt = 1 << (minLod - 1);
   // int maxLodInt = 1 << (maxLod - 1);
