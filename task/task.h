@@ -1,14 +1,16 @@
 #ifndef TASK_H
 #define TASK_H
 
-#include "vectorMath.h"
+#include "../libs/vectorMath.h"
+#include "../libs/vector.h"
 #include "sync.h"
-#include "vector.h"
+
 #include <array>
 #include <vector>
 #include <deque>
 #include <atomic>
 #include <emscripten.h>
+
 
 class Task {
 public:

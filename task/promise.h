@@ -1,9 +1,10 @@
 #ifndef PROMISE_H
 #define PROMISE_H
 
-#include "vectorMath.h"
+#include "../libs/vectorMath.h"
 #include "sync.h"
 #include "result.h"
+
 #include <vector>
 #include <deque>
 #include <atomic>

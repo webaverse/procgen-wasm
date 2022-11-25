@@ -1,14 +1,9 @@
 #ifndef SORT_H
 #define SORT_H
 
-// #include "vectorMath.h"
-// #include "sync.h"
-// #include "vector.h"
 #include <array>
 #include <vector>
 #include <deque>
-// #include <semaphore>
-// #include <atomic>
 #include <emscripten.h>
 
 //

@@ -4,8 +4,9 @@
 #include <array>
 #include <unordered_map>
 #include <mutex>
-#include "../sync.h"
+#include "../task/sync.h"
 #include "../constants.h"
+#include "../utils/util.h"
 #include <emscripten.h>
 
 //
@@ -75,6 +76,72 @@ public:
       return a.acceptIndex() && b.acceptIndex() && c.acceptIndex();
     }
 };
+
+class HeightfieldSampler
+{
+public:
+    const vm::vec2 &worldPositionXZ;
+    const int &lod;
+    const int chunkSize;
+    const int chunkSizeP2;
+    const std::vector<Heightfield> &heightfields;
+
+    HeightfieldSampler(
+        const vm::vec2 &worldPositionXZ,
+        const int &lod,
+        const int chunkSize,
+        const std::vector<Heightfield> &heightfields) : worldPositionXZ(worldPositionXZ),
+                                                        lod(lod),
+                                                        chunkSize(chunkSize),
+                                                        chunkSizeP2(chunkSize + 2),
+                                                        heightfields(heightfields)
+    {
+    }
+    float getHeight(float x, float z)
+    {
+        const vm::vec2 location = getLocalPosition(x, z);
+
+        float result = bilinear<HeightfieldSampler, float>(location, chunkSize, *this);
+        return result;
+    }
+    Heightfield getHeightfield(float x, float z)
+    {
+        const vm::vec2 location = getLocalPosition(x, z);
+
+        float rx = std::floor(location.x);
+        float ry = std::floor(location.y);
+
+        int ix = (int)rx;
+        int iy = (int)ry;
+
+        return getHeightfieldByLocalPosition(ix, iy);
+    }
+    float get(int x, int z)
+    {
+        const Heightfield heightfield = getHeightfieldByLocalPosition(x, z);
+        const float &height = heightfield.height;
+        return height;
+    }
+
+private:
+    vm::vec2 getLocalPosition(float x, float z)
+    {
+        vm::vec2 location{
+            x - worldPositionXZ.x,
+            z - worldPositionXZ.y};
+        location /= (float)lod;
+        return location;
+    };
+    Heightfield getHeightfieldByLocalPosition(int x, int z)
+    {
+        const int dx = x + 1;
+        const int dz = z + 1;
+        const int index = dx + dz * chunkSizeP2;
+        const Heightfield &heightfield = heightfields[index];
+        return heightfield;
+    }
+};
+
 
 class BiomeNoiseField {
 public:

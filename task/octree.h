@@ -1,10 +1,11 @@
 #ifndef OCTREE_H
 #define OCTREE_H
 
-#include "vectorMath.h"
 #define _USE_MATH_DEFINES
 
-#include "procgen.h"
+#include "../libs/vectorMath.h"
+#include "../libs/vector.h"
+#include "../constants.h"
 // #include "qef.h"
 // #include "mesh.h"
 #include <iostream>

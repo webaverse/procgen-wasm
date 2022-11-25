@@ -1,9 +1,9 @@
 #ifndef __GENERATOR_H__
 #define __GENERATOR_H__
 
-#include "../noises.h"
+#include "noises.h"
 #include "heightfield.h"
-#include "../biomes.h"
+#include "biomes.h"
 
 const int numBiomes = (int)BIOME::NUM_BIOMES;
 const int numLiquids = (int)LIQUID::NUM_LIQUIDS;

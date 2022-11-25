@@ -1,19 +1,18 @@
 #ifndef _TRACKER_H_
 #define _TRACKER_H_
 
-#include "vectorMath.h"
+#include "../libs/vector.h"
+#include "../libs/vectorMath.h"
 #include "octree.h"
+#include "sort.h"
+
 #include <vector>
 #include <unordered_map>
 #include <iostream>
 #include <functional>
 #include <emscripten/atomic.h>
 
-//
-
 class PGInstance;
-
-//
 
 constexpr size_t numCachedOctreeNodes = 64 * 1024;
 
@@ -68,26 +67,6 @@ public:
 
 extern std::atomic<int> nextTrackerId;
 
-/* enum TrackerTaskType {
-  ADD = 1,
-  REMOVE = 2,
-  OUTRANGE = 3
-};
-
-class TrackerTask {
-public:
-  int id;
-  TrackerTaskType type;
-  OctreeNodePtr maxLodNode;
-  std::vector<OctreeNodePtr> oldNodes;
-  std::vector<OctreeNodePtr> newNodes;
-
-  bool isNop() const;
-
-  std::vector<uint8_t> getBuffer() const;
-};
-typedef std::shared_ptr<TrackerTask> TrackerTaskPtr; */
-
 class TrackerUpdate {
 public:
   PGInstance *inst;
@@ -96,9 +75,6 @@ public:
   std::vector<DataRequestPtr> newDataRequests;
   std::vector<DataRequestPtr> keepDataRequests;
   std::vector<DataRequestPtr> cancelDataRequests;
-  // vm::ivec2 chunkPosition;
-
-  // std::unordered_map<uint64_t, Dominator> dominators;
 
   uint8_t *getBuffer() const;
 };

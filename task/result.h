@@ -1,7 +1,7 @@
 #ifndef RESULT_H
 #define RESULT_H
 
-#include "vectorMath.h"
+#include "../libs/vectorMath.h"
 #include "sync.h"
 #include <vector>
 #include <deque>

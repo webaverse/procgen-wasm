@@ -3,7 +3,7 @@
 
 #include <string>
 #include <tuple>
-#include "./vectorMath.h"
+#include "../libs/vectorMath.h"
 
 class UV {
 public:

@@ -1,7 +1,7 @@
 #ifndef GLSL_H
 #define GLSL_H
 
-#include "vectorMath.h"
+#include "../libs/vectorMath.h"
 #include "noise.h"
 
 using namespace vm;

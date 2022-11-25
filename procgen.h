@@ -7,11 +7,13 @@
 #include <ctime>
 #include <string.h>
 #include <memory>
+
 #include "instance.h"
-#include "noises.h"
-#include "tracker.h"
-#include "result.h"
-#include "vectorMath.h"
+#include "generation/noises.h"
+#include "task/tracker.h"
+#include "task/task.h"
+#include "task/result.h"
+#include "libs/vectorMath.h"
 #include "constants.h"
 
 //

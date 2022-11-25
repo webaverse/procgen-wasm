@@ -8,23 +8,16 @@
 #include <ctime>
 #include <string.h>
 #include <memory>
-#include "context.h"
-#include "mesh.h"
-#include "task.h"
-#include "vector.h"
-#include "noises.h"
-#include "tracker.h"
-#include "promise.h"
-#include "./generation/generator.h"
 
-//
-
-class Tracker;
-class OctreeNodeSpec;
-class OctreeNode;
-class OctreeContext;
-
-//
+#include "libs/vector.h"
+#include "generation/noises.h"
+#include "generation/generator.h"
+#include "generation/instance-generator.h"
+#include "polygonization/polygonizer.h"
+#include "polygonization/mesh.h"
+#include "task/task.h"
+#include "task/promise.h"
+#include "task/octree.h"
 
 class ChunkResult
 {
@@ -58,6 +51,8 @@ public:
     std::unique_ptr<vm::box3> clipRange;
 
     Generator generator;
+    InstanceGenerator instanceGenerator;
+    Polygonizer polygonizer;
     RenderingInfo renderingInfo;
 
     PGInstance(int seed, int chunkSize);

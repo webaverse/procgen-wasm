@@ -1,5 +1,4 @@
 #include "octree.h"
-#include "procgen.h"
 #include <cmath>
 
 const vm::ivec3 CHILD_MIN_OFFSETS[] =

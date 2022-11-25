@@ -6,27 +6,30 @@ echo 'building...'
 
 NUM_THREADS=8
 
-emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=100MB -pthread -sPTHREAD_POOL_SIZE=$NUM_THREADS -sPTHREAD_POOL_SIZE_STRICT=$NUM_THREADS -s ALLOW_MEMORY_GROWTH=0 -O3 \
+emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=100MB -pthread -sPTHREAD_POOL_SIZE=$NUM_THREADS -sPTHREAD_POOL_SIZE_STRICT=$NUM_THREADS -s ALLOW_MEMORY_GROWTH=0 -sLLD_REPORT_UNDEFINED -O3 \
   binding.cc \
-  FastNoise.cpp \
   procgen.cc \
   instance.cc \
-  result.cc \
-  task.cc \
-  vectorMath.cc \
-  sync.cc \
-  noise.cc \
-  glsl.cc \
-  vector.cc \
-  promise.cc \
-  tracker.cc \
-  octree.cc \
-  mesh.cc \
-  util.cc \
-  MurmurHash3.cpp \
-  Worley.cpp \
-  NoiseTools.cpp \
-  NoiseBase.cpp \
+  generation/generator.cc \
+  generation/instance-generator.cc \
+  generation/noise.cc \
+  generation/glsl.cc \
+  polygonization/polygonizer.cc \
+  polygonization/mesh.cc \
+  task/octree.cc \
+  task/result.cc \
+  task/task.cc \
+  task/sync.cc \
+  task/promise.cc \
+  task/tracker.cc \
+  libs/FastNoise.cpp \
+  libs/vectorMath.cc \
+  libs/vector.cc \
+  libs/MurmurHash3.cpp \
+  libs/Worley.cpp \
+  libs/NoiseTools.cpp \
+  libs/NoiseBase.cpp \
+  utils/util.cc \
   -I. \
   -o bin/pg.js
 

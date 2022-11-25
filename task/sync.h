@@ -1,7 +1,7 @@
 #ifndef SYNC_H
 #define SYNC_H
 
-#include "vectorMath.h"
+#include "../libs/vectorMath.h"
 #include <vector>
 #include <deque>
 #include <atomic>

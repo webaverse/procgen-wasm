@@ -1,9 +1,9 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include "vectorMath.h"
-#include "biomes.h"
-#include "./generation/heightfield.h"
+#include "libs/vectorMath.h"
+#include "generation/biomes.h"
+#include "generation/heightfield.h"
 
 #include <vector>
 #include <array>
