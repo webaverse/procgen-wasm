@@ -224,9 +224,11 @@ void pushGrassInstances(const float &ax, const float &az, const float &rot, Gras
 {
     GrassSplatInstance &instance = pushMaterialAwareSplatInstances<GrassGeometry, GrassSplatInstance>(ax, az, rot, geometry, instanceId, heightfieldSampler, heightfield);
 
-    const float heightScale = GRASS_MODEL_BASE_HEIGHT + ((noises.uberNoise.simplexNoise(ax * 7.f, ax * 7.f) * 2.f) - 1.f) * GRASS_HEIGHT_VARIATION_RANGE;
+    const float simplexm10 = noises.uberNoise.simplexNoise(ax * 10.f, az * 10.f) * 2.f - 1.f;
 
-    const float colorVariationNoise = vm::clamp(GRASS_COLOR_VARIATION_BASE + (noises.uberNoise.simplexNoise(ax * 10.f, az * 10.f) * 2.f - 1.f) * GRASS_COLOR_VARIATION_RANGE, 0.0f, 1.f + GRASS_COLOR_VARIATION_RANGE);
+    const float heightScale = GRASS_MODEL_BASE_HEIGHT + simplexm10 * GRASS_HEIGHT_VARIATION_RANGE;
+
+    const float colorVariationNoise = vm::clamp(GRASS_COLOR_VARIATION_BASE + simplexm10 * GRASS_COLOR_VARIATION_RANGE, 0.0f, 1.f + GRASS_COLOR_VARIATION_RANGE);
     const float randomBladeFactor = noises.uberNoise.hashNoise(ax, az) * 2.f - 1.f;
 
     const vm::vec3 grassColorMultiplier = (vm::vec3{colorVariationNoise, colorVariationNoise / 1.1f, colorVariationNoise / 1.2f} +
