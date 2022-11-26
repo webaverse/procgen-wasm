@@ -157,10 +157,6 @@ EMSCRIPTEN_KEEPALIVE bool eraseCubeDamage(
 
 //
 
-EMSCRIPTEN_KEEPALIVE void setClipRange(PGInstance *inst, float minX, float minZ, float maxX, float maxZ) {
-    inst->setClipRange(vm::vec2{minX, minZ}, vm::vec2{maxX, maxZ});
-}
-
 EMSCRIPTEN_KEEPALIVE void cancelTask(PGInstance *inst, uint32_t taskId) {
     ProcGen::taskQueue.cancelTask(taskId);
     ProcGen::resultQueue.cancelPromise(taskId);

@@ -34,7 +34,7 @@ constexpr float GRASS_HEIGHT_VARIATION_RANGE = 0.3;
 constexpr float GRASS_COLOR_VARIATION_BASE = 1.0;
 constexpr float GRASS_COLOR_VARIATION_RANGE = 0.2;
 constexpr float CRUSHED_GRASS_THRESHOLD = 1.0 - ROCK_THRESHOLD;
-constexpr float GRASS_MODEL_BASE_HEIGHT = 1.2;
+constexpr float GRASS_MODEL_BASE_HEIGHT = 1.4;
 // vegetation
 constexpr int MAX_NUM_VEGGIES_PER_CHUNK = 8;
 constexpr float VEGGIE_THRESHOLD = 0.5;
