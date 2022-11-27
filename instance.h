@@ -22,19 +22,18 @@
 class ChunkResult
 {
 public:
-    uint8_t *terrainMeshBuffer = nullptr;
-    uint8_t *waterMeshBuffer = nullptr;
-    uint8_t *treeInstancesBuffer = nullptr;
-    uint8_t *bushInstancesBuffer = nullptr;
-    uint8_t *rockInstancesBuffer = nullptr;
-    uint8_t *stoneInstancesBuffer = nullptr;
-    uint8_t *grassInstancesBuffer = nullptr;
-    uint8_t *poiInstancesBuffer = nullptr;
-    uint8_t *heightfieldsBuffer = nullptr;
+    uint8_t *terrainMeshBuffer;
+    uint8_t *waterMeshBuffer;
+    uint8_t *treeInstancesBuffer;
+    uint8_t *bushInstancesBuffer;
+    uint8_t *rockInstancesBuffer;
+    uint8_t *stoneInstancesBuffer;
+    uint8_t *grassInstancesBuffer;
+    uint8_t *poiInstancesBuffer;
+    uint8_t *heightfieldsBuffer;
 
     void free(PGInstance *inst);
 };
-
 
 class RenderingInfo
 {
@@ -76,7 +75,6 @@ public:
         int numRockInstances,
         int numGrassInstances,
         int numPoiInstances);
-
 
     void createChunkMeshAsync(
         uint32_t id,

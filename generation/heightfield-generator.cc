@@ -38,17 +38,17 @@ uint8_t HeightfieldGenerator::getBiome(float bx, float bz)
     const bool isCold = getNoiseVisibility(biomeFactor, COLD_WARM_BORDER, BIOME_BORDER_MAX);
     if (isCold)
     {
-        biome = (uint8_t)BIOME::ICE_MOUNTAINS;
+        biome = (uint8_t)BIOME::TAIGA;
     }
     const bool isWarm = getNoiseVisibility(biomeFactor, WARM_HOT_BORDER, COLD_WARM_BORDER);
     if (isWarm)
     {
-        biome = (uint8_t)BIOME::FOREST_MOUNTAINS;
+        biome = (uint8_t)BIOME::FOREST;
     }
     const bool isHot = getNoiseVisibility(biomeFactor, BIOME_BORDER_MIN, WARM_HOT_BORDER);
     if (isHot)
     {
-        biome = (uint8_t)BIOME::DESERT_MOUNTAINS;
+        biome = (uint8_t)BIOME::DESERT;
     }
 
     return biome;
@@ -72,14 +72,14 @@ uint8_t HeightfieldGenerator::getLiquid(float bx, float bz, uint8_t biome)
 
     if (riverVisibility)
     {
-        if (biome == (uint8_t)BIOME::DESERT_MOUNTAINS)
+        if (biome == (uint8_t)BIOME::DESERT)
         {
             return liquid;
         }
 
         if (liquid == (uint8_t)LIQUID::OCEAN)
         {
-            liquid = (uint8_t)LIQUID::FLOWING_RIVER;
+            liquid = (uint8_t)LIQUID::WATERFALL;
         }
         else
         {
@@ -291,24 +291,24 @@ Heightfield HeightfieldGenerator::getHeightField(float bx, float bz)
             {
                 const uint8_t &biome = seenBiomes[i];
                 localHeightfield.biomes[i] = biome;
-                localHeightfield.biomesWeights[i] = biomeWeights[biome] / totalHeightFactors * WEIGHT_FITTER;
+                localHeightfield.biomesWeights[i] = biomeWeights[biome] / totalHeightFactors;
             }
             else
             {
                 localHeightfield.biomes[i] = (uint8_t)BIOME::NULL_BIOME;
-                localHeightfield.biomesWeights[i] = (uint8_t)BIOME::NULL_BIOME;
+                localHeightfield.biomesWeights[i] = 0;
             }
 
             if (i < seenLiquids.size())
             {
                 const uint8_t &liquid = seenLiquids[i];
                 localHeightfield.liquids[i] = liquid;
-                localHeightfield.liquidsWeights[i] = liquidWeights[liquid] / totalHeightFactors * WEIGHT_FITTER;
+                localHeightfield.liquidsWeights[i] = liquidWeights[liquid] / totalHeightFactors;
             }
             else
             {
                 localHeightfield.liquids[i] = (uint8_t)LIQUID::NULL_LIQUID;
-                localHeightfield.liquidsWeights[i] = (uint8_t)LIQUID::NULL_LIQUID;
+                localHeightfield.liquidsWeights[i] = 0;
             }
         }
 
@@ -325,7 +325,7 @@ Heightfield HeightfieldGenerator::getHeightField(float bx, float bz)
             if (biomeWeight > 0.f)
             {
                 const float computedBiomeHeight = getComputedBiomeHeight(biome, fWorldPosition);
-                const float computedTerrainHeight = getComputedTerrainHeight(computedBiomeHeight, fWorldPosition);
+                const float computedTerrainHeight = getComputedTerrainHeight(biome, computedBiomeHeight, fWorldPosition);
 
                 elevationSum += biomeWeight * computedTerrainHeight;
 
@@ -395,32 +395,44 @@ float HeightfieldGenerator::getHeight(float bx, float bz)
 // }
 
 // biomes
-float HeightfieldGenerator::getComputedBiomeHeight(uint8_t b, const vm::vec2 &worldPosition)
+float HeightfieldGenerator::getComputedBiomeHeight(const uint8_t &biome, const vm::vec2 &worldPosition)
 {
     const float &ax = worldPosition.x;
     const float &az = worldPosition.y;
 
-    switch (b)
+    switch (biome)
     {
     case (int)BIOME::NULL_BIOME:
         return 0.f;
-    case (int)BIOME::DESERT_MOUNTAINS:
+    case (int)BIOME::DESERT:
         return noises.uberNoise.desertNoise(ax, az);
-    case (int)BIOME::FOREST_MOUNTAINS:
+    case (int)BIOME::FOREST:
         return noises.uberNoise.mountainNoise(ax, az);
-    case (int)BIOME::ICE_MOUNTAINS:
+    case (int)BIOME::TAIGA:
         return noises.uberNoise.iceMountainNoise(ax, az);
     default:
         return noises.uberNoise.mountainNoise(ax, az);
     }
 }
 
-float HeightfieldGenerator::getComputedTerrainHeight(const float &height, const vm::vec2 &worldPosition)
+float HeightfieldGenerator::getComputedTerrainHeight(const uint8_t &biome, const float &height, const vm::vec2 &worldPosition)
 {
     const float &ax = worldPosition.x;
     const float &az = worldPosition.y;
 
-    return vm::clamp(height - noises.uberNoise.waterDepthNoise(ax, az), (float)MIN_WORLD_HEIGHT, (float)MAX_WORLD_HEIGHT);
+    float terrainHeight = height;
+
+    switch (biome)
+    {
+    case (uint8_t)BIOME::DESERT:
+        // we don't have water in desert !
+        break;
+    default:
+        terrainHeight -= noises.uberNoise.waterDepthNoise(ax, az);
+        break;
+    }
+
+    return vm::clamp(terrainHeight, (float)MIN_WORLD_HEIGHT, (float)MAX_WORLD_HEIGHT);
 }
 
 float HeightfieldGenerator::getComputedWaterHeight(const float &biomeHeight, const float &terrainHeight, uint8_t liquid)
@@ -446,7 +458,7 @@ float HeightfieldGenerator::getComputedWaterHeight(const float &biomeHeight, con
     case (int)LIQUID::LAVA:
         liquidHeight = belowBiomeHeight;
         break;
-    case (int)LIQUID::FLOWING_RIVER:
+    case (int)LIQUID::WATERFALL:
         liquidHeight = terrainHeight + WATER_OFFSET;
         break;
     default:
@@ -604,7 +616,7 @@ void HeightfieldGenerator::applyMaterials(const int &x, const int &z, const int 
 void HeightfieldGenerator::getComputedMaterials(Heightfield &localHeightfield, std::vector<MaterialWeightAccumulator> &materialWeightAccumulators, float &totalMaterialFactors, const vm::vec2 &worldPosition)
 {
     const std::array<uint8_t, 4> &biomes = localHeightfield.biomes;
-    const std::array<uint8_t, 4> &biomesWeights = localHeightfield.biomesWeights;
+    const std::array<float, 4> &biomesWeights = localHeightfield.biomesWeights;
 
     const int GRASS = (int)MATERIAL::GRASS;
     const int DIRT = (int)MATERIAL::DIRT;
@@ -614,7 +626,7 @@ void HeightfieldGenerator::getComputedMaterials(Heightfield &localHeightfield, s
     for (int i = 0; i < 1; i++)
     {
         const uint8_t b = biomes[i];
-        const float bw = (float)biomesWeights[i] / 255.f;
+        const float bw = (float)biomesWeights[i];
 
         switch (b)
         {

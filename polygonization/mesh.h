@@ -1,8 +1,8 @@
 #ifndef MESH_H
 #define MESH_H
 
+#include "biomes.h"
 #include "libs/vectorMath.h"
-#include "generation/biomes.h"
 #include "generation/heightfield.h"
 
 #include <vector>
@@ -89,7 +89,6 @@ public:
     int instanceId;
     std::vector<float> ps;
     std::vector<float> qs;
-    // uint8_t instanceType = (uint8_t)INSTANCE::NULL_INSTANCE;
 };
 class SplatInstanceGeometry {
 public:

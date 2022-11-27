@@ -3,22 +3,16 @@
 
 #include <string>
 #include <tuple>
-#include "../libs/vectorMath.h"
-
-class UV {
-public:
-  float u;
-  float v;
-};
+#include "libs/vectorMath.h"
 
 // ? INFO : Biome types determine the terrain height function 
 // TODO : Add more biome types 🙂
 enum class BIOME : uint8_t {
   NULL_BIOME,
 
-  DESERT_MOUNTAINS,
-  FOREST_MOUNTAINS,
-  ICE_MOUNTAINS,
+  DESERT,
+  FOREST,
+  TAIGA,
 
   // Num Biomes should be the last element in the list since it represents the total number of biomes
   NUM_BIOMES,
@@ -31,7 +25,7 @@ enum class LIQUID : uint8_t {
   OCEAN,
   RIVER,
   LAVA,
-  FLOWING_RIVER,
+  WATERFALL,
 
   // Swamp
 
@@ -49,17 +43,27 @@ enum class MATERIAL : uint8_t {
   NUM_MATERIALS,
 };
 
-enum class INSTANCE : uint8_t {
+enum class LAYER : uint8_t {
   NULL_INSTANCE,
 
-  TREE,
-  BUSH,
-  ROCK,
-  STONE,
-  GRASS,
+  VEGETATION,
+  MINERALS,
+  BUILDINGS,
 
   // Num Instances should be the last element in the list since it represents the total number of biomes
   NUM_INSTANCES,
+};
+
+enum class VEGETATION : uint8_t {
+  NULL_VEGETATION,
+
+  TREE,
+  BUSH,
+  FLOWER,
+  GRASS,
+
+  // Num Veggies should be the last element in the list since it represents the total number of biomes
+  NUM_VEGGIES,
 };
 
 enum class TREE : uint8_t {
@@ -71,6 +75,12 @@ enum class TREE : uint8_t {
 
   // Num Trees should be the last element in the list since it represents the total number of biomes
   NUM_TREES,
+};
+
+class UV {
+public:
+  float u;
+  float v;
 };
 
 // class Biome {

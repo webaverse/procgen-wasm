@@ -3,7 +3,7 @@
 
 #include "noises.h"
 #include "heightfield.h"
-#include "biomes.h"
+#include "../biomes.h"
 
 const int numBiomes = (int)BIOME::NUM_BIOMES;
 const int numLiquids = (int)LIQUID::NUM_LIQUIDS;
@@ -57,9 +57,9 @@ public:
     Heightfield getHeightField(float bx, float bz);
     float getHeight(float bx, float bz);
 
-    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
+    float getComputedBiomeHeight(const uint8_t &biome, const vm::vec2 &worldPosition);
     float getComputedWaterHeight(const float &height, const float &realHeight, uint8_t liquid);
-    float getComputedTerrainHeight(const float &height, const vm::vec2 &worldPosition);
+    float getComputedTerrainHeight(const uint8_t &biome, const float &height, const vm::vec2 &worldPosition);
 
     // materials
     void setHeightfieldMaterial(Heightfield &localHeightfield, const vm::vec2 &position);

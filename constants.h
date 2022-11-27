@@ -27,6 +27,7 @@ constexpr float BIOME_BORDERS_FLATTENER_DELTA = 0.04;
 // rocks
 constexpr float ROCK_THRESHOLD = 0.85;
 constexpr int NUM_STONES_AROUND_ROCK = 2;
+constexpr int MAX_NUM_ROCKS_PER_CHUNK = 8;
 // grass
 constexpr int MAX_NUM_GRASSES_PER_CHUNK = 2048;
 constexpr float GRASS_THRESHOLD = 0.15;
@@ -52,6 +53,8 @@ constexpr int RIVER_DEPTH = WATER_BASE_HEIGHT / 6;
 constexpr int WATER_BASE_DEPTH = 8;
 constexpr float WATER_OFFSET = 1.5;
 constexpr float WATER_HEIGHT_DIFFERENCE = 3.0;
+// general
+constexpr float SLOPE_CUTOFF = 0.1f;
 
 //
 
