@@ -54,7 +54,7 @@ constexpr int WATER_BASE_DEPTH = 8;
 constexpr float WATER_OFFSET = 1.5;
 constexpr float WATER_HEIGHT_DIFFERENCE = 3.0;
 // general
-constexpr float SLOPE_CUTOFF = 0.1f;
+constexpr float SLOPE_CUTOFF = 0.13f;
 
 //
 

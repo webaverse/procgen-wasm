@@ -4,80 +4,160 @@
 #include <string>
 #include <tuple>
 #include "libs/vectorMath.h"
+#include <array>
+#include <variant>
+#include <vector>
 
-// ? INFO : Biome types determine the terrain height function 
+// namespace Vegetation {
+//   std::array<> tree;
+//   std::array<> bush;
+//   std::array<> flower;
+//   std::array<> grass;
+// }
+// namespace Biome {
+//   std::array<>
+// }
+
+// ? INFO : Biome types determine the terrain height function
 // TODO : Add more biome types 🙂
-enum class BIOME : uint8_t {
-  NULL_BIOME,
-
+enum class BIOME : uint8_t
+{
   DESERT,
   FOREST,
   TAIGA,
+
+  NULL_BIOME,
 
   // Num Biomes should be the last element in the list since it represents the total number of biomes
   NUM_BIOMES,
 };
 
 // ? INFO : Liquid types determine the liquid height function
-enum class LIQUID : uint8_t {
-  NULL_LIQUID,
-
+enum class LIQUID : uint8_t
+{
   OCEAN,
   RIVER,
   LAVA,
   WATERFALL,
 
-  // Swamp
+  // SWAMP
 
+  NULL_LIQUID,
   // Num Liquids should be the last element in the list since it represents the total number of biomes
   NUM_LIQUIDS,
 };
 
-enum class MATERIAL : uint8_t {
+enum class MATERIAL : uint8_t
+{
   GRASS,
   DIRT,
   ROCK,
   STONE,
 
+  NULL_MATERIAL,
+
   // Num Materials should be the last element in the enum since it is used to determine the number of materials
   NUM_MATERIALS,
 };
 
-enum class LAYER : uint8_t {
-  NULL_INSTANCE,
-
+enum class LAYER : uint8_t
+{
   VEGETATION,
   MINERALS,
   BUILDINGS,
 
+  NULL_LAYER,
   // Num Instances should be the last element in the list since it represents the total number of biomes
-  NUM_INSTANCES,
+  NUM_LAYERS,
 };
 
-enum class VEGETATION : uint8_t {
-  NULL_VEGETATION,
-
+enum class VEGETATION : uint8_t
+{
   TREE,
   BUSH,
   FLOWER,
   GRASS,
 
+  NULL_VEGETATION,
   // Num Veggies should be the last element in the list since it represents the total number of biomes
   NUM_VEGGIES,
 };
 
-enum class TREE : uint8_t {
-  NULL_TREE,
-
+enum class TREE : uint8_t
+{
   SHORT_TREE,
   MEDIUM_TREE,
   TALL_TREE,
 
+  NULL_TREE,
   // Num Trees should be the last element in the list since it represents the total number of biomes
   NUM_TREES,
 };
 
-class UV {
+
+struct Variant {
+  uint8_t id;
+  // either a list of variants or a list of ids
+  std::variant<std::vector<Variant>, std::vector<uint8_t>> types;
+};
+
+typedef std::vector<uint8_t> IL;
+typedef std::vector<Variant> VL;
+
+const static Variant BIOMES_DATA = {
+  (uint8_t)0, VL{
+    Variant{
+      (uint8_t)BIOME::DESERT, VL{
+        Variant{
+          (uint8_t)LAYER::VEGETATION, VL{
+            Variant{
+              (uint8_t)VEGETATION::TREE, IL{
+                (uint8_t)TREE::SHORT_TREE,
+                (uint8_t)TREE::MEDIUM_TREE,
+                (uint8_t)TREE::TALL_TREE
+              }
+            }
+          }
+        }
+      },
+    },
+
+    Variant{
+      (uint8_t)BIOME::FOREST, VL{
+        Variant{
+          (uint8_t)LAYER::VEGETATION, VL{
+            Variant{
+              (uint8_t)VEGETATION::TREE, IL{
+                (uint8_t)TREE::SHORT_TREE,
+                (uint8_t)TREE::MEDIUM_TREE,
+                (uint8_t)TREE::TALL_TREE
+              }
+            }
+          }
+        }
+      }
+    },
+
+    Variant{
+      (uint8_t)BIOME::FOREST, VL{
+        Variant{
+          (uint8_t)LAYER::VEGETATION, VL{
+            Variant{
+              (uint8_t)VEGETATION::TREE, IL{
+                (uint8_t)TREE::SHORT_TREE,
+                (uint8_t)TREE::MEDIUM_TREE,
+                (uint8_t)TREE::TALL_TREE
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
+class UV
+{
 public:
   float u;
   float v;

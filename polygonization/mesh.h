@@ -3,6 +3,7 @@
 
 #include "biomes.h"
 #include "libs/vectorMath.h"
+#include "libs/vector.h"
 #include "generation/heightfield.h"
 
 #include <vector>
@@ -89,6 +90,19 @@ public:
     int instanceId;
     std::vector<float> ps;
     std::vector<float> qs;
+
+    void set(const vm::vec3 &position, const float &rot)
+    {
+        ps.push_back(position.x);
+        ps.push_back(position.y);
+        ps.push_back(position.z);
+
+        Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
+        qs.push_back(q.x);
+        qs.push_back(q.y);
+        qs.push_back(q.z);
+        qs.push_back(q.w);
+    }
 };
 class SplatInstanceGeometry {
 public:
@@ -99,6 +113,14 @@ public:
 
 class VegetationGeometry : public SplatInstanceGeometry {
     // nothing
+};
+
+const int NUM_TREES = (int)TREE::NUM_TREES - 1;
+class SplatInstanceGeometryManager {
+public:
+    std::array<SplatInstanceGeometry, NUM_TREES> geometries;
+
+    uint8_t *getBuffer() const;
 };
 
 class RockGeometry : public SplatInstanceGeometry {

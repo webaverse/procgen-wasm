@@ -48,7 +48,8 @@ class PGInstance
 {
 public:
     HeightfieldGenerator heightfieldGenerator;
-    InstanceGenerator instanceGenerator;
+    VegetationGenerator vegetationGenerator;
+    PoiGenerator poiGenerator;
     Polygonizer polygonizer;
     RenderingInfo renderingInfo;
 

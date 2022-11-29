@@ -463,3 +463,27 @@ uint8_t *HeightfieldGeometry::getBuffer() const {
 
   return buffer;
 }
+
+uint8_t *SplatInstanceGeometryManager::getBuffer() const {
+  // serialize
+  size_t size = sizeof(uint32_t); // num geometries
+
+  for (auto &iter : geometries) {
+      size += sizeof(uint32_t *); // geometry buffer address
+  }
+
+  uint8_t *buffer = (uint8_t *)malloc(size);
+  int index = 0;
+
+  *((uint32_t *)(buffer + index)) = geometries.size(); // num geometries
+  index += sizeof(uint32_t);
+  
+  for (auto &iter : geometries) {
+      const SplatInstanceGeometry &geometry = iter;
+
+      *((uint32_t **)(buffer + index)) = (uint32_t *)geometry.getBuffer(); // geometry buffer address
+      index += sizeof(uint32_t *);
+  }
+
+  return buffer;
+}
