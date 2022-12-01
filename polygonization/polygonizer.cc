@@ -1374,7 +1374,6 @@ void Polygonizer::generateTerrainGeometry(
     generateHeightfieldCenterMesh(lod, chunkSize, heightfields, geometry);
     generateHeightfieldSeamsMesh(lod, lodArray, chunkSize, heightfields, geometry);
     offsetGeometry(geometry, worldPosition);
-    // computeVertexNormals(geometry.positions, geometry.normals, geometry.indices);
 }
 
 void Polygonizer::generateWaterGeometry(
@@ -1388,6 +1387,7 @@ void Polygonizer::generateWaterGeometry(
     generateWaterfieldCenterMesh(lod, chunkSize, waterfields, geometry);
     generateWaterfieldSeamsMesh(lod, lodArray, chunkSize, waterfields, geometry);
     offsetGeometry(geometry, worldPosition);
+    computeFaceNormals(geometry.positions, geometry.normals, geometry.indices);
 }
 
 Polygonizer::Polygonizer()
