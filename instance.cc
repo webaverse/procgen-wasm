@@ -9,7 +9,7 @@
 
 constexpr int CHUNK_RANGE = 1;
 
-void ChunkResult::free(PGInstance *inst)
+void ChunkResult::free()
 {
     std::free(terrainMeshBuffer);
     std::free(waterMeshBuffer);
@@ -607,7 +607,7 @@ void PGInstance::createChunkMeshAsync(
         );
 
         if (!promise->resolve(result)) {
-            result->free(this);
+            result->free();
         } });
     ProcGen::taskQueue.pushTask(terrainTask);
 }

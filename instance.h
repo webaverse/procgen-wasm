@@ -32,7 +32,7 @@ public:
     uint8_t *poiInstancesBuffer;
     uint8_t *heightfieldsBuffer;
 
-    void free(PGInstance *inst);
+    void free();
 };
 
 class RenderingInfo

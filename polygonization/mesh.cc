@@ -469,7 +469,7 @@ uint8_t *SplatInstanceGeometryManager::getBuffer() const {
   size_t size = sizeof(uint32_t); // num geometries
 
   for (auto &iter : geometries) {
-      size += sizeof(uint32_t *); // geometry buffer address
+      size += sizeof(uint32_t); // geometry buffer address
   }
 
   uint8_t *buffer = (uint8_t *)malloc(size);
@@ -481,8 +481,8 @@ uint8_t *SplatInstanceGeometryManager::getBuffer() const {
   for (auto &iter : geometries) {
       const SplatInstanceGeometry &geometry = iter;
 
-      *((uint32_t **)(buffer + index)) = (uint32_t *)geometry.getBuffer(); // geometry buffer address
-      index += sizeof(uint32_t *);
+      *((uint32_t *)(buffer + index)) = (uint32_t)geometry.getBuffer(); // geometry buffer address
+      index += sizeof(uint32_t);
   }
 
   return buffer;
