@@ -1,6 +1,6 @@
 #include "instance.h"
 #include "procgen.h"
-#include "generation/biomes.h"
+#include "biomes.h"
 #include "task/tracker.h"
 #include "libs/vector.h"
 #include "utils/util.h"
@@ -9,7 +9,7 @@
 
 constexpr int CHUNK_RANGE = 1;
 
-void ChunkResult::free(PGInstance *inst)
+void ChunkResult::free()
 {
     std::free(terrainMeshBuffer);
     std::free(waterMeshBuffer);
@@ -293,7 +293,6 @@ void PGInstance::createChunkMesh(
             waterfields,
             waterGeometry);
 
-
         result->waterMeshBuffer = waterGeometry.getBuffer();
     }
     else
@@ -304,20 +303,55 @@ void PGInstance::createChunkMesh(
     // vegetation
     if (generateFlags & GF_VEGETATION)
     {
-        VegetationGeometry treeGeometry;
+        const int NUM_TREES = (int)TREE::NUM_TREES - 1;
+
+        SplatInstanceGeometryGroup treeGeometryGroup(NUM_TREES);
         VegetationGeometry bushGeometry;
 
-        instanceGenerator.generateVegetationInstances(
+        const uint8_t TREE = (uint8_t)VEGETATION::TREE;
+
+        const PushInstancesFunction pushTreeFn = [&](INSTANCE_PUSH_FN_PARAMS)
+        {
+            const float simpm5 = heightfieldGenerator.noises.uberNoise.simplexNoise(ax * 5.f, az * 5.f);
+            const float hashm5d4 = (heightfieldGenerator.noises.uberNoise.hashNoise(ax * 5.f, az * 5.f) * 2.f - 1.f) / 4.f;
+            const float randomTreePicker = vm::clamp(simpm5 + hashm5d4, 0.f, 1.f);
+
+            const int geometryIndex = std::round((treeGeometryGroup.geometries.size() - 1) * randomTreePicker);
+            SplatInstanceGeometry &treeGeometry = treeGeometryGroup.geometries[geometryIndex];
+
+            vegetationGenerator.pushSplatInstances(
+                ax,
+                az,
+                rot,
+                treeGeometry,
+                instanceId,
+                heightfieldSampler,
+                rng,
+                dis);
+
+            vegetationGenerator.pushSubSplatInstances(
+                ax,
+                az,
+                rot,
+                bushGeometry,
+                instanceId,
+                heightfieldSampler,
+                NUM_BUSHES_AROUND_TREE,
+                rng,
+                dis);
+        };
+
+        vegetationGenerator.generateInstances<TREE, VegetationGeometry>(
             worldPosition,
             lod,
             chunkSize,
             numVegetationInstances,
+            MAX_NUM_VEGGIES_PER_CHUNK,
             heightfields,
             heightfieldGenerator.noises,
-            treeGeometry,
-            bushGeometry);
+            pushTreeFn);
 
-        result->treeInstancesBuffer = treeGeometry.getBuffer();
+        result->treeInstancesBuffer = treeGeometryGroup.getBuffer();
         result->bushInstancesBuffer = bushGeometry.getBuffer();
     }
     else
@@ -326,48 +360,38 @@ void PGInstance::createChunkMesh(
         result->bushInstancesBuffer = nullptr;
     }
 
-    // rocks
-    if (generateFlags & GF_ROCK)
-    {
-        RockGeometry rockGeometry;
-        RockGeometry stoneGeometry;
-
-        instanceGenerator.generateRocksInstances(
-            worldPosition,
-            lod,
-            chunkSize,
-            numRockInstances,
-            heightfields,
-            heightfieldGenerator.noises,
-            rockGeometry,
-            stoneGeometry);
-
-        result->rockInstancesBuffer = rockGeometry.getBuffer();
-        result->stoneInstancesBuffer = stoneGeometry.getBuffer();
-    }
-    else
-    {
-        result->rockInstancesBuffer = nullptr;
-        result->stoneInstancesBuffer = nullptr;
-    }
-
-    // grass
-    if (generateFlags & GF_GRASS)
+    if (generateFlags & GF_VEGETATION)
     {
         GrassGeometry grassGeometry;
+        const uint8_t GRASS = (uint8_t)VEGETATION::GRASS;
+
+        const PushInstancesFunction pushGrassFn = [&](INSTANCE_PUSH_FN_PARAMS)
+        {
+            vegetationGenerator.pushGrassInstances(
+                ax,
+                az,
+                rot,
+                grassGeometry,
+                instanceId,
+                heightfieldSampler,
+                heightfield,
+                heightfieldGenerator.noises);
+        };
 
         // TODO: get the cutoff value from JS
         const int GRASS_LOD_CUTOFF = 2;
         if (lod <= 2)
         {
-            instanceGenerator.generateGrassInstances(
+            vegetationGenerator.generateInstances<GRASS, GrassGeometry>(
                 worldPosition,
                 lod,
                 chunkSize,
                 numGrassInstances,
+                MAX_NUM_GRASSES_PER_CHUNK,
                 heightfields,
                 heightfieldGenerator.noises,
-                grassGeometry);
+                pushGrassFn);
+
         }
 
         result->grassInstancesBuffer = grassGeometry.getBuffer();
@@ -376,13 +400,61 @@ void PGInstance::createChunkMesh(
     {
         result->grassInstancesBuffer = nullptr;
     }
+    // // rocks
+    // if (generateFlags & GF_ROCK)
+    // {
+    //     SplatInstanceGeometry rockGeometry;
+    //     SplatInstanceGeometry stoneGeometry;
+
+    //     const uint8_t ROCK_INSTANCE = (uint8_t)LAYER::MINERALS;
+
+    //     const PushInstancesFunction pushInstancesFunction = [&](INSTANCE_PUSH_FN_PARAMS)
+    //     {
+    //         vegetationGenerator.pushSplatInstances(
+    //             ax,
+    //             az,
+    //             rot,
+    //             rockGeometry,
+    //             instanceId,
+    //             heightfieldSampler);
+
+    //         vegetationGenerator.pushSubSplatInstances(
+    //             ax,
+    //             az,
+    //             rot,
+    //             stoneGeometry,
+    //             instanceId,
+    //             heightfieldSampler,
+    //             NUM_STONES_AROUND_ROCK,
+    //             rng,
+    //             dis);
+    //     };
+
+    //     vegetationGenerator.generateInstances<ROCK_INSTANCE, SplatInstanceGeometry>(
+    //         worldPosition,
+    //         lod,
+    //         chunkSize,
+    //         numRockInstances,
+    //         MAX_NUM_ROCKS_PER_CHUNK,
+    //         heightfields,
+    //         heightfieldGenerator.noises,
+    //         pushInstancesFunction);
+
+    //     result->rockInstancesBuffer = rockGeometry.getBuffer();
+    //     result->stoneInstancesBuffer = stoneGeometry.getBuffer();
+    // }
+    // else
+    // {
+    result->rockInstancesBuffer = nullptr;
+    result->stoneInstancesBuffer = nullptr;
+    // }
 
     // poi
     if (generateFlags & GF_POI)
     {
         PoiGeometry poiGeometry;
 
-        instanceGenerator.generatePoiInstances(
+        poiGenerator.generatePoiInstances(
             worldPosition,
             lod,
             chunkSize,
@@ -390,6 +462,7 @@ void PGInstance::createChunkMesh(
             heightfields,
             heightfieldGenerator.noises,
             poiGeometry);
+
         result->poiInstancesBuffer = poiGeometry.getBuffer();
     }
     else
@@ -547,8 +620,9 @@ void PGInstance::createChunkMeshAsync(
             numGrassInstances,
             numPoiInstances
         );
+
         if (!promise->resolve(result)) {
-            result->free(this);
+            result->free();
         } });
     ProcGen::taskQueue.pushTask(terrainTask);
 }

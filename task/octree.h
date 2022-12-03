@@ -29,6 +29,7 @@ uint64_t hashOctreeMin(const vm::ivec2 &min);
 uint64_t hashOctreeMin(const vm::ivec3 &min);
 uint64_t hashOctreeMinLod(const vm::ivec2 &min, int lod);
 uint64_t hashOctreeMinLod(const vm::ivec3 &min, int lod);
+
 class OctreeNodeSpec {
 public:
     vm::ivec2 min;

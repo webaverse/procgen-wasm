@@ -277,6 +277,7 @@ void Polygonizer::calculateSurfaceNormals(std::vector<Heightfield> &heightfields
 
     const int rowSize = chunkSize + 2;
 
+    // TODO : This is not the best way to calculate normals (it lacks precision)
     calculateCenterNormals<Heightfield>(heightfields, chunkSize, rowSize);
     calculateSeamNormals<Heightfield>(heightfields, lod, lodArray, chunkSize, rowSize);
 }

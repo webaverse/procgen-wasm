@@ -34,11 +34,11 @@ public:
     vm::vec3 normal{0.f, 1.f, 0.f};
 
     std::array<uint8_t, 4> biomes;
-    std::array<uint8_t, 4> biomesWeights;
+    std::array<float, 4> biomesWeights;
 
     // TODO : send these to the shader for blending liquid shaders
     std::array<uint8_t, 4> liquids;
-    std::array<uint8_t, 4> liquidsWeights;
+    std::array<float, 4> liquidsWeights;
 
     MaterialsArray materials;
     MaterialsWeightsArray materialsWeights;
@@ -49,6 +49,10 @@ public:
     float getSlope() const
     {
       return std::max(0.f, 1.f - normal.y);
+    }
+    uint8_t getDominantBiome() const {
+      // because biomes are sorted by weight the dominant biome is the first one
+      return biomes[0];
     }
     static bool acceptIndices(
       const Heightfield &a,
@@ -97,6 +101,7 @@ public:
                                                         heightfields(heightfields)
     {
     }
+
     float getHeight(float x, float z)
     {
         const vm::vec2 location = getLocalPosition(x, z);
@@ -104,6 +109,11 @@ public:
         float result = bilinear<HeightfieldSampler, float>(location, chunkSize, *this);
         return result;
     }
+
+    float getWorldHeight(float x, float z) {
+      return getHeight(x, z) - (float)WORLD_BASE_HEIGHT;
+    }
+
     Heightfield getHeightfield(float x, float z)
     {
         const vm::vec2 location = getLocalPosition(x, z);
@@ -116,6 +126,7 @@ public:
 
         return getHeightfieldByLocalPosition(ix, iy);
     }
+
     float get(int x, int z)
     {
         const Heightfield heightfield = getHeightfieldByLocalPosition(x, z);
