@@ -303,18 +303,27 @@ void PGInstance::createChunkMesh(
     // vegetation
     if (generateFlags & GF_VEGETATION)
     {
-        SplatInstanceGeometryManager treeGeometryManager;
+        const int NUM_TREES = (int)TREE::NUM_TREES - 1;
+
+        SplatInstanceGeometryGroup treeGeometryGroup(NUM_TREES);
         VegetationGeometry bushGeometry;
 
         const uint8_t TREE = (uint8_t)VEGETATION::TREE;
 
         const PushInstancesFunction pushTreeFn = [&](INSTANCE_PUSH_FN_PARAMS)
         {
+            const float simpm5 = heightfieldGenerator.noises.uberNoise.simplexNoise(ax * 5.f, az * 5.f);
+            const float hashm5d4 = (heightfieldGenerator.noises.uberNoise.hashNoise(ax * 5.f, az * 5.f) * 2.f - 1.f) / 4.f;
+            const float randomTreePicker = vm::clamp(simpm5 + hashm5d4, 0.f, 1.f);
+
+            const int geometryIndex = std::round((treeGeometryGroup.geometries.size() - 1) * randomTreePicker);
+            SplatInstanceGeometry &treeGeometry = treeGeometryGroup.geometries[geometryIndex];
+
             vegetationGenerator.pushSplatInstances(
                 ax,
                 az,
                 rot,
-                treeGeometryManager,
+                treeGeometry,
                 instanceId,
                 heightfieldSampler,
                 rng,
@@ -342,9 +351,19 @@ void PGInstance::createChunkMesh(
             heightfieldGenerator.noises,
             pushTreeFn);
 
+        result->treeInstancesBuffer = treeGeometryGroup.getBuffer();
+        result->bushInstancesBuffer = bushGeometry.getBuffer();
+    }
+    else
+    {
+        result->treeInstancesBuffer = nullptr;
+        result->bushInstancesBuffer = nullptr;
+    }
+
+    if (generateFlags & GF_VEGETATION)
+    {
         GrassGeometry grassGeometry;
         const uint8_t GRASS = (uint8_t)VEGETATION::GRASS;
-
 
         const PushInstancesFunction pushGrassFn = [&](INSTANCE_PUSH_FN_PARAMS)
         {
@@ -372,19 +391,15 @@ void PGInstance::createChunkMesh(
                 heightfields,
                 heightfieldGenerator.noises,
                 pushGrassFn);
+
         }
 
-        result->treeInstancesBuffer = treeGeometryManager.getBuffer();
-        result->bushInstancesBuffer = bushGeometry.getBuffer();
         result->grassInstancesBuffer = grassGeometry.getBuffer();
     }
     else
     {
-        result->treeInstancesBuffer = nullptr;
-        result->bushInstancesBuffer = nullptr;
         result->grassInstancesBuffer = nullptr;
     }
-
     // // rocks
     // if (generateFlags & GF_ROCK)
     // {

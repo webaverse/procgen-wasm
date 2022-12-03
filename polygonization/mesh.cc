@@ -464,7 +464,7 @@ uint8_t *HeightfieldGeometry::getBuffer() const {
   return buffer;
 }
 
-uint8_t *SplatInstanceGeometryManager::getBuffer() const {
+uint8_t *SplatInstanceGeometryGroup::getBuffer() const {
   // serialize
   size_t size = sizeof(uint32_t); // num geometries
 

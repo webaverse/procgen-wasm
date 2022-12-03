@@ -104,7 +104,7 @@ struct Variant {
 typedef std::vector<uint8_t> IL;
 typedef std::vector<Variant> VL;
 
-const static Variant BIOMES_DATA = {
+const static Variant VARIANTS_DATA = {
   (uint8_t)0, VL{
     Variant{
       (uint8_t)BIOME::DESERT, VL{
@@ -155,6 +155,10 @@ const static Variant BIOMES_DATA = {
     }
   }
 };
+
+// const VL VARIANTS_BIOME_ARRAY = std::get<VL>(VARIANTS_DATA.types);
+// const int VARIANTS_NUM_BIOMES = VARIANTS_BIOME_ARRAY.size();
+// const int VARIANTS_NUM_BIOMES = std::get<VL>(VARIANTS_DATA.types).size();
 
 class UV
 {

@@ -29,27 +29,27 @@ uint8_t HeightfieldGenerator::getBiome(float bx, float bz)
 {
     uint8_t biome = 0xFF;
 
-    const auto &noise = getBiomeNoiseField(bx, bz);
-    const float temperature = noise.temperature;
-    const float coldness = 1.f - temperature;
-    const float humidity = noise.humidity;
-    const float biomeFactor = coldness * humidity;
+    // const auto &noise = getBiomeNoiseField(bx, bz);
+    // const float temperature = noise.temperature;
+    // const float coldness = 1.f - temperature;
+    // const float humidity = noise.humidity;
+    // const float biomeFactor = coldness * humidity;
 
-    const bool isCold = getNoiseVisibility(biomeFactor, COLD_WARM_BORDER, BIOME_BORDER_MAX);
-    if (isCold)
-    {
-        biome = (uint8_t)BIOME::TAIGA;
-    }
-    const bool isWarm = getNoiseVisibility(biomeFactor, WARM_HOT_BORDER, COLD_WARM_BORDER);
-    if (isWarm)
-    {
-        biome = (uint8_t)BIOME::FOREST;
-    }
-    const bool isHot = getNoiseVisibility(biomeFactor, BIOME_BORDER_MIN, WARM_HOT_BORDER);
-    if (isHot)
-    {
-        biome = (uint8_t)BIOME::DESERT;
-    }
+    // const bool isCold = getNoiseVisibility(biomeFactor, COLD_WARM_BORDER, BIOME_BORDER_MAX);
+    // if (isCold)
+    // {
+    //     biome = (uint8_t)BIOME::TAIGA;
+    // }
+    // const bool isWarm = getNoiseVisibility(biomeFactor, WARM_HOT_BORDER, COLD_WARM_BORDER);
+    // if (isWarm)
+    // {
+    biome = (uint8_t)BIOME::FOREST;
+    // }
+    // const bool isHot = getNoiseVisibility(biomeFactor, BIOME_BORDER_MIN, WARM_HOT_BORDER);
+    // if (isHot)
+    // {
+    //     biome = (uint8_t)BIOME::DESERT;
+    // }
 
     return biome;
 }

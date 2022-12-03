@@ -22,10 +22,8 @@ typedef std::function<void(const float &, const float &, const float &, const in
 class InstanceGenerator
 {
 public:
-    void pushSplatInstances(const float &ax, const float &az, const float &rot, SplatInstanceGeometryManager &geometryManager, const int &instanceId, HeightfieldSampler &heightfieldSampler, std::mt19937 &rng, std::uniform_real_distribution<float> &dis)
+    void pushSplatInstances(const float &ax, const float &az, const float &rot, SplatInstanceGeometry &geometry, const int &instanceId, HeightfieldSampler &heightfieldSampler, std::mt19937 &rng, std::uniform_real_distribution<float> &dis)
     {
-        const size_t geometryIndex = std::round((geometryManager.geometries.size() - 1) * dis(rng));
-        SplatInstanceGeometry &geometry = geometryManager.geometries[geometryIndex];
         auto iterPair = geometry.instances.emplace(std::make_pair(instanceId, SplatInstance{}));
         auto iter = iterPair.first;
         const bool &inserted = iterPair.second;
@@ -206,7 +204,7 @@ public:
         const float randomBladeFactor = noises.uberNoise.hashNoise(ax, az) * 2.f - 1.f;
 
         const vm::vec3 grassColorMultiplier = (vm::vec3{colorVariationNoise, colorVariationNoise / 1.1f, colorVariationNoise / 1.2f} +
-                                               vm::vec3{randomBladeFactor / 10.f, randomBladeFactor / 12.f, randomBladeFactor / 14.f});
+                                               vm::vec3{randomBladeFactor / 8.f, randomBladeFactor / 10.f, randomBladeFactor / 12.f});
 
         const vm::vec4 grassProps = vm::vec4{grassColorMultiplier.x, grassColorMultiplier.y, grassColorMultiplier.z, heightScale};
 

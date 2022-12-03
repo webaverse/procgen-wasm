@@ -40,5 +40,5 @@ emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=100MB -pthr
   sed -Ei 's/scriptDirectory\+path/"\/"+path/g' bin/pg.js
   cp bin/pg.js bin/pg.module.js
   echo 'export default Module;' >>bin/pg.module.js
-  cp -R bin/* ../app/public/
+  # cp -R bin/* ../app/public/
 echo done

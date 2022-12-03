@@ -115,10 +115,14 @@ class VegetationGeometry : public SplatInstanceGeometry {
     // nothing
 };
 
-const int NUM_TREES = (int)TREE::NUM_TREES - 1;
-class SplatInstanceGeometryManager {
+class SplatInstanceGeometryGroup {
 public:
-    std::array<SplatInstanceGeometry, NUM_TREES> geometries;
+    std::vector<SplatInstanceGeometry> geometries;
+
+    SplatInstanceGeometryGroup(const int &numGeometries) : geometries(numGeometries)
+    {
+        // nothing
+    }
 
     uint8_t *getBuffer() const;
 };

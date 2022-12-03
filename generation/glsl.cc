@@ -391,7 +391,14 @@ float getWaterDepth(vec2 position)
 
 float getWetness(vec2 position)
 {
-    return clamp(simplex(position / 2.f) + 0.25f, 0.f, 1.f);
+    return simplex(position / 2.f);
+}
+
+float getGrassMaterial(vec2 position)
+{
+    float wetness = getWetness(position);
+    float noise = warpNoise1Layer_2(position * 10.f) * wetness;
+    return clamp(noise, 0.f, 1.f);
 }
 
 float getGrassObject(vec2 position)
@@ -400,8 +407,7 @@ float getGrassObject(vec2 position)
     {
         return 0.f;
     }
-    float wetness = getWetness(position);
-    return clamp(simplex(position * 40.f) * wetness, 0.f, 1.f);
+    return getGrassMaterial(position);
 }
 
 bool getGrassVisibility(vec2 position)
@@ -424,13 +430,6 @@ bool getTreeVisibility(vec2 position)
 {
     float tree = getTreeObject(position);
     return tree >= TERRAIN_TREE_THRESHOLD; 
-}
-
-float getGrassMaterial(vec2 position)
-{
-    float wetness = getWetness(position);
-    float noise = warpNoise1Layer_2(position * 5.f) * wetness;
-    return clamp(noise, 0.f, 1.f);
 }
 
 bool getRockVisibility(vec2 position)
