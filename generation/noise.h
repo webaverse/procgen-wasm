@@ -52,21 +52,29 @@ public:
   {
     switch (T)
     {
-    case (uint8_t)VEGETATION::TREE:
+    case (uint8_t)INSTANCE::TREE:
       return treeVisibility(x, z);
-    // case (uint8_t)VEGETATION::MINERALS:
-    //   return rockVisibility(x, z);
-    case (uint8_t)VEGETATION::GRASS:
+    case (uint8_t)INSTANCE::FLOWER:
+      return flowerVisibility(x, z);
+    case (uint8_t)INSTANCE::GRASS:
       return grassVisibility(x, z);
+    case (uint8_t)INSTANCE::ROCK:
+      return rockVisibility(x, z);
+    case (uint8_t)INSTANCE::STONE:
+      return stoneVisibility(x, z);
     default:
       std::cerr << "Unknown instance type" << std::endl;
       break;
     }
+
+    return false;
   }
 
+  bool flowerVisibility(float x, float z);
   bool grassVisibility(float x, float z);
   bool treeVisibility(float x, float z);
   bool rockVisibility(float x, float z);
+  bool stoneVisibility(float x, float z);
 };
 
 #endif

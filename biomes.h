@@ -60,28 +60,42 @@ enum class MATERIAL : uint8_t
   NUM_MATERIALS,
 };
 
-enum class LAYER : uint8_t
-{
-  VEGETATION,
-  MINERALS,
-  BUILDINGS,
-
-  NULL_LAYER,
-  // Num Instances should be the last element in the list since it represents the total number of biomes
-  NUM_LAYERS,
-};
-
-enum class VEGETATION : uint8_t
+enum class INSTANCE : uint8_t
 {
   TREE,
   BUSH,
   FLOWER,
   GRASS,
+  ROCK,
+  STONE,
 
-  NULL_VEGETATION,
-  // Num Veggies should be the last element in the list since it represents the total number of biomes
-  NUM_VEGGIES,
+  NULL_INSTANCE,
+  // Num Veggies should be the last element in the list since it represents the total number of instances
+  NUM_INSTANCES,
 };
+
+// enum class LAYER : uint8_t
+// {
+//   VEGETATION,
+//   MINERALS,
+//   BUILDINGS,
+
+//   NULL_LAYER,
+//   // Num Layers should be the last element in the list since it represents the total number of layers
+//   NUM_LAYERS,
+// };
+
+// enum class VEGETATION : uint8_t
+// {
+//   TREE,
+//   BUSH,
+//   FLOWER,
+//   GRASS,
+
+//   NULL_VEGETATION,
+//   // Num Veggies should be the last element in the list since it represents the total number of veggies
+//   NUM_VEGGIES,
+// };
 
 enum class TREE : uint8_t
 {
@@ -90,71 +104,82 @@ enum class TREE : uint8_t
   TALL_TREE,
 
   NULL_TREE,
-  // Num Trees should be the last element in the list since it represents the total number of biomes
+  // Num Trees should be the last element in the list since it represents the total number of trees
   NUM_TREES,
 };
 
+enum class FLOWER : uint8_t
+{
+  SHORT_FLOWER,
+  MEDIUM_FLOWER,
+  TALL_FLOWER,
 
-struct Variant {
-  uint8_t id;
-  // either a list of variants or a list of ids
-  std::variant<std::vector<Variant>, std::vector<uint8_t>> types;
+  NULL_FLOWER,
+  // Num Flowers should be the last element in the list since it represents the total number of flowers
+  NUM_FLOWERS,
 };
 
-typedef std::vector<uint8_t> IL;
-typedef std::vector<Variant> VL;
 
-const static Variant VARIANTS_DATA = {
-  (uint8_t)0, VL{
-    Variant{
-      (uint8_t)BIOME::DESERT, VL{
-        Variant{
-          (uint8_t)LAYER::VEGETATION, VL{
-            Variant{
-              (uint8_t)VEGETATION::TREE, IL{
-                (uint8_t)TREE::SHORT_TREE,
-                (uint8_t)TREE::MEDIUM_TREE,
-                (uint8_t)TREE::TALL_TREE
-              }
-            }
-          }
-        }
-      },
-    },
+// struct Variant {
+//   uint8_t id;
+//   // either a list of variants or a list of ids
+//   std::variant<std::vector<Variant>, std::vector<uint8_t>> types;
+// };
 
-    Variant{
-      (uint8_t)BIOME::FOREST, VL{
-        Variant{
-          (uint8_t)LAYER::VEGETATION, VL{
-            Variant{
-              (uint8_t)VEGETATION::TREE, IL{
-                (uint8_t)TREE::SHORT_TREE,
-                (uint8_t)TREE::MEDIUM_TREE,
-                (uint8_t)TREE::TALL_TREE
-              }
-            }
-          }
-        }
-      }
-    },
+// typedef std::vector<uint8_t> IL;
+// typedef std::vector<Variant> VL;
 
-    Variant{
-      (uint8_t)BIOME::FOREST, VL{
-        Variant{
-          (uint8_t)LAYER::VEGETATION, VL{
-            Variant{
-              (uint8_t)VEGETATION::TREE, IL{
-                (uint8_t)TREE::SHORT_TREE,
-                (uint8_t)TREE::MEDIUM_TREE,
-                (uint8_t)TREE::TALL_TREE
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-};
+// const static Variant VARIANTS_DATA = {
+//   (uint8_t)0, VL{
+//     Variant{
+//       (uint8_t)BIOME::DESERT, VL{
+//         Variant{
+//           (uint8_t)LAYER::VEGETATION, VL{
+//             Variant{
+//               (uint8_t)VEGETATION::TREE, IL{
+//                 (uint8_t)TREE::SHORT_TREE,
+//                 (uint8_t)TREE::MEDIUM_TREE,
+//                 (uint8_t)TREE::TALL_TREE
+//               }
+//             }
+//           }
+//         }
+//       },
+//     },
+
+//     Variant{
+//       (uint8_t)BIOME::FOREST, VL{
+//         Variant{
+//           (uint8_t)LAYER::VEGETATION, VL{
+//             Variant{
+//               (uint8_t)VEGETATION::TREE, IL{
+//                 (uint8_t)TREE::SHORT_TREE,
+//                 (uint8_t)TREE::MEDIUM_TREE,
+//                 (uint8_t)TREE::TALL_TREE
+//               }
+//             }
+//           }
+//         }
+//       }
+//     },
+
+//     Variant{
+//       (uint8_t)BIOME::FOREST, VL{
+//         Variant{
+//           (uint8_t)LAYER::VEGETATION, VL{
+//             Variant{
+//               (uint8_t)VEGETATION::TREE, IL{
+//                 (uint8_t)TREE::SHORT_TREE,
+//                 (uint8_t)TREE::MEDIUM_TREE,
+//                 (uint8_t)TREE::TALL_TREE
+//               }
+//             }
+//           }
+//         }
+//       }
+//     }
+//   }
+// };
 
 // const VL VARIANTS_BIOME_ARRAY = std::get<VL>(VARIANTS_DATA.types);
 // const int VARIANTS_NUM_BIOMES = VARIANTS_BIOME_ARRAY.size();

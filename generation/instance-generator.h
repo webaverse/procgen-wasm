@@ -22,6 +22,17 @@ typedef std::function<void(const float &, const float &, const float &, const in
 class InstanceGenerator
 {
 public:
+    template <typename G, typename GG>
+    G &getVariationGeometry(const float &ax, const float &az, GG &geometryGroup, Noises &noises)
+    {
+        // TODO: move this to glsl
+        const float simpm5 = noises.uberNoise.simplexNoise(ax * 5.f, az * 5.f);
+        const float hashm5d4 = (noises.uberNoise.hashNoise(ax * 5.f, az * 5.f) * 2.f - 1.f) / 4.f;
+        const float randomTreePicker = vm::clamp(simpm5 + hashm5d4, 0.f, 1.f);
+
+        const int geometryIndex = std::round((geometryGroup.geometries.size() - 1) * randomTreePicker);
+        return geometryGroup.geometries[geometryIndex];
+    }
     void pushSplatInstances(const float &ax, const float &az, const float &rot, SplatInstanceGeometry &geometry, const int &instanceId, HeightfieldSampler &heightfieldSampler, std::mt19937 &rng, std::uniform_real_distribution<float> &dis)
     {
         auto iterPair = geometry.instances.emplace(std::make_pair(instanceId, SplatInstance{}));
@@ -38,7 +49,7 @@ public:
         instance.set(vm::vec3{ax, height, az}, rot);
     }
 
-    void pushSubSplatInstances(const float &ax, const float &az, const float &rot, SplatInstanceGeometry &geometry, const int &instanceId, HeightfieldSampler &heightfieldSampler, const int &numObjects, std::mt19937 &rng, std::uniform_real_distribution<float> &dis)
+    void pushSubSplatInstances(const float &ax, const float &az, const float &rot, SplatInstanceGeometry &geometry, const int &instanceId, HeightfieldSampler &heightfieldSampler, const int &numObjects, std::mt19937 &rng, std::uniform_real_distribution<float> &dis, const float &baseOffset, const float &offsetRange)
     {
         for (int i = 0; i < numObjects; i++)
         {
@@ -48,8 +59,8 @@ public:
             const float signX = signbit(offsetX) ? -1.f : 1.f;
             const float signZ = signbit(offsetZ) ? -1.f : 1.f;
 
-            const float newX = (BUSH_AROUND_TREE_BASE_OFFSET * signX) + ax + offsetX * BUSH_AROUND_TREE_OFFSET_RANGE;
-            const float newZ = (BUSH_AROUND_TREE_BASE_OFFSET * signZ) + az + offsetZ * BUSH_AROUND_TREE_OFFSET_RANGE;
+            const float newX = (baseOffset * signX) + ax + offsetX * offsetRange;
+            const float newZ = (baseOffset * signZ) + az + offsetZ * offsetRange;
 
             auto iterPair = geometry.instances.emplace(std::make_pair(instanceId, SplatInstance{}));
             auto iter = iterPair.first;
@@ -174,7 +185,7 @@ public:
 
             switch (id)
             {
-            case (uint8_t)VEGETATION::GRASS:
+            case (uint8_t)INSTANCE::GRASS:
                 // valid = dominantBiome != (uint8_t)BIOME::DESERT;
                 break;
             default:
@@ -209,6 +220,24 @@ public:
         const vm::vec4 grassProps = vm::vec4{grassColorMultiplier.x, grassColorMultiplier.y, grassColorMultiplier.z, heightScale};
 
         instance.grassProps.push_back(grassProps);
+    }
+};
+
+class MineralGenerator : public InstanceGenerator
+{
+public:
+    bool validateHeightfield(const uint8_t &id, const Heightfield &heightfield) override
+    {
+        bool valid = true;
+
+        // validate slope
+        if (valid)
+        {
+            const float slope = heightfield.getSlope();
+            valid = slope < SLOPE_CUTOFF;
+        }
+
+        return valid;
     }
 };
 

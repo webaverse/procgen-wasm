@@ -21,6 +21,7 @@ const float TERRAIN_BIOME_BORDER_MIN = BIOME_BORDER_MIN;
 const float TERRAIN_BIOME_BORDER_MAX = BIOME_BORDER_MAX;
 const float TERRAIN_COLD_WARM_BORDER = COLD_WARM_BORDER;
 const float TERRAIN_WARM_HOT_BORDER = WARM_HOT_BORDER;
+const float TERRAIN_BIOME_BORDERS_FLATTENER_DELTA = BIOME_BORDERS_FLATTENER_DELTA;
 // water
 const float WATER_SURROUNDING_HEIGHT = float(WORLD_BASE_HEIGHT / 4);
 const float TERRAIN_OCEAN_DEPTH = float(OCEAN_DEPTH);
@@ -31,12 +32,17 @@ const float TERRAIN_BASE_HEIGHT = float(WATER_SURROUNDING_HEIGHT + WATER_BASE_HE
 const float TERRAIN_OCEAN_THRESHOLD = OCEAN_THRESHOLD;
 const float TERRAIN_RIVER_THRESHOLD = RIVER_BASE;
 const float TERRAIN_WATER_THRESHOLD = WATER_THRESHOLD;
+const float TERRAIN_RIVER_EDGES_DELTA = RIVER_EDGES_DELTA;
 // grass
 const float TERRAIN_GRASS_THRESHOLD = GRASS_THRESHOLD;
+// flowers
+const float TERRAIN_FLOWER_THRESHOLD = FLOWER_THRESHOLD;
 // trees
 const float TERRAIN_TREE_THRESHOLD = VEGGIE_THRESHOLD;
 // rocks
 const float TERRAIN_ROCK_THRESHOLD = ROCK_THRESHOLD;
+const float TERRAIN_STONE_THRESHOLD = STONE_THRESHOLD;
+const float TERRAIN_ROCK_NOISE_SHARPNESS = ROCK_NOISE_SHARPNESS;
 // flattener
 const float TERRAIN_FLATTENER_DEPTH = float(WATER_BASE_HEIGHT * 2);
 
@@ -70,6 +76,12 @@ float smoothEdge(float value, float edge)
     float clampedValue = smoothClamp(value, edge, 1.f);
     // making the value fit in the 0-1 range
     return ((clampedValue - edge) * (1.f / (1.f - edge)));
+}
+
+float getSmoothBorder(float biomeFactor, float border, float delta)
+{
+    float multiplier = 1.f / delta;
+    return clamp(1.f - (smoothClamp(biomeFactor, border, border + delta) - smoothClamp(biomeFactor, border - delta, border)) * multiplier, 0.f, 1.f);
 }
 
 // noise functions
@@ -351,8 +363,28 @@ float getRiverNoise(vec2 position, float ocean)
     float connectOceans = (1. - ocean);
     float riverNoise = simplex(position / 2.);
     float river = 1.0 - abs(riverNoise * 8.f * connectOceans - 0.5);
-    float smoothRiver = smoothEdge(river, 0.6);
+    const float RIVER_EDGE = 0.6;
+    float smoothRiver = smoothEdge(river, RIVER_EDGE);
     return clamp(smoothRiver, 0.f, 1.f);
+}
+
+float getSmoothRiverBorder(float biomeFactor, float border)
+{
+    const float delta = TERRAIN_RIVER_EDGES_DELTA;
+    return getSmoothBorder(biomeFactor, border, delta);
+}
+
+float getRiverEdges(vec2 position)
+{
+    float ocean = getOceanNoise(position);
+
+    float smoothRiverEdges = getSmoothRiverBorder(getRiverNoise(position, ocean), TERRAIN_RIVER_THRESHOLD);
+
+    // we only want river edges so we need to make sure where there's an ocean there's no river edges
+    float isOceanVisible = step(TERRAIN_WATER_THRESHOLD, ocean);
+
+    float breakingPattern = clamp(simplex(position * 10.0) + 0.2f, 0.f, 1.f);
+    return smoothRiverEdges * breakingPattern - isOceanVisible;
 }
 
 bool getOceanVisibility(vec2 position)
@@ -391,7 +423,7 @@ float getWaterDepth(vec2 position)
 
 float getWetness(vec2 position)
 {
-    return simplex(position / 2.f);
+    return clamp(simplex(position / 2.f) + 0.1f, 0.f, 1.f);
 }
 
 float getGrassMaterial(vec2 position)
@@ -416,6 +448,21 @@ bool getGrassVisibility(vec2 position)
     return grass >= TERRAIN_GRASS_THRESHOLD;
 }
 
+float getFlowerObject(vec2 position)
+{
+    if (getWaterVisibility(position))
+    {
+        return 0.f;
+    }
+    return clamp(warpNoise1Layer_1(position * 15.f), 0.f, 1.f);
+}
+
+bool getFlowerVisibility(vec2 position)
+{
+    float flower = getFlowerObject(position);
+    return flower >= TERRAIN_FLOWER_THRESHOLD;
+}
+
 float getTreeObject(vec2 position)
 {
     if (getWaterVisibility(position))
@@ -429,20 +476,32 @@ float getTreeObject(vec2 position)
 bool getTreeVisibility(vec2 position)
 {
     float tree = getTreeObject(position);
-    return tree >= TERRAIN_TREE_THRESHOLD; 
+    return tree >= TERRAIN_TREE_THRESHOLD;
 }
 
-bool getRockVisibility(vec2 position)
+float getRockObject(vec2 position)
 {
     if (getWaterVisibility(position))
     {
-        return false;
+        return 0.f;
     }
-    const float edge = TERRAIN_ROCK_THRESHOLD;
-    float drynessFactor = 1.f - getWetness(position) / 8.f;
-    float stone = clamp(simplex(position / 3.f) * drynessFactor, 0.f, 1.f);
-    bool visibility = bool(step(edge, stone));
-    return visibility;
+    return clamp(simplex(position * 15.f) * TERRAIN_ROCK_NOISE_SHARPNESS - (TERRAIN_ROCK_NOISE_SHARPNESS - 1.f), 0.f, 1.f);
+}
+bool getRockVisibility(vec2 position)
+{
+    float rock = getRockObject(position);
+    return rock >= TERRAIN_ROCK_THRESHOLD;
+}
+
+float getStoneObject(vec2 position)
+{
+    return getRiverEdges(position);
+}
+
+bool getStoneVisibility(vec2 position)
+{
+    float stone = getStoneObject(position);
+    return stone >= TERRAIN_STONE_THRESHOLD;
 }
 
 float getStiffness(vec2 position)
@@ -461,11 +520,10 @@ float getTemperature(vec2 position)
     return simplex(position / 65.f);
 }
 
-float getSmoothBorder(float biomeFactor, float border)
+float getSmoothBiomeBorder(float biomeFactor, float border)
 {
-    const float delta = BIOME_BORDERS_FLATTENER_DELTA;
-    const float multiplier = 1.f / delta;
-    return clamp(1.f - (smoothClamp(biomeFactor, border, border + delta) - smoothClamp(biomeFactor, border - delta, border)) * multiplier, 0.f, 1.f);
+    const float delta = TERRAIN_BIOME_BORDERS_FLATTENER_DELTA;
+    return getSmoothBorder(biomeFactor, border, delta);
 }
 
 float getBiomeFactor(vec2 position)
@@ -478,8 +536,8 @@ float getBiomeFactor(vec2 position)
 float getBiomeBorders(vec2 position)
 {
     float biomeFactor = getBiomeFactor(position);
-    float coldWarmBorder = getSmoothBorder(biomeFactor, TERRAIN_COLD_WARM_BORDER);
-    float warmHotBorder = getSmoothBorder(biomeFactor, TERRAIN_WARM_HOT_BORDER);
+    float coldWarmBorder = getSmoothBiomeBorder(biomeFactor, TERRAIN_COLD_WARM_BORDER);
+    float warmHotBorder = getSmoothBiomeBorder(biomeFactor, TERRAIN_WARM_HOT_BORDER);
     return coldWarmBorder + warmHotBorder;
 }
 
@@ -563,7 +621,7 @@ float getMountainHillsHeight(vec2 position)
     float tallMountainsLayer = tallMountains * TERRAIN_TALL_MOUNTAIN_HEIGHT;
 
     float shortAndTallMountainsBlender = fbm2d2clamped;
-    float tallAreaLayer  = mix(tallMountainsLayer, shortMountainsLayer, shortAndTallMountainsBlender);
+    float tallAreaLayer = mix(tallMountainsLayer, shortMountainsLayer, shortAndTallMountainsBlender);
 
     float highAndFlatAreaBlender = fbm2d4clampedm2;
     float mountainHeight = mix(tallAreaLayer, flatAreaLayer, highAndFlatAreaBlender);
@@ -643,6 +701,11 @@ float GLSL::riverNoise(const vec2 &position, const float &ocean)
 {
     return getRiverNoise(position, ocean);
 }
+
+bool GLSL::flowerVisibility(const vec2 &position)
+{
+    return getFlowerVisibility(position);
+}
 bool GLSL::waterVisibilityNoise(const vec2 &position)
 {
     return getWaterVisibility(position);
@@ -650,4 +713,8 @@ bool GLSL::waterVisibilityNoise(const vec2 &position)
 bool GLSL::rockVisibility(const vec2 &position)
 {
     return getRockVisibility(position);
+}
+bool GLSL::stoneVisibility(const vec2 &position)
+{
+    return getStoneVisibility(position);
 }

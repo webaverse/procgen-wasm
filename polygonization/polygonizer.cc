@@ -346,7 +346,7 @@ void createPlaneGeometry(
 
         // materials
         const MaterialsArray &materials = v0.materials;
-        const MaterialsWeightsArray &materialWeights = v0.materialsWeights;
+        const MaterialsWeightsArray &materialsWeights = v0.materialsWeights;
 
         geometry.materials.push_back(vm::ivec4{
             materials[0],
@@ -354,10 +354,25 @@ void createPlaneGeometry(
             materials[2],
             materials[3]});
         geometry.materialsWeights.push_back(vm::vec4{
-            materialWeights[0],
-            materialWeights[1],
-            materialWeights[2],
-            materialWeights[3]});
+            materialsWeights[0],
+            materialsWeights[1],
+            materialsWeights[2],
+            materialsWeights[3]});
+
+        // materials
+        const LiquidsArray &liquids = v0.liquids;
+        const LiquidsWeightsArray &liquidsWeights = v0.liquidsWeights;
+
+        geometry.liquids.push_back(vm::ivec4{
+            liquids[0],
+            liquids[1],
+            liquids[2],
+            liquids[3]});
+        geometry.liquidsWeights.push_back(vm::vec4{
+            liquidsWeights[0],
+            liquidsWeights[1],
+            liquidsWeights[2],
+            liquidsWeights[3]});
 
         // normal
         const vm::vec3 &normal = v0.normal;
@@ -466,13 +481,13 @@ void createPlaneSeamsGeometry(
         // position
         const float height = v0.getHeight();
 
-        const MaterialsArray &materials = v0.materials;
-        const MaterialsWeightsArray &materialWeights = v0.materialsWeights;
-
         geometry.positions.push_back(vm::vec3{
             (float)ax,
             height,
             (float)ay});
+
+        const MaterialsArray &materials = v0.materials;
+        const MaterialsWeightsArray &materialsWeights = v0.materialsWeights;
 
         geometry.materials.push_back(vm::ivec4{
             materials[0],
@@ -481,10 +496,25 @@ void createPlaneSeamsGeometry(
             materials[3]});
 
         geometry.materialsWeights.push_back(vm::vec4{
-            materialWeights[0],
-            materialWeights[1],
-            materialWeights[2],
-            materialWeights[3]});
+            materialsWeights[0],
+            materialsWeights[1],
+            materialsWeights[2],
+            materialsWeights[3]});
+
+        const LiquidsArray &liquids = v0.liquids;
+        const LiquidsWeightsArray &liquidsWeights = v0.liquidsWeights;
+
+        geometry.liquids.push_back(vm::ivec4{
+            liquids[0],
+            liquids[1],
+            liquids[2],
+            liquids[3]});
+
+        geometry.liquidsWeights.push_back(vm::vec4{
+            liquidsWeights[0],
+            liquidsWeights[1],
+            liquidsWeights[2],
+            liquidsWeights[3]});
 
         // normal
         const vm::vec3 &normal = v0.normal;
@@ -510,13 +540,13 @@ void createPlaneSeamsGeometry(
         // position
         const float height = v0.getHeight();
 
-        const MaterialsArray &materials = v0.materials;
-        const MaterialsWeightsArray &materialWeights = v0.materialsWeights;
-
         geometry.positions.push_back(vm::vec3{
             (float)ax,
             height,
             (float)ay});
+
+        const MaterialsArray &materials = v0.materials;
+        const MaterialsWeightsArray &materialsWeights = v0.materialsWeights;
 
         geometry.materials.push_back(vm::ivec4{
             materials[0],
@@ -525,10 +555,25 @@ void createPlaneSeamsGeometry(
             materials[3]});
 
         geometry.materialsWeights.push_back(vm::vec4{
-            materialWeights[0],
-            materialWeights[1],
-            materialWeights[2],
-            materialWeights[3]});
+            materialsWeights[0],
+            materialsWeights[1],
+            materialsWeights[2],
+            materialsWeights[3]});
+
+        const LiquidsArray &liquids = v0.liquids;
+        const LiquidsWeightsArray &liquidsWeights = v0.liquidsWeights;
+
+        geometry.liquids.push_back(vm::ivec4{
+            liquids[0],
+            liquids[1],
+            liquids[2],
+            liquids[3]});
+
+        geometry.liquidsWeights.push_back(vm::vec4{
+            liquidsWeights[0],
+            liquidsWeights[1],
+            liquidsWeights[2],
+            liquidsWeights[3]});
 
         // normal
         const vm::vec3 &normal = v0.normal;

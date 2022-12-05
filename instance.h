@@ -25,6 +25,7 @@ public:
     uint8_t *terrainMeshBuffer;
     uint8_t *waterMeshBuffer;
     uint8_t *treeInstancesBuffer;
+    uint8_t *flowerInstancesBuffer;
     uint8_t *bushInstancesBuffer;
     uint8_t *rockInstancesBuffer;
     uint8_t *stoneInstancesBuffer;
@@ -49,6 +50,7 @@ class PGInstance
 public:
     HeightfieldGenerator heightfieldGenerator;
     VegetationGenerator vegetationGenerator;
+    MineralGenerator mineralGenerator;
     PoiGenerator poiGenerator;
     Polygonizer polygonizer;
     RenderingInfo renderingInfo;

@@ -124,6 +124,12 @@ uint8_t *WaterGeometry::getBuffer() const {
     // factors
     sizeof(uint32_t) +
     factors.size() * sizeof(factors[0]) +
+    // liquids
+    sizeof(uint32_t) +
+    liquids.size() * sizeof(liquids[0]) +
+    // liquids weights
+    sizeof(uint32_t) +
+    liquidsWeights.size() * sizeof(liquidsWeights[0]) +
     // indices
     sizeof(uint32_t) +
     indices.size() * sizeof(indices[0]);
@@ -149,6 +155,18 @@ uint8_t *WaterGeometry::getBuffer() const {
   index += sizeof(uint32_t);
   std::memcpy(buffer + index, &factors[0], factors.size() * sizeof(factors[0]));
   index += factors.size() * sizeof(factors[0]);
+
+  // liquids
+  *((uint32_t *)(buffer + index)) = liquids.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &liquids[0], liquids.size() * sizeof(liquids[0]));
+  index += liquids.size() * sizeof(liquids[0]);
+
+  // liquids weights
+  *((uint32_t *)(buffer + index)) = liquidsWeights.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &liquidsWeights[0], liquidsWeights.size() * sizeof(liquidsWeights[0]));
+  index += liquidsWeights.size() * sizeof(liquidsWeights[0]);
 
   // indices
   *((uint32_t *)(buffer + index)) = indices.size();
