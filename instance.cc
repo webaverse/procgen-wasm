@@ -319,6 +319,7 @@ void PGInstance::createChunkMesh(
                 az,
                 rot,
                 treeGeometry,
+                instanceId,
                 heightfieldSampler,
                 rng,
                 dis);
@@ -328,6 +329,7 @@ void PGInstance::createChunkMesh(
                 az,
                 rot,
                 bushGeometry,
+                instanceId,
                 heightfieldSampler,
                 NUM_BUSHES_AROUND_TREE,
                 rng,
@@ -355,7 +357,7 @@ void PGInstance::createChunkMesh(
         result->bushInstancesBuffer = nullptr;
     }
 
-    if (generateFlags & GF_GRASS)
+    if (generateFlags & GF_VEGETATION)
     {
         GrassGeometry grassGeometry;
         const uint8_t GRASS = (uint8_t)INSTANCE::GRASS;
@@ -367,6 +369,7 @@ void PGInstance::createChunkMesh(
                 az,
                 rot,
                 grassGeometry,
+                instanceId,
                 heightfieldSampler,
                 heightfield,
                 heightfieldGenerator.noises);
@@ -412,6 +415,7 @@ void PGInstance::createChunkMesh(
                 az,
                 rot,
                 flowerGeometry,
+                instanceId,
                 heightfieldSampler,
                 rng,
                 dis);
@@ -450,6 +454,7 @@ void PGInstance::createChunkMesh(
                 az,
                 rot,
                 rockGeometry,
+                instanceId,
                 heightfieldSampler,
                 rng,
                 dis);
@@ -459,6 +464,7 @@ void PGInstance::createChunkMesh(
                 az,
                 rot,
                 stoneGeometry,
+                instanceId,
                 heightfieldSampler,
                 NUM_STONES_AROUND_ROCK,
                 rng,
@@ -484,6 +490,7 @@ void PGInstance::createChunkMesh(
                 az,
                 rot,
                 stoneGeometry,
+                instanceId,
                 heightfieldSampler,
                 rng,
                 dis);

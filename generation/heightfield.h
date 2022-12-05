@@ -23,6 +23,8 @@ inline int modulo(int x, int N){
 
 typedef std::array<uint8_t, 4> MaterialsArray;
 typedef std::array<float, 4> MaterialsWeightsArray;
+typedef std::array<uint8_t, 4> LiquidsArray;
+typedef std::array<float, 4> LiquidsWeightsArray;
 
 class Heightfield {
 public:
@@ -36,9 +38,8 @@ public:
     std::array<uint8_t, 4> biomes;
     std::array<float, 4> biomesWeights;
 
-    // TODO : send these to the shader for blending liquid shaders
-    std::array<uint8_t, 4> liquids;
-    std::array<float, 4> liquidsWeights;
+    LiquidsArray liquids;
+    LiquidsWeightsArray liquidsWeights;
 
     MaterialsArray materials;
     MaterialsWeightsArray materialsWeights;

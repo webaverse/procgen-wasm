@@ -423,7 +423,7 @@ float getWaterDepth(vec2 position)
 
 float getWetness(vec2 position)
 {
-    return simplex(position / 2.f);
+    return clamp(simplex(position / 2.f) + 0.1f, 0.f, 1.f);
 }
 
 float getGrassMaterial(vec2 position)

@@ -26,7 +26,9 @@ typedef std::vector<vm::vec2> UvBuffer;
 typedef std::vector<vm::ivec4> BiomesBuffer;
 typedef std::vector<vm::vec4> BiomesWeightBuffer;
 typedef std::vector<vm::ivec4> MaterialsBuffer;
+typedef std::vector<vm::ivec4> LiquidsBuffer;
 typedef std::vector<vm::vec4> MaterialsWeightBuffer;
+typedef std::vector<vm::vec4> LiquidsWeightBuffer;
 typedef std::vector<vm::vec4> MaterialsSplatBuffer;
 typedef std::vector<std::array<UV, 2>> BiomesUvsBuffer;
 typedef std::vector<uint32_t> IndexBuffer;
@@ -52,6 +54,9 @@ public:
     MaterialsBuffer materials;
     MaterialsWeightBuffer materialsWeights;
 
+    LiquidsBuffer liquids;
+    LiquidsWeightBuffer liquidsWeights;
+
     // SeedBuffer seeds;
 
     // LightBuffer skylights;
@@ -76,6 +81,9 @@ public:
 
     MaterialsBuffer materials;
     MaterialsWeightBuffer materialsWeights;
+
+    LiquidsBuffer liquids;
+    LiquidsWeightBuffer liquidsWeights;
     // PeekBuffer peeks;
 
     void pushPointMetadata(const Waterfield &fieldValue);
@@ -87,7 +95,7 @@ public:
 
 class SplatInstance {
 public:
-    int instanceId = 0;
+    int instanceId;
     std::vector<float> ps;
     std::vector<float> qs;
 
@@ -106,7 +114,7 @@ public:
 };
 class SplatInstanceGeometry {
 public:
-    std::vector<SplatInstance> instances;
+    std::map<int, SplatInstance> instances;
 
     uint8_t *getBuffer() const;
 };
@@ -146,14 +154,14 @@ public:
 
 class MaterialAwareSplatInstanceGeometry {
 public:
-    std::vector<MaterialAwareSplatInstance> instances;
+    std::map<int, MaterialAwareSplatInstance> instances;
 
     uint8_t *getBuffer() const;
 };
 
 class GrassGeometry {
 public:
-    std::vector<GrassSplatInstance> instances;
+    std::map<int, GrassSplatInstance> instances;
 
     uint8_t *getBuffer() const;
 };

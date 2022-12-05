@@ -124,6 +124,12 @@ uint8_t *WaterGeometry::getBuffer() const {
     // factors
     sizeof(uint32_t) +
     factors.size() * sizeof(factors[0]) +
+    // liquids
+    sizeof(uint32_t) +
+    liquids.size() * sizeof(liquids[0]) +
+    // liquids weights
+    sizeof(uint32_t) +
+    liquidsWeights.size() * sizeof(liquidsWeights[0]) +
     // indices
     sizeof(uint32_t) +
     indices.size() * sizeof(indices[0]);
@@ -150,6 +156,18 @@ uint8_t *WaterGeometry::getBuffer() const {
   std::memcpy(buffer + index, &factors[0], factors.size() * sizeof(factors[0]));
   index += factors.size() * sizeof(factors[0]);
 
+  // liquids
+  *((uint32_t *)(buffer + index)) = liquids.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &liquids[0], liquids.size() * sizeof(liquids[0]));
+  index += liquids.size() * sizeof(liquids[0]);
+
+  // liquids weights
+  *((uint32_t *)(buffer + index)) = liquidsWeights.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &liquidsWeights[0], liquidsWeights.size() * sizeof(liquidsWeights[0]));
+  index += liquidsWeights.size() * sizeof(liquidsWeights[0]);
+
   // indices
   *((uint32_t *)(buffer + index)) = indices.size();
   index += sizeof(uint32_t);
@@ -164,7 +182,9 @@ uint8_t *WaterGeometry::getBuffer() const {
 uint8_t *SplatInstanceGeometry::getBuffer() const {
   // serialize
   size_t size = sizeof(uint32_t); // numInstances
-  for (auto &instance : instances) {
+  for (auto &iter : instances) {
+      const SplatInstance &instance = iter.second;
+
       size += sizeof(int); // instanceId
       
       size += sizeof(uint32_t); // numPs
@@ -180,7 +200,9 @@ uint8_t *SplatInstanceGeometry::getBuffer() const {
   *((uint32_t *)(buffer + index)) = instances.size();
   index += sizeof(uint32_t);
   
-  for (auto &instance : instances) {
+  for (auto &iter : instances) {
+      const SplatInstance &instance = iter.second;
+
       *((int *)(buffer + index)) = instance.instanceId;
       index += sizeof(int);
 
@@ -201,7 +223,9 @@ uint8_t *SplatInstanceGeometry::getBuffer() const {
 uint8_t *MaterialAwareSplatInstanceGeometry::getBuffer() const {
   // serialize
   size_t size = sizeof(uint32_t); // numInstances
-  for (auto &instance : instances) {
+  for (auto &iter : instances) {
+      const MaterialAwareSplatInstance &instance = iter.second;
+
       size += sizeof(int); // instanceId
       
       size += sizeof(uint32_t); // numPs
@@ -223,7 +247,9 @@ uint8_t *MaterialAwareSplatInstanceGeometry::getBuffer() const {
   *((uint32_t *)(buffer + index)) = instances.size();
   index += sizeof(uint32_t);
   
-  for (auto &instance : instances) {
+  for (auto &iter : instances) {
+      const MaterialAwareSplatInstance &instance = iter.second;
+
       *((int *)(buffer + index)) = instance.instanceId;
       index += sizeof(int);
 
@@ -254,7 +280,9 @@ uint8_t *MaterialAwareSplatInstanceGeometry::getBuffer() const {
 uint8_t *GrassGeometry::getBuffer() const {
   // serialize
   size_t size = sizeof(uint32_t); // numInstances
-  for (auto &instance : instances) {
+  for (auto &iter : instances) {
+      const GrassSplatInstance &instance = iter.second;
+
       size += sizeof(int); // instanceId
       
       size += sizeof(uint32_t); // numPs
@@ -279,7 +307,9 @@ uint8_t *GrassGeometry::getBuffer() const {
   *((uint32_t *)(buffer + index)) = instances.size();
   index += sizeof(uint32_t);
   
-  for (auto &instance : instances) {
+  for (auto &iter : instances) {
+      const GrassSplatInstance &instance = iter.second;
+
       *((int *)(buffer + index)) = instance.instanceId;
       index += sizeof(int);
 
