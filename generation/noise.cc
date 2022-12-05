@@ -47,6 +47,10 @@ float UberNoise::grassMaterialNoise(float x, float z)
 {
   return GLSL::grassMaterialNoise(vm::vec2(x, z));
 }
+bool UberNoise::flowerVisibility(float x, float z)
+{
+  return GLSL::flowerVisibility(vm::vec2(x, z));
+}
 bool UberNoise::grassVisibility(float x, float z)
 {
   return GLSL::grassVisibility(vm::vec2(x, z));
@@ -98,4 +102,8 @@ bool UberNoise::waterVisibilityNoise(float x, float z)
 bool UberNoise::rockVisibility(float x, float z)
 {
   return GLSL::rockVisibility(vm::vec2(x, z));
+}
+bool UberNoise::stoneVisibility(float x, float z)
+{
+  return GLSL::stoneVisibility(vm::vec2(x, z));
 }

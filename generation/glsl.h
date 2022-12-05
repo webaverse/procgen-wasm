@@ -29,10 +29,12 @@ namespace GLSL
     float oceanNoise(const vec2 &position);
     float riverNoise(const vec2 &position, const float &ocean);
 
+    bool flowerVisibility(const vec2 &position);
     bool grassVisibility(const vec2 &position);
     bool treeVisibility(const vec2 &position);
     bool waterVisibilityNoise(const vec2 &position);
     bool rockVisibility(const vec2 &position);
+    bool stoneVisibility(const vec2 &position);
 };
 
 #endif // GLSL_H

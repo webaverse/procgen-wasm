@@ -87,7 +87,7 @@ public:
 
 class SplatInstance {
 public:
-    int instanceId;
+    int instanceId = 0;
     std::vector<float> ps;
     std::vector<float> qs;
 
@@ -106,7 +106,7 @@ public:
 };
 class SplatInstanceGeometry {
 public:
-    std::map<int, SplatInstance> instances;
+    std::vector<SplatInstance> instances;
 
     uint8_t *getBuffer() const;
 };
@@ -146,14 +146,14 @@ public:
 
 class MaterialAwareSplatInstanceGeometry {
 public:
-    std::map<int, MaterialAwareSplatInstance> instances;
+    std::vector<MaterialAwareSplatInstance> instances;
 
     uint8_t *getBuffer() const;
 };
 
 class GrassGeometry {
 public:
-    std::map<int, GrassSplatInstance> instances;
+    std::vector<GrassSplatInstance> instances;
 
     uint8_t *getBuffer() const;
 };

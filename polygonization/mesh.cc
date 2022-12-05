@@ -164,9 +164,7 @@ uint8_t *WaterGeometry::getBuffer() const {
 uint8_t *SplatInstanceGeometry::getBuffer() const {
   // serialize
   size_t size = sizeof(uint32_t); // numInstances
-  for (auto &iter : instances) {
-      const SplatInstance &instance = iter.second;
-
+  for (auto &instance : instances) {
       size += sizeof(int); // instanceId
       
       size += sizeof(uint32_t); // numPs
@@ -182,9 +180,7 @@ uint8_t *SplatInstanceGeometry::getBuffer() const {
   *((uint32_t *)(buffer + index)) = instances.size();
   index += sizeof(uint32_t);
   
-  for (auto &iter : instances) {
-      const SplatInstance &instance = iter.second;
-
+  for (auto &instance : instances) {
       *((int *)(buffer + index)) = instance.instanceId;
       index += sizeof(int);
 
@@ -205,9 +201,7 @@ uint8_t *SplatInstanceGeometry::getBuffer() const {
 uint8_t *MaterialAwareSplatInstanceGeometry::getBuffer() const {
   // serialize
   size_t size = sizeof(uint32_t); // numInstances
-  for (auto &iter : instances) {
-      const MaterialAwareSplatInstance &instance = iter.second;
-
+  for (auto &instance : instances) {
       size += sizeof(int); // instanceId
       
       size += sizeof(uint32_t); // numPs
@@ -229,9 +223,7 @@ uint8_t *MaterialAwareSplatInstanceGeometry::getBuffer() const {
   *((uint32_t *)(buffer + index)) = instances.size();
   index += sizeof(uint32_t);
   
-  for (auto &iter : instances) {
-      const MaterialAwareSplatInstance &instance = iter.second;
-
+  for (auto &instance : instances) {
       *((int *)(buffer + index)) = instance.instanceId;
       index += sizeof(int);
 
@@ -262,9 +254,7 @@ uint8_t *MaterialAwareSplatInstanceGeometry::getBuffer() const {
 uint8_t *GrassGeometry::getBuffer() const {
   // serialize
   size_t size = sizeof(uint32_t); // numInstances
-  for (auto &iter : instances) {
-      const GrassSplatInstance &instance = iter.second;
-
+  for (auto &instance : instances) {
       size += sizeof(int); // instanceId
       
       size += sizeof(uint32_t); // numPs
@@ -289,9 +279,7 @@ uint8_t *GrassGeometry::getBuffer() const {
   *((uint32_t *)(buffer + index)) = instances.size();
   index += sizeof(uint32_t);
   
-  for (auto &iter : instances) {
-      const GrassSplatInstance &instance = iter.second;
-
+  for (auto &instance : instances) {
       *((int *)(buffer + index)) = instance.instanceId;
       index += sizeof(int);
 

@@ -25,11 +25,17 @@ constexpr float COLD_WARM_BORDER = 0.35;
 constexpr float WARM_HOT_BORDER = 0.05;
 constexpr float BIOME_BORDERS_FLATTENER_DELTA = 0.04;
 // rocks
-constexpr float ROCK_THRESHOLD = 0.85;
+constexpr float ROCK_THRESHOLD = 0.95;
+constexpr float STONE_THRESHOLD = 0.5;
 constexpr int NUM_STONES_AROUND_ROCK = 2;
 constexpr int MAX_NUM_ROCKS_PER_CHUNK = 8;
+constexpr int MAX_NUM_STONES_PER_CHUNK = 16;
+constexpr float STONE_AROUND_ROCK_BASE_OFFSET = 15.0;
+constexpr float STONE_AROUND_ROCK_OFFSET_RANGE = 3.0;
+constexpr float ROCK_NOISE_SHARPNESS = 85.0;
 // grass
 constexpr int MAX_NUM_GRASSES_PER_CHUNK = 2048;
+constexpr int MAX_NUM_FLOWERS_PER_CHUNK = 2048;
 constexpr float GRASS_THRESHOLD = 0.15;
 constexpr float GRASS_HEIGHT_VARIATION_RANGE = 0.5;
 constexpr float GRASS_COLOR_VARIATION_BASE = 1.0;
@@ -38,10 +44,11 @@ constexpr float CRUSHED_GRASS_THRESHOLD = 1.0 - ROCK_THRESHOLD;
 constexpr float GRASS_MODEL_BASE_HEIGHT = 1.4;
 // vegetation
 constexpr int MAX_NUM_VEGGIES_PER_CHUNK = 8;
-constexpr float VEGGIE_THRESHOLD = 0.5;
+constexpr float VEGGIE_THRESHOLD = 0.3;
 constexpr int NUM_BUSHES_AROUND_TREE = 2;
 constexpr float BUSH_AROUND_TREE_BASE_OFFSET = 2.0;
 constexpr float BUSH_AROUND_TREE_OFFSET_RANGE = 3.0;
+constexpr float FLOWER_THRESHOLD = 0.8;
 // water
 constexpr float OCEAN_THRESHOLD = 0.5;
 constexpr float RIVER_THRESHOLD = 0.5;
@@ -53,6 +60,7 @@ constexpr int RIVER_DEPTH = WATER_BASE_HEIGHT / 6;
 constexpr int WATER_BASE_DEPTH = 8;
 constexpr float WATER_OFFSET = 1.5;
 constexpr float WATER_HEIGHT_DIFFERENCE = 3.0;
+constexpr float RIVER_EDGES_DELTA = 0.3;
 // general
 constexpr float SLOPE_CUTOFF = 0.13f;
 
