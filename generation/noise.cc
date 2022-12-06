@@ -4,6 +4,11 @@
 
 using namespace vm;
 
+bool getNoiseVisibility(float value, float min, float max)
+{
+    return value >= min && value <= max;
+}
+
 Noise::Noise(int s, double frequency, int octaves) : fastNoise(s) {
   fastNoise.SetFrequency(frequency);
   fastNoise.SetFractalOctaves(octaves);
@@ -43,21 +48,25 @@ float UberNoise::temperatureNoise(float x, float z)
 {
   return GLSL::temperatureNoise(vm::vec2(x, z));
 }
-float UberNoise::grassMaterialNoise(float x, float z)
+float UberNoise::grassMaterialNoise(float x, float z, float wetness)
 {
-  return GLSL::grassMaterialNoise(vm::vec2(x, z));
+  return GLSL::grassMaterialNoise(vm::vec2(x, z), wetness);
 }
-bool UberNoise::flowerVisibility(float x, float z)
+float UberNoise::wetnessNoise(float x, float z)
 {
-  return GLSL::flowerVisibility(vm::vec2(x, z));
+  return GLSL::wetnessNoise(vm::vec2(x, z));
 }
-bool UberNoise::grassVisibility(float x, float z)
+bool UberNoise::flowerVisibility(float x, float z, float grass)
 {
-  return GLSL::grassVisibility(vm::vec2(x, z));
+  return GLSL::flowerVisibility(vm::vec2(x, z), grass);
 }
-bool UberNoise::treeVisibility(float x, float z)
+bool UberNoise::grassVisibility(float x, float z, float wetness)
 {
-  return GLSL::treeVisibility(vm::vec2(x, z));
+  return GLSL::grassVisibility(vm::vec2(x, z), wetness);
+}
+bool UberNoise::treeVisibility(float x, float z, float wetness)
+{
+  return GLSL::treeVisibility(vm::vec2(x, z), wetness);
 }
 float UberNoise::stiffnessNoise(float x, float z)
 {

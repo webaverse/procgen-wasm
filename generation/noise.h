@@ -5,9 +5,12 @@
 #include "../libs/Worley.hpp"
 #include "../libs/vectorMath.h"
 #include "../biomes.h"
+#include "heightfield.h"
 #include <iostream>
 
 using namespace vm;
+
+bool getNoiseVisibility(float value, float min, float max = 1.f);
 
 class Noise
 {
@@ -35,7 +38,8 @@ public:
 
   float humidityNoise(float x, float z);
   float temperatureNoise(float x, float z);
-  float grassMaterialNoise(float x, float z);
+  float grassMaterialNoise(float x, float z, float wetness);
+  float wetnessNoise(float x, float z);
   float stiffnessNoise(float x, float z);
   float desertNoise(float x, float z);
   float mountainNoise(float x, float z);
@@ -48,16 +52,25 @@ public:
   bool waterVisibilityNoise(float x, float z);
 
   template <uint8_t T>
-  bool instanceVisibility(float x, float z)
+  bool instanceVisibility(float x, float z, const Heightfield &heightfield)
   {
     switch (T)
     {
     case (uint8_t)INSTANCE::TREE:
-      return treeVisibility(x, z);
+    {
+      const float wetness = heightfield.field.wetness;
+      return treeVisibility(x, z, wetness);
+    }
     case (uint8_t)INSTANCE::FLOWER:
-      return flowerVisibility(x, z);
+      {
+        const float grass = heightfield.field.grass;
+        return flowerVisibility(x, z, grass);
+      }
     case (uint8_t)INSTANCE::GRASS:
-      return grassVisibility(x, z);
+    {
+      const float grass = heightfield.field.grass;
+      return getNoiseVisibility(grass, GRASS_THRESHOLD);
+    }
     case (uint8_t)INSTANCE::ROCK:
       return rockVisibility(x, z);
     case (uint8_t)INSTANCE::STONE:
@@ -70,9 +83,9 @@ public:
     return false;
   }
 
-  bool flowerVisibility(float x, float z);
-  bool grassVisibility(float x, float z);
-  bool treeVisibility(float x, float z);
+  bool flowerVisibility(float x, float z, float grass);
+  bool grassVisibility(float x, float z, float wetness);
+  bool treeVisibility(float x, float z, float wetness);
   bool rockVisibility(float x, float z);
   bool stoneVisibility(float x, float z);
 };

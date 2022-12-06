@@ -220,8 +220,8 @@ void generateGridHeightfield(
             const Heightfield &heightfield = heightfields[srcIndex];
 
             heightfieldGeometry.heightfieldImage[dstIndex++] = vm::vec4{
-                heightfield.height,
-                heightfield.liquidHeight,
+                heightfield.field.height,
+                heightfield.field.liquidHeight,
                 0,
                 0};
         }
@@ -397,7 +397,7 @@ void PGInstance::createChunkMesh(
         result->grassInstancesBuffer = nullptr;
     }
 
-    // vegetation
+    // flowers
     if (generateFlags & GF_VEGETATION)
     {
         const int NUM_FLOWERS = (int)FLOWER::NUM_FLOWERS - 1;
