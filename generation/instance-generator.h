@@ -158,11 +158,16 @@ public:
 
                     const Heightfield &heightfield = heightfieldSampler.getHeightfield(ax, az);
 
-                    if (validateHeightfield(I, heightfield))
+                    // TODO :: this shouldn't be a universal rule for instances, this should only apply to instances which don't exist in water
+                    const bool hasWater = heightfield.hasWater();
+                    if (!hasWater)
                     {
-                        if (noises.uberNoise.instanceVisibility<I>(ax, az))
+                        if (validateHeightfield(I, heightfield))
                         {
-                            pushInstancesFunction(ax, az, rot, instanceId, heightfieldSampler, heightfield, rng, dis);
+                            if (noises.uberNoise.instanceVisibility<I>(ax, az, heightfield))
+                            {
+                                pushInstancesFunction(ax, az, rot, instanceId, heightfieldSampler, heightfield, rng, dis);
+                            }
                         }
                     }
                 }

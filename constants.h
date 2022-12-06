@@ -15,9 +15,12 @@ constexpr float MAX_MOUNTAINS_HEIGHT = (float)MAX_WORLD_HEIGHT;
 constexpr float SHORT_HILLS_HEIGHT = MAX_MOUNTAINS_HEIGHT / 12.0;
 constexpr float SHORT_MOUNTAIN_HEIGHT = MAX_MOUNTAINS_HEIGHT / 6.0;
 constexpr float FLAT_SHORT_HILLS_HEIGHT = MAX_MOUNTAINS_HEIGHT / 12.0;
-constexpr float TALL_MOUNTAIN_HEIGHT = MAX_MOUNTAINS_HEIGHT / 3.0;
+constexpr float TALL_MOUNTAIN_HEIGHT = MAX_MOUNTAINS_HEIGHT / 2.0;
 constexpr float ICE_MOUNTAIN_HEIGHT = MAX_MOUNTAINS_HEIGHT / 2.0;
 constexpr float SAND_MOUNTAIN_HEIGHT = MAX_MOUNTAINS_HEIGHT / 8.0;
+constexpr float SNOW_RANGE = ICE_MOUNTAIN_HEIGHT / 4.0;
+constexpr float SNOW_START_HEIGHT = ICE_MOUNTAIN_HEIGHT - SNOW_RANGE;
+constexpr float SNOW_END_HEIGHT = ICE_MOUNTAIN_HEIGHT ;
 // biomes borders
 constexpr float BIOME_BORDER_MIN = 0.0;
 constexpr float BIOME_BORDER_MAX = 1.0;
@@ -61,6 +64,7 @@ constexpr int WATER_BASE_DEPTH = 8;
 constexpr float WATER_OFFSET = 1.5;
 constexpr float WATER_HEIGHT_DIFFERENCE = 3.0;
 constexpr float RIVER_EDGES_DELTA = 0.3;
+constexpr float DEEP_OCEAN_AND_WATERFALL_DIFF = 0.12f;
 // general
 constexpr float SLOPE_CUTOFF = 0.13f;
 

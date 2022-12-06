@@ -426,65 +426,49 @@ float getWetness(vec2 position)
     return clamp(simplex(position / 2.f) + 0.1f, 0.f, 1.f);
 }
 
-float getGrassMaterial(vec2 position)
+float getGrassMaterial(vec2 position, float wetness)
 {
-    float wetness = getWetness(position);
     float noise = warpNoise1Layer_2(position * 10.f) * wetness;
     return clamp(noise, 0.f, 1.f);
 }
 
-float getGrassObject(vec2 position)
+float getGrassObject(vec2 position, float wetness)
 {
-    if (getWaterVisibility(position))
-    {
-        return 0.f;
-    }
-    return getGrassMaterial(position);
+    return getGrassMaterial(position, wetness);
 }
 
-bool getGrassVisibility(vec2 position)
+bool getGrassVisibility(vec2 position, float wetness)
 {
-    float grass = getGrassObject(position);
+    float grass = getGrassObject(position, wetness);
     return grass >= TERRAIN_GRASS_THRESHOLD;
 }
 
-float getFlowerObject(vec2 position)
+float getFlowerObject(vec2 position, float grass)
 {
-    if (getWaterVisibility(position))
-    {
-        return 0.f;
-    }
-    return clamp(warpNoise1Layer_1(position * 15.f), 0.f, 1.f);
+    vec2 q = vec2(grass*grass, grass*grass*grass);
+    float flower = warpNoise1Layer_2(position + q * NOISE_SCALE / 5.f);
+    return clamp(flower, 0.f, 1.f);
 }
 
-bool getFlowerVisibility(vec2 position)
+bool getFlowerVisibility(vec2 position, float grass)
 {
-    float flower = getFlowerObject(position);
+    float flower = getFlowerObject(position, grass);
     return flower >= TERRAIN_FLOWER_THRESHOLD;
 }
 
-float getTreeObject(vec2 position)
+float getTreeObject(vec2 position, float wetness)
 {
-    if (getWaterVisibility(position))
-    {
-        return 0.f;
-    }
-    float wetness = getWetness(position);
     return clamp(simplex(position * 20.f) * wetness, 0.f, 1.f);
 }
 
-bool getTreeVisibility(vec2 position)
+bool getTreeVisibility(vec2 position, float wetness)
 {
-    float tree = getTreeObject(position);
+    float tree = getTreeObject(position, wetness);
     return tree >= TERRAIN_TREE_THRESHOLD;
 }
 
 float getRockObject(vec2 position)
 {
-    if (getWaterVisibility(position))
-    {
-        return 0.f;
-    }
     return clamp(simplex(position * 15.f) * TERRAIN_ROCK_NOISE_SHARPNESS - (TERRAIN_ROCK_NOISE_SHARPNESS - 1.f), 0.f, 1.f);
 }
 bool getRockVisibility(vec2 position)
@@ -506,7 +490,7 @@ bool getStoneVisibility(vec2 position)
 
 float getStiffness(vec2 position)
 {
-    return warpNoise1Layer_1(position * 5.f) / 2.f;
+    return clamp(warpNoise2Layer_2(position * 5.f) + 0.3f, 0.f, 1.f);
 }
 
 float getHumidity(vec2 position)
@@ -640,19 +624,24 @@ float GLSL::humidityNoise(const vec2 &position)
     return getHumidity(position);
 }
 
-float GLSL::grassMaterialNoise(const vec2 &position)
+float GLSL::grassMaterialNoise(const vec2 &position, const float &wetness)
 {
-    return getGrassMaterial(position);
+    return getGrassMaterial(position, wetness);
 }
 
-bool GLSL::grassVisibility(const vec2 &position)
+float GLSL::wetnessNoise(const vec2 &position)
 {
-    return getGrassVisibility(position);
+    return getWetness(position);
 }
 
-bool GLSL::treeVisibility(const vec2 &position)
+bool GLSL::grassVisibility(const vec2 &position, const float &wetness)
 {
-    return getTreeVisibility(position);
+    return getGrassVisibility(position, wetness);
+}
+
+bool GLSL::treeVisibility(const vec2 &position, const float &wetness)
+{
+    return getTreeVisibility(position, wetness);
 }
 
 float GLSL::stiffnessNoise(const vec2 &position)
@@ -702,9 +691,9 @@ float GLSL::riverNoise(const vec2 &position, const float &ocean)
     return getRiverNoise(position, ocean);
 }
 
-bool GLSL::flowerVisibility(const vec2 &position)
+bool GLSL::flowerVisibility(const vec2 &position, const float &grass)
 {
-    return getFlowerVisibility(position);
+    return getFlowerVisibility(position, grass);
 }
 bool GLSL::waterVisibilityNoise(const vec2 &position)
 {

@@ -20,11 +20,6 @@ LiquidNoiseField HeightfieldGenerator::getLiquidNoiseField(float bx, float bz)
         rNoise};
 }
 
-bool getNoiseVisibility(float value, float min, float max)
-{
-    return value >= min && value <= max;
-}
-
 uint8_t HeightfieldGenerator::getBiome(float bx, float bz)
 {
     uint8_t biome = 0xFF;
@@ -79,7 +74,14 @@ uint8_t HeightfieldGenerator::getLiquid(float bx, float bz, uint8_t biome)
 
         if (liquid == (uint8_t)LIQUID::OCEAN)
         {
-            liquid = (uint8_t)LIQUID::WATERFALL;
+            const bool deepOceanVisibility = getNoiseVisibility(ocean, OCEAN_THRESHOLD + DEEP_OCEAN_AND_WATERFALL_DIFF, 1.f);
+            if(deepOceanVisibility) {
+                liquid = (uint8_t)LIQUID::OCEAN;
+            }
+            else
+            {
+                liquid = (uint8_t)LIQUID::WATERFALL;
+            }
         }
         else
         {
@@ -201,11 +203,11 @@ std::vector<uint8_t> sortWeightedTypes(const std::vector<float> &weights)
     std::vector<uint8_t> seenTypes;
     for (size_t i = 0; i < weights.size(); i++)
     {
-        const uint8_t biome = (uint8_t)i;
-        const float &biomeWeight = weights[biome];
-        if (biomeWeight > 0.f)
+        const uint8_t type = (uint8_t)i;
+        const float &typeWeight = weights[type];
+        if (typeWeight > 0.f)
         {
-            seenTypes.push_back(biome);
+            seenTypes.push_back(type);
         }
     }
 
@@ -275,7 +277,7 @@ Heightfield HeightfieldGenerator::getHeightField(float bx, float bz)
 
     // liquid factor
     sumLiquidFactors /= totalHeightFactors;
-    localHeightfield.liquidFactor = sumLiquidFactors;
+    localHeightfield.field.liquidFactor = sumLiquidFactors;
 
     // postprocess height
     {
@@ -343,8 +345,14 @@ Heightfield HeightfieldGenerator::getHeightField(float bx, float bz)
             }
         }
 
-        localHeightfield.height = elevationSum;
-        localHeightfield.liquidHeight = liquidElevationSum;
+        localHeightfield.field.height = elevationSum;
+        localHeightfield.field.liquidHeight = liquidElevationSum;
+    }
+
+    // extra noises
+    {
+        localHeightfield.field.wetness = noises.uberNoise.wetnessNoise(fWorldPosition.x, fWorldPosition.y);
+        localHeightfield.field.grass = noises.uberNoise.grassMaterialNoise(fWorldPosition.x, fWorldPosition.y, localHeightfield.field.wetness);
     }
 
     return localHeightfield;
@@ -632,17 +640,21 @@ void HeightfieldGenerator::getComputedMaterials(Heightfield &localHeightfield, s
         {
         // TODO : Define a different set of material rules for each biome, for now we're using these rules as default
         default:
-            const float wetness = noises.uberNoise.grassMaterialNoise(worldPosition.x, worldPosition.y);
-            const float stiffness = noises.uberNoise.stiffnessNoise(worldPosition.x, worldPosition.y);
+            const float grassMaterial = localHeightfield.field.grass;
+            const float height = localHeightfield.field.height;
+
+            const float snowFactor = std::max(height - SNOW_START_HEIGHT, 0.f) / SNOW_RANGE;
+
+            const float stiffness = noises.uberNoise.stiffnessNoise(worldPosition.x, worldPosition.y) * snowFactor;
 
             // amplifying the slope of the terrain to blend between ground and cliffs
             const float SLOPE_AMPLIFIER = 2.5f;
             const float mountainAndGroundBlend = vm::clamp(localHeightfield.getSlope() * SLOPE_AMPLIFIER, 0.f, 1.f);
 
-            const float grassWeight = (wetness)*bw * (1.f - mountainAndGroundBlend);
-            const float dirtWeight = (1.f - wetness) * bw * (1.f - mountainAndGroundBlend);
+            const float grassWeight = (grassMaterial) * bw * (1.f - mountainAndGroundBlend);
+            const float dirtWeight = (1.f - grassMaterial) * bw * (1.f - mountainAndGroundBlend);
 
-            const float stoneWeight = (stiffness)*mountainAndGroundBlend * bw;
+            const float stoneWeight = (stiffness) * mountainAndGroundBlend * bw;
             const float rockWeight = (1.f - stiffness) * mountainAndGroundBlend * bw;
 
             MaterialWeightAccumulator &grassWeightAcc = materialWeightAccumulators[GRASS];
