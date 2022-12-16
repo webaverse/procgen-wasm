@@ -190,8 +190,11 @@ uint8_t *SplatInstanceGeometry::getBuffer() const {
       size += sizeof(uint32_t); // numPs
       size += sizeof(float) * instance.ps.size(); // ps
       
-      size += sizeof(uint32_t); // numQs
+      size += sizeof(uint32_t);
       size += sizeof(float) * instance.qs.size(); // qs
+
+      size += sizeof(uint32_t);
+      size += sizeof(float) * instance.scales.size(); // scales
   }
 
   uint8_t *buffer = (uint8_t *)malloc(size);
@@ -215,6 +218,11 @@ uint8_t *SplatInstanceGeometry::getBuffer() const {
       index += sizeof(uint32_t);
       memcpy(buffer + index, instance.qs.data(), sizeof(float) * instance.qs.size());
       index += sizeof(float) * instance.qs.size();
+
+      *((uint32_t *)(buffer + index)) = instance.scales.size();
+      index += sizeof(uint32_t);
+      memcpy(buffer + index, instance.scales.data(), sizeof(float) * instance.scales.size());
+      index += sizeof(float) * instance.scales.size();
   }
 
   return buffer;
@@ -233,6 +241,9 @@ uint8_t *MaterialAwareSplatInstanceGeometry::getBuffer() const {
       
       size += sizeof(uint32_t); // numQs
       size += sizeof(float) * instance.qs.size(); // qs
+
+      size += sizeof(uint32_t); // numScales
+      size += sizeof(float) * instance.scales.size(); // scales
 
       size += sizeof(uint32_t); // num materials
       size += sizeof(instance.materials[0]) * instance.materials.size(); // materials
@@ -263,6 +274,11 @@ uint8_t *MaterialAwareSplatInstanceGeometry::getBuffer() const {
       memcpy(buffer + index, instance.qs.data(), sizeof(float) * instance.qs.size());
       index += sizeof(float) * instance.qs.size();
 
+      *((uint32_t *)(buffer + index)) = instance.scales.size();
+      index += sizeof(uint32_t);
+      memcpy(buffer + index, instance.scales.data(), sizeof(float) * instance.scales.size());
+      index += sizeof(float) * instance.scales.size();
+
       *((uint32_t *)(buffer + index)) = instance.materials.size();
       index += sizeof(uint32_t);
       memcpy(buffer + index, instance.materials.data(), sizeof(instance.materials[0]) * instance.materials.size());
@@ -290,6 +306,9 @@ uint8_t *GrassGeometry::getBuffer() const {
       
       size += sizeof(uint32_t); // numQs
       size += sizeof(float) * instance.qs.size(); // qs
+
+      size += sizeof(uint32_t); // numScales
+      size += sizeof(float) * instance.scales.size(); // scales
 
       size += sizeof(uint32_t); // num materials
       size += sizeof(instance.materials[0]) * instance.materials.size(); // materials
@@ -322,6 +341,11 @@ uint8_t *GrassGeometry::getBuffer() const {
       index += sizeof(uint32_t);
       memcpy(buffer + index, instance.qs.data(), sizeof(float) * instance.qs.size());
       index += sizeof(float) * instance.qs.size();
+
+      *((uint32_t *)(buffer + index)) = instance.scales.size();
+      index += sizeof(uint32_t);
+      memcpy(buffer + index, instance.scales.data(), sizeof(float) * instance.scales.size());
+      index += sizeof(float) * instance.scales.size();
 
       *((uint32_t *)(buffer + index)) = instance.materials.size();
       index += sizeof(uint32_t);
@@ -504,4 +528,18 @@ uint8_t *SplatInstanceGeometryGroup::getBuffer() const {
   }
 
   return buffer;
+}
+
+void freeSplatInstanceGeometryGroup(uint8_t *buffer) {
+  uint32_t numGeometries = *((uint32_t *)buffer);
+  buffer += sizeof(uint32_t);
+
+  for (uint32_t i = 0; i < numGeometries; i++) {
+      uint32_t geometryBufferAddress = *((uint32_t *)buffer);
+      buffer += sizeof(uint32_t);
+
+      std::free((void *)geometryBufferAddress);
+  }
+
+  std::free(buffer);
 }

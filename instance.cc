@@ -13,7 +13,8 @@ void ChunkResult::free()
 {
     std::free(terrainMeshBuffer);
     std::free(waterMeshBuffer);
-    std::free(treeInstancesBuffer);
+    freeSplatInstanceGeometryGroup(treeInstancesBuffer);
+    freeSplatInstanceGeometryGroup(flowerInstancesBuffer);
     std::free(bushInstancesBuffer);
     std::free(rockInstancesBuffer);
     std::free(stoneInstancesBuffer);
@@ -318,6 +319,7 @@ void PGInstance::createChunkMesh(
                 ax,
                 az,
                 rot,
+                scale,
                 treeGeometry,
                 instanceId,
                 heightfieldSampler,
@@ -328,6 +330,7 @@ void PGInstance::createChunkMesh(
                 ax,
                 az,
                 rot,
+                scale,
                 bushGeometry,
                 instanceId,
                 heightfieldSampler,
@@ -368,6 +371,7 @@ void PGInstance::createChunkMesh(
                 ax,
                 az,
                 rot,
+                scale,
                 grassGeometry,
                 instanceId,
                 heightfieldSampler,
@@ -414,6 +418,7 @@ void PGInstance::createChunkMesh(
                 ax,
                 az,
                 rot,
+                scale,
                 flowerGeometry,
                 instanceId,
                 heightfieldSampler,
@@ -453,6 +458,7 @@ void PGInstance::createChunkMesh(
                 ax,
                 az,
                 rot,
+                scale,
                 rockGeometry,
                 instanceId,
                 heightfieldSampler,
@@ -463,6 +469,7 @@ void PGInstance::createChunkMesh(
                 ax,
                 az,
                 rot,
+                scale,
                 stoneGeometry,
                 instanceId,
                 heightfieldSampler,
@@ -489,6 +496,7 @@ void PGInstance::createChunkMesh(
                 ax,
                 az,
                 rot,
+                scale,
                 stoneGeometry,
                 instanceId,
                 heightfieldSampler,

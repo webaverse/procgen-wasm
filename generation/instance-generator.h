@@ -16,8 +16,8 @@
 #include <string.h>
 #include <memory>
 
-typedef std::function<void(const float &, const float &, const float &, const int &, HeightfieldSampler &, const Heightfield &, std::mt19937 &, std::uniform_real_distribution<float> &)> PushInstancesFunction;
-#define INSTANCE_PUSH_FN_PARAMS const float &ax, const float &az, const float &rot, const int &instanceId, HeightfieldSampler &heightfieldSampler, const Heightfield &heightfield, std::mt19937 &rng, std::uniform_real_distribution<float> &dis
+typedef std::function<void(const float &, const float &, const float &, const float &, const int &, HeightfieldSampler &, const Heightfield &, std::mt19937 &, std::uniform_real_distribution<float> &)> PushInstancesFunction;
+#define INSTANCE_PUSH_FN_PARAMS const float &ax, const float &az, const float &rot, const float &scale, const int &instanceId, HeightfieldSampler &heightfieldSampler, const Heightfield &heightfield, std::mt19937 &rng, std::uniform_real_distribution<float> &dis
 
 class InstanceGenerator
 {
@@ -33,7 +33,7 @@ public:
         const int geometryIndex = std::round((geometryGroup.geometries.size() - 1) * randomTreePicker);
         return geometryGroup.geometries[geometryIndex];
     }
-    void pushSplatInstances(const float &ax, const float &az, const float &rot, SplatInstanceGeometry &geometry, const int &instanceId, HeightfieldSampler &heightfieldSampler, std::mt19937 &rng, std::uniform_real_distribution<float> &dis)
+    void pushSplatInstances(const float &ax, const float &az, const float &rot, const float &scale, SplatInstanceGeometry &geometry, const int &instanceId, HeightfieldSampler &heightfieldSampler, std::mt19937 &rng, std::uniform_real_distribution<float> &dis)
     {
         auto iterPair = geometry.instances.emplace(std::make_pair(instanceId, SplatInstance{}));
         auto iter = iterPair.first;
@@ -46,10 +46,10 @@ public:
 
         const float height = heightfieldSampler.getWorldHeight(ax, az);
 
-        instance.set(vm::vec3{ax, height, az}, rot);
+        instance.set(vm::vec3{ax, height, az}, rot, scale);
     }
 
-    void pushSubSplatInstances(const float &ax, const float &az, const float &rot, SplatInstanceGeometry &geometry, const int &instanceId, HeightfieldSampler &heightfieldSampler, const int &numObjects, std::mt19937 &rng, std::uniform_real_distribution<float> &dis, const float &baseOffset, const float &offsetRange)
+    void pushSubSplatInstances(const float &ax, const float &az, const float &rot, const float &scale, SplatInstanceGeometry &geometry, const int &instanceId, HeightfieldSampler &heightfieldSampler, const int &numObjects, std::mt19937 &rng, std::uniform_real_distribution<float> &dis, const float &baseOffset, const float &offsetRange)
     {
         for (int i = 0; i < numObjects; i++)
         {
@@ -73,12 +73,12 @@ public:
 
             const float height = heightfieldSampler.getHeight(newX, newZ) - (float)WORLD_BASE_HEIGHT;
 
-            instance.set(vm::vec3{newX, height, newZ}, rot);
+            instance.set(vm::vec3{newX, height, newZ}, rot, scale);
         }
     }
 
     template <typename T, typename G>
-    G &pushMaterialAwareSplatInstances(const float &ax, const float &az, const float &rot, T &geometry, const int &instanceId, HeightfieldSampler &heightfieldSampler, const Heightfield &heightfield)
+    G &pushMaterialAwareSplatInstances(const float &ax, const float &az, const float &rot, const float &scale, T &geometry, const int &instanceId, HeightfieldSampler &heightfieldSampler, const Heightfield &heightfield)
     {
         auto iterPair = geometry.instances.emplace(std::make_pair(instanceId, G{}));
         auto iter = iterPair.first;
@@ -91,7 +91,7 @@ public:
 
         const float height = heightfieldSampler.getWorldHeight(ax, az);
 
-        instance.set(vm::vec3{ax, height, az}, rot);
+        instance.set(vm::vec3{ax, height, az}, rot, scale);
 
         const MaterialsArray &heightfieldMaterials = heightfield.materials;
         const MaterialsWeightsArray &heightfieldMaterialsWeights = heightfield.materialsWeights;
@@ -150,9 +150,6 @@ public:
                     const float chunkOffsetX = dis(rng) * (float)chunkSize;
                     const float chunkOffsetZ = dis(rng) * (float)chunkSize;
 
-                    const float rot = dis(rng) * 2.0f * M_PI;
-                    const int instanceId = (int)std::round(dis(rng) * (float)(numInstances - 1));
-
                     const float ax = (float)chunkMinX + chunkOffsetX;
                     const float az = (float)chunkMinZ + chunkOffsetZ;
 
@@ -166,7 +163,11 @@ public:
                         {
                             if (noises.uberNoise.instanceVisibility<I>(ax, az, heightfield))
                             {
-                                pushInstancesFunction(ax, az, rot, instanceId, heightfieldSampler, heightfield, rng, dis);
+                                const int instanceId = (int)std::round(dis(rng) * (float)(numInstances - 1));
+                                const float scale = noises.uberNoise.scaleNoise<I>(ax, az, heightfield);
+                                const float rot = dis(rng) * 2.0f * M_PI;
+
+                                pushInstancesFunction(ax, az, rot, scale, instanceId, heightfieldSampler, heightfield, rng, dis);
                             }
                         }
                     }
@@ -208,9 +209,9 @@ public:
         return valid;
     }
 
-    void pushGrassInstances(const float &ax, const float &az, const float &rot, GrassGeometry &geometry, const int &instanceId, HeightfieldSampler &heightfieldSampler, const Heightfield &heightfield, Noises &noises)
+    void pushGrassInstances(const float &ax, const float &az, const float &rot, const float &scale, GrassGeometry &geometry, const int &instanceId, HeightfieldSampler &heightfieldSampler, const Heightfield &heightfield, Noises &noises)
     {
-        GrassSplatInstance &instance = pushMaterialAwareSplatInstances<GrassGeometry, GrassSplatInstance>(ax, az, rot, geometry, instanceId, heightfieldSampler, heightfield);
+        GrassSplatInstance &instance = pushMaterialAwareSplatInstances<GrassGeometry, GrassSplatInstance>(ax, az, rot, scale, geometry, instanceId, heightfieldSampler, heightfield);
 
         const float simplexm10 = noises.uberNoise.simplexNoise(ax * 10.f, az * 10.f) * 2.f - 1.f;
 
@@ -219,7 +220,7 @@ public:
         const float colorVariationNoise = vm::clamp(GRASS_COLOR_VARIATION_BASE + simplexm10 * GRASS_COLOR_VARIATION_RANGE, 0.0f, 1.f + GRASS_COLOR_VARIATION_RANGE);
         const float randomBladeFactor = noises.uberNoise.hashNoise(ax, az) * 2.f - 1.f;
 
-        const vm::vec3 grassColorMultiplier = (vm::vec3{colorVariationNoise, colorVariationNoise / 1.1f, colorVariationNoise / 1.2f} +
+        const vm::vec3 grassColorMultiplier = (vm::vec3{colorVariationNoise / 1.4f, colorVariationNoise / 1.6f, colorVariationNoise / 1.75f} +
                                                vm::vec3{randomBladeFactor / 8.f, randomBladeFactor / 10.f, randomBladeFactor / 12.f});
 
         const vm::vec4 grassProps = vm::vec4{grassColorMultiplier.x, grassColorMultiplier.y, grassColorMultiplier.z, heightScale};

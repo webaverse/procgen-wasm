@@ -98,18 +98,21 @@ public:
     int instanceId;
     std::vector<float> ps;
     std::vector<float> qs;
+    std::vector<float> scales;
 
-    void set(const vm::vec3 &position, const float &rot)
+    void set(const vm::vec3 &position, const float &rot, const float &scale)
     {
         ps.push_back(position.x);
         ps.push_back(position.y);
         ps.push_back(position.z);
 
-        Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
+        const Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
         qs.push_back(q.x);
         qs.push_back(q.y);
         qs.push_back(q.z);
         qs.push_back(q.w);
+
+        scales.push_back(scale);
     }
 };
 class SplatInstanceGeometry {
@@ -134,6 +137,7 @@ public:
 
     uint8_t *getBuffer() const;
 };
+void freeSplatInstanceGeometryGroup(uint8_t *buffer);
 
 class RockGeometry : public SplatInstanceGeometry {
     // nothing

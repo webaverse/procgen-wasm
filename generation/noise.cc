@@ -68,9 +68,9 @@ bool UberNoise::treeVisibility(float x, float z, float wetness)
 {
   return GLSL::treeVisibility(vm::vec2(x, z), wetness);
 }
-float UberNoise::stiffnessNoise(float x, float z)
+float UberNoise::coldnessNoise(float x, float z)
 {
-  return GLSL::stiffnessNoise(vm::vec2(x, z));  
+  return GLSL::coldnessNoise(vm::vec2(x, z));  
 }
 float UberNoise::desertNoise(float x, float z)
 {
