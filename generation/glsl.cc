@@ -423,13 +423,13 @@ float getWaterDepth(vec2 position)
 
 float getWetness(vec2 position)
 {
-    return clamp(simplex(position / 2.f) + 0.1f, 0.f, 1.f);
+    return clamp(simplex(position / 2.f) + 0.2f, 0.f, 1.f);
 }
 
 float getGrassMaterial(vec2 position, float wetness)
 {
     float noise = warpNoise1Layer_2(position * 10.f) * wetness;
-    return clamp(noise, 0.f, 1.f);
+    return clamp(noise + 0.1f, 0.f, 1.f);
 }
 
 float getGrassObject(vec2 position, float wetness)
@@ -488,9 +488,9 @@ bool getStoneVisibility(vec2 position)
     return stone >= TERRAIN_STONE_THRESHOLD;
 }
 
-float getStiffness(vec2 position)
+float getColdness(vec2 position)
 {
-    return clamp(warpNoise2Layer_2(position * 5.f) + 0.3f, 0.f, 1.f);
+    return clamp(warpNoise1Layer_1(position * 5.f) + 0.4f, 0.f, 1.f);
 }
 
 float getHumidity(vec2 position)
@@ -644,9 +644,9 @@ bool GLSL::treeVisibility(const vec2 &position, const float &wetness)
     return getTreeVisibility(position, wetness);
 }
 
-float GLSL::stiffnessNoise(const vec2 &position)
+float GLSL::coldnessNoise(const vec2 &position)
 {
-    return getStiffness(position);
+    return getColdness(position);
 }
 
 float GLSL::temperatureNoise(const vec2 &position)

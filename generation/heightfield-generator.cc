@@ -645,7 +645,7 @@ void HeightfieldGenerator::getComputedMaterials(Heightfield &localHeightfield, s
 
             const float snowFactor = std::max(height - SNOW_START_HEIGHT, 0.f) / SNOW_RANGE;
 
-            const float stiffness = noises.uberNoise.stiffnessNoise(worldPosition.x, worldPosition.y) * snowFactor;
+            const float stiffness = noises.uberNoise.coldnessNoise(worldPosition.x, worldPosition.y) * snowFactor;
 
             // amplifying the slope of the terrain to blend between ground and cliffs
             const float SLOPE_AMPLIFIER = 2.5f;

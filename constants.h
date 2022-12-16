@@ -47,11 +47,21 @@ constexpr float CRUSHED_GRASS_THRESHOLD = 1.0 - ROCK_THRESHOLD;
 constexpr float GRASS_MODEL_BASE_HEIGHT = 1.4;
 // vegetation
 constexpr int MAX_NUM_VEGGIES_PER_CHUNK = 8;
-constexpr float VEGGIE_THRESHOLD = 0.3;
+constexpr float VEGGIE_THRESHOLD = 0.4;
 constexpr int NUM_BUSHES_AROUND_TREE = 2;
 constexpr float BUSH_AROUND_TREE_BASE_OFFSET = 2.0;
 constexpr float BUSH_AROUND_TREE_OFFSET_RANGE = 3.0;
 constexpr float FLOWER_THRESHOLD = 0.8;
+constexpr float TREE_BASE_SCALE = 0.5;
+constexpr float TREE_SCALE_RANGE = 1.5;
+constexpr float FLOWER_BASE_SCALE = 0.9;
+constexpr float FLOWER_SCALE_RANGE = 0.5;
+constexpr float ROCK_BASE_SCALE = 0.85;
+constexpr float ROCK_SCALE_RANGE = 1.5;
+constexpr float GRASS_BASE_SCALE = 1.0;
+constexpr float GRASS_SCALE_RANGE = 0.1;
+constexpr float STONE_BASE_SCALE = 0.5;
+constexpr float STONE_SCALE_RANGE = 0.5;
 // water
 constexpr float OCEAN_THRESHOLD = 0.5;
 constexpr float RIVER_THRESHOLD = 0.5;

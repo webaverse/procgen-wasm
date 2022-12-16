@@ -40,7 +40,7 @@ public:
   float temperatureNoise(float x, float z);
   float grassMaterialNoise(float x, float z, float wetness);
   float wetnessNoise(float x, float z);
-  float stiffnessNoise(float x, float z);
+  float coldnessNoise(float x, float z);
   float desertNoise(float x, float z);
   float mountainNoise(float x, float z);
   float iceMountainNoise(float x, float z);
@@ -62,10 +62,10 @@ public:
       return treeVisibility(x, z, wetness);
     }
     case (uint8_t)INSTANCE::FLOWER:
-      {
-        const float grass = heightfield.field.grass;
-        return flowerVisibility(x, z, grass);
-      }
+    {
+      const float grass = heightfield.field.grass;
+      return flowerVisibility(x, z, grass);
+    }
     case (uint8_t)INSTANCE::GRASS:
     {
       const float grass = heightfield.field.grass;
@@ -81,6 +81,45 @@ public:
     }
 
     return false;
+  }
+
+  template <uint8_t T>
+  float scaleNoise(float x, float z, const Heightfield &heightfield)
+  {
+    switch (T)
+    {
+    case (uint8_t)INSTANCE::TREE:
+    {
+      const float wetness = heightfield.field.wetness;
+      return TREE_BASE_SCALE + wetness + TREE_SCALE_RANGE * (hashNoise(x, z) * 2.0 - 1.0);
+    }
+    case (uint8_t)INSTANCE::FLOWER:
+    {
+      const float wetness = heightfield.field.wetness;
+      return FLOWER_BASE_SCALE + wetness + FLOWER_SCALE_RANGE * (hashNoise(x, z) * 2.0 - 1.0);
+    }
+    case (uint8_t)INSTANCE::GRASS:
+    {
+      return GRASS_BASE_SCALE + GRASS_SCALE_RANGE * (hashNoise(x, z) * 2.0 - 1.0);
+    }
+    case (uint8_t)INSTANCE::ROCK:
+    {
+      const float dryness = 1.0 - heightfield.field.wetness;
+      return ROCK_BASE_SCALE + dryness + ROCK_SCALE_RANGE * (hashNoise(x, z) * 2.0 - 1.0);
+    }
+    case (uint8_t)INSTANCE::STONE:
+    {
+      const float dryness = 1.0 - heightfield.field.wetness;
+      return STONE_BASE_SCALE + dryness + STONE_SCALE_RANGE * (hashNoise(x, z) * 2.0 - 1.0);
+    }
+    default:
+    {
+      std::cerr << "Unknown instance type" << std::endl;
+      break;
+    }
+    }
+
+    return 0.f;
   }
 
   bool flowerVisibility(float x, float z, float grass);
