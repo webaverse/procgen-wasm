@@ -195,6 +195,9 @@ uint8_t *SplatInstanceGeometry::getBuffer() const {
 
       size += sizeof(uint32_t);
       size += sizeof(float) * instance.scales.size(); // scales
+
+      size += sizeof(uint32_t);
+      size += sizeof(float) * instance.colors.size(); // colors
   }
 
   uint8_t *buffer = (uint8_t *)malloc(size);
@@ -223,6 +226,11 @@ uint8_t *SplatInstanceGeometry::getBuffer() const {
       index += sizeof(uint32_t);
       memcpy(buffer + index, instance.scales.data(), sizeof(float) * instance.scales.size());
       index += sizeof(float) * instance.scales.size();
+
+      *((uint32_t *)(buffer + index)) = instance.colors.size();
+      index += sizeof(uint32_t);
+      memcpy(buffer + index, instance.colors.data(), sizeof(float) * instance.colors.size());
+      index += sizeof(float) * instance.colors.size();
   }
 
   return buffer;
@@ -244,6 +252,9 @@ uint8_t *MaterialAwareSplatInstanceGeometry::getBuffer() const {
 
       size += sizeof(uint32_t); // numScales
       size += sizeof(float) * instance.scales.size(); // scales
+
+      size += sizeof(uint32_t); // numColors
+      size += sizeof(float) * instance.colors.size(); // colors
 
       size += sizeof(uint32_t); // num materials
       size += sizeof(instance.materials[0]) * instance.materials.size(); // materials
@@ -279,6 +290,11 @@ uint8_t *MaterialAwareSplatInstanceGeometry::getBuffer() const {
       memcpy(buffer + index, instance.scales.data(), sizeof(float) * instance.scales.size());
       index += sizeof(float) * instance.scales.size();
 
+      *((uint32_t *)(buffer + index)) = instance.colors.size();
+      index += sizeof(uint32_t);
+      memcpy(buffer + index, instance.colors.data(), sizeof(float) * instance.colors.size());
+      index += sizeof(float) * instance.colors.size();
+
       *((uint32_t *)(buffer + index)) = instance.materials.size();
       index += sizeof(uint32_t);
       memcpy(buffer + index, instance.materials.data(), sizeof(instance.materials[0]) * instance.materials.size());
@@ -309,6 +325,9 @@ uint8_t *GrassGeometry::getBuffer() const {
 
       size += sizeof(uint32_t); // numScales
       size += sizeof(float) * instance.scales.size(); // scales
+
+      size += sizeof(uint32_t); // numColors
+      size += sizeof(float) * instance.colors.size(); // colors
 
       size += sizeof(uint32_t); // num materials
       size += sizeof(instance.materials[0]) * instance.materials.size(); // materials
@@ -346,6 +365,11 @@ uint8_t *GrassGeometry::getBuffer() const {
       index += sizeof(uint32_t);
       memcpy(buffer + index, instance.scales.data(), sizeof(float) * instance.scales.size());
       index += sizeof(float) * instance.scales.size();
+
+      *((uint32_t *)(buffer + index)) = instance.colors.size();
+      index += sizeof(uint32_t);
+      memcpy(buffer + index, instance.colors.data(), sizeof(float) * instance.colors.size());
+      index += sizeof(float) * instance.colors.size();
 
       *((uint32_t *)(buffer + index)) = instance.materials.size();
       index += sizeof(uint32_t);

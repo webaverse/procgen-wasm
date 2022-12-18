@@ -57,15 +57,15 @@ uint8_t HeightfieldGenerator::getLiquid(float bx, float bz, uint8_t biome)
     const float ocean = noise.ocean;
     const float river = noise.river;
 
-    const bool oceanVisibility = getNoiseVisibility(ocean, OCEAN_THRESHOLD, 1.f);
-    const bool riverVisibility = getNoiseVisibility(river, RIVER_THRESHOLD, 1.f);
+    const bool isOcean = getNoiseVisibility(ocean, OCEAN_THRESHOLD, 1.f);
+    const bool isRiver = getNoiseVisibility(river, RIVER_THRESHOLD, 1.f);
 
-    if (oceanVisibility)
+    if (isOcean)
     {
         liquid = (uint8_t)LIQUID::OCEAN;
     }
 
-    if (riverVisibility)
+    if (isRiver)
     {
         if (biome == (uint8_t)BIOME::DESERT)
         {
@@ -74,8 +74,8 @@ uint8_t HeightfieldGenerator::getLiquid(float bx, float bz, uint8_t biome)
 
         if (liquid == (uint8_t)LIQUID::OCEAN)
         {
-            const bool deepOceanVisibility = getNoiseVisibility(ocean, OCEAN_THRESHOLD + DEEP_OCEAN_AND_WATERFALL_DIFF, 1.f);
-            if(deepOceanVisibility) {
+            const bool isDeepOcean = getNoiseVisibility(ocean, OCEAN_THRESHOLD + DEEP_OCEAN_AND_WATERFALL_DIFF, 1.f);
+            if(isDeepOcean) {
                 liquid = (uint8_t)LIQUID::OCEAN;
             }
             else
@@ -349,10 +349,15 @@ Heightfield HeightfieldGenerator::getHeightField(float bx, float bz)
         localHeightfield.field.liquidHeight = liquidElevationSum;
     }
 
-    // extra noises
+    // caching noises
     {
+        localHeightfield.field.hash = noises.uberNoise.hashNoise(fWorldPosition.x, fWorldPosition.y);
         localHeightfield.field.wetness = noises.uberNoise.wetnessNoise(fWorldPosition.x, fWorldPosition.y);
+        localHeightfield.field.tree = noises.uberNoise.treeVisibility(fWorldPosition.x, fWorldPosition.y, localHeightfield.field.wetness);
         localHeightfield.field.grass = noises.uberNoise.grassMaterialNoise(fWorldPosition.x, fWorldPosition.y, localHeightfield.field.wetness);
+        localHeightfield.field.rock = noises.uberNoise.rockVisibility(fWorldPosition.x, fWorldPosition.y);
+        localHeightfield.field.stone = noises.uberNoise.stoneVisibility(fWorldPosition.x, fWorldPosition.y);
+        localHeightfield.field.flower = noises.uberNoise.flowerVisibility(fWorldPosition.x, fWorldPosition.y, localHeightfield.field.grass);
     }
 
     return localHeightfield;

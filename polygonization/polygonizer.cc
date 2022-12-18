@@ -4,15 +4,7 @@ void normalizeNormals(std::vector<vm::vec3> &normals)
 {
     for (size_t i = 0, il = normals.size(); i < il; i++)
     {
-        Vec vec{
-            normals[i].x,
-            normals[i].y,
-            normals[i].z};
-        vec.normalize();
-        // normals.setXYZ(i, vec.x, vec.y, vec.z);
-        normals[i].x = vec.x;
-        normals[i].y = vec.y;
-        normals[i].z = vec.z;
+        normals[i] = vm::normalize(normals[i]);
     }
 }
 void computeFaceNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3> &normals, std::vector<uint32_t> &indices)
@@ -24,52 +16,35 @@ void computeFaceNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3> 
         const uint32_t &vB = indices[i + 1];
         const uint32_t &vC = indices[i + 2];
 
-        Vec pA{
-            positions[vA].x,
-            positions[vA].y,
-            positions[vA].z};
-        Vec pB{
-            positions[vB].x,
-            positions[vB].y,
-            positions[vB].z};
-        Vec pC{
-            positions[vC].x,
-            positions[vC].y,
-            positions[vC].z};
+        const vm::vec3 &pA = positions[vA];
+        const vm::vec3 &pB = positions[vB];
+        const vm::vec3 &pC = positions[vC];
 
-        Vec cb = pC - pB;
-        Vec ab = pA - pB;
+        vm::vec3 cb = pC - pB;
+        vm::vec3 ab = pA - pB;
         cb ^= ab;
 
-        Vec nA{
-            normals[vA].x,
-            normals[vA].y,
-            normals[vA].z};
-        Vec nB{
-            normals[vB].x,
-            normals[vB].y,
-            normals[vB].z};
-        Vec nC{
-            normals[vC].x,
-            normals[vC].y,
-            normals[vC].z};
+        vm::vec3 &nA = normals[vA];
+        vm::vec3 &nB = normals[vB];
+        vm::vec3 &nC = normals[vC];
 
         nA += cb;
         nB += cb;
         nC += cb;
-
-        normals[vA].x = nA.x;
-        normals[vA].y = nA.y;
-        normals[vA].z = nA.z;
-        normals[vB].x = nB.x;
-        normals[vB].y = nB.y;
-        normals[vB].z = nB.z;
-        normals[vC].x = nC.x;
-        normals[vC].y = nC.y;
-        normals[vC].z = nC.z;
     }
 
     normalizeNormals(normals);
+}
+
+void computeFlowDirections(std::vector<vm::vec3> &normals)
+{
+    for (size_t i = 0, il = normals.size(); i < il; i++)
+    {
+        vm::vec3 &normal = normals[i];
+        const vm::vec3 crossGravity = vm::cross(normal, vm::vec3{0.0f, 1.0f, 0.0f});
+        const vm::vec3 crossFlow = vm::cross(crossGravity, normal);
+        normal = vm::normalize(crossFlow);
+    }
 }
 
 template <typename T>
@@ -1434,6 +1409,7 @@ void Polygonizer::generateWaterGeometry(
     generateWaterfieldSeamsMesh(lod, lodArray, chunkSize, waterfields, geometry);
     offsetGeometry(geometry, worldPosition);
     computeFaceNormals(geometry.positions, geometry.normals, geometry.indices);
+    // computeFlowDirections(geometry.normals);
 }
 
 Polygonizer::Polygonizer()

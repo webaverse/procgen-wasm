@@ -141,6 +141,8 @@ namespace vm
     float dot(const vec2 &v, const vec2 &o);
     float dot(const vec3 &v, const vec3 &o);
 
+    vm::vec3 cross(const vec3 &v, const vec3 &o);
+
     vec2 sin(const vec2 &v);
     vec3 sin(const vec3 &v);
     vec4 sin(const vec4 &v);
@@ -238,57 +240,71 @@ namespace vm
     ivec4 operator/(const ivec4 &v1, const int _m);
 
     // += operator
-    vec2 operator+=(vec2 &v1, const vec2 &v2);
-    vec3 operator+=(vec3 &v1, const vec3 &v2);
-    vec4 operator+=(vec4 &v1, const vec4 &v2);
-    ivec2 operator+=(ivec2 &v1, const ivec2 &v2);
-    ivec3 operator+=(ivec3 &v1, const ivec3 &v2);
-    ivec4 operator+=(ivec4 &v1, const float _m);
-    vec2 operator+=(vec2 &v1, const float _m);
-    vec3 operator+=(vec3 &v1, const float _m);
-    vec4 operator+=(vec4 &v1, const float _m);
-    ivec2 operator+=(ivec2 &v1, const int _m);
-    ivec3 operator+=(ivec3 &v1, const int _m);
-    ivec4 operator+=(ivec4 &v1, const int _m);
+    vec2 &operator+=(vec2 &v1, const vec2 &v2);
+    vec3 &operator+=(vec3 &v1, const vec3 &v2);
+    vec4 &operator+=(vec4 &v1, const vec4 &v2);
+    ivec2 &operator+=(ivec2 &v1, const ivec2 &v2);
+    ivec3 &operator+=(ivec3 &v1, const ivec3 &v2);
+    ivec4 &operator+=(ivec4 &v1, const float _m);
+    vec2 &operator+=(vec2 &v1, const float _m);
+    vec3 &operator+=(vec3 &v1, const float _m);
+    vec4 &operator+=(vec4 &v1, const float _m);
+    ivec2 &operator+=(ivec2 &v1, const int _m);
+    ivec3 &operator+=(ivec3 &v1, const int _m);
+    ivec4 &operator+=(ivec4 &v1, const int _m);
     // -= operator
-    vec2 operator-=(vec2 &v1, const vec2 &v2);
-    vec3 operator-=(vec3 &v1, const vec3 &v2);
-    vec4 operator-=(vec4 &v1, const vec4 &v2);
-    ivec2 operator-=(ivec2 &v1, const ivec2 &v2);
-    ivec3 operator-=(ivec3 &v1, const ivec3 &v2);
-    ivec4 operator-=(ivec4 &v1, const float _m);
-    vec2 operator-=(vec2 &v1, const float _m);
-    vec3 operator-=(vec3 &v1, const float _m);
-    vec4 operator-=(vec4 &v1, const float _m);
-    ivec2 operator-=(ivec2 &v1, const int _m);
-    ivec3 operator-=(ivec3 &v1, const int _m);
-    ivec4 operator-=(ivec4 &v1, const int _m);
+    vec2 &operator-=(vec2 &v1, const vec2 &v2);
+    vec3 &operator-=(vec3 &v1, const vec3 &v2);
+    vec4 &operator-=(vec4 &v1, const vec4 &v2);
+    ivec2 &operator-=(ivec2 &v1, const ivec2 &v2);
+    ivec3 &operator-=(ivec3 &v1, const ivec3 &v2);
+    ivec4 &operator-=(ivec4 &v1, const float _m);
+    vec2 &operator-=(vec2 &v1, const float _m);
+    vec3 &operator-=(vec3 &v1, const float _m);
+    vec4 &operator-=(vec4 &v1, const float _m);
+    ivec2 &operator-=(ivec2 &v1, const int _m);
+    ivec3 &operator-=(ivec3 &v1, const int _m);
+    ivec4 &operator-=(ivec4 &v1, const int _m);
     // *= operator
-    vec2 operator*=(vec2 &v1, const vec2 &v2);
-    vec3 operator*=(vec3 &v1, const vec3 &v2);
-    vec4 operator*=(vec4 &v1, const vec4 &v2);
-    ivec2 operator*=(ivec2 &v1, const ivec2 &v2);
-    ivec3 operator*=(ivec3 &v1, const ivec3 &v2);
-    ivec4 operator*=(ivec4 &v1, const float _m);
-    vec2 operator*=(vec2 &v1, const float _m);
-    vec3 operator*=(vec3 &v1, const float _m);
-    vec4 operator*=(vec4 &v1, const float _m);
-    ivec2 operator*=(ivec2 &v1, const int _m);
-    ivec3 operator*=(ivec3 &v1, const int _m);
-    ivec4 operator*=(ivec4 &v1, const int _m);
+    vec2 &operator*=(vec2 &v1, const vec2 &v2);
+    vec3 &operator*=(vec3 &v1, const vec3 &v2);
+    vec4 &operator*=(vec4 &v1, const vec4 &v2);
+    ivec2 &operator*=(ivec2 &v1, const ivec2 &v2);
+    ivec3 &operator*=(ivec3 &v1, const ivec3 &v2);
+    ivec4 &operator*=(ivec4 &v1, const float _m);
+    vec2 &operator*=(vec2 &v1, const float _m);
+    vec3 &operator*=(vec3 &v1, const float _m);
+    vec4 &operator*=(vec4 &v1, const float _m);
+    ivec2 &operator*=(ivec2 &v1, const int _m);
+    ivec3 &operator*=(ivec3 &v1, const int _m);
+    ivec4 &operator*=(ivec4 &v1, const int _m);
     // /= operator
-    vec2 operator/=(vec2 &v1, const vec2 &v2);
-    vec3 operator/=(vec3 &v1, const vec3 &v2);
-    vec4 operator/=(vec4 &v1, const vec4 &v2);
-    ivec2 operator/=(ivec2 &v1, const ivec2 &v2);
-    ivec3 operator/=(ivec3 &v1, const ivec3 &v2);
-    ivec4 operator/=(ivec4 &v1, const float _m);
-    vec2 operator/=(vec2 &v1, const float _m);
-    vec3 operator/=(vec3 &v1, const float _m);
-    vec4 operator/=(vec4 &v1, const float _m);
-    ivec2 operator/=(ivec2 &v1, const int _m);
-    ivec3 operator/=(ivec3 &v1, const int _m);
-    ivec4 operator/=(ivec4 &v1, const int _m);
+    vec2 &operator/=(vec2 &v1, const vec2 &v2);
+    vec3 &operator/=(vec3 &v1, const vec3 &v2);
+    vec4 &operator/=(vec4 &v1, const vec4 &v2);
+    ivec2 &operator/=(ivec2 &v1, const ivec2 &v2);
+    ivec3 &operator/=(ivec3 &v1, const ivec3 &v2);
+    ivec4 &operator/=(ivec4 &v1, const float _m);
+    vec2 &operator/=(vec2 &v1, const float _m);
+    vec3 &operator/=(vec3 &v1, const float _m);
+    vec4 &operator/=(vec4 &v1, const float _m);
+    ivec2 &operator/=(ivec2 &v1, const int _m);
+    ivec3 &operator/=(ivec3 &v1, const int _m);
+    ivec4 &operator/=(ivec4 &v1, const int _m);
+    // ^= operator
+    vec2 &operator^=(vec2 &v1, const vec2 &v2);
+    vec3 &operator^=(vec3 &v1, const vec3 &v2);
+    vec4 &operator^=(vec4 &v1, const vec4 &v2);
+    ivec2 &operator^=(ivec2 &v1, const ivec2 &v2);
+    ivec3 &operator^=(ivec3 &v1, const ivec3 &v2);
+    ivec4 &operator^=(ivec4 &v1, const ivec4 &v2);
+    vec2 &operator^=(vec2 &v1, const float _m);
+    vec3 &operator^=(vec3 &v1, const float _m);
+    vec4 &operator^=(vec4 &v1, const float _m);
+    ivec2 &operator^=(ivec2 &v1, const int _m);
+    ivec3 &operator^=(ivec3 &v1, const int _m);
+    ivec4 &operator^=(ivec4 &v1, const int _m);
+
     // == operator
     bool operator==(const vec2 &v1, const vec2 &v2);
     bool operator==(const vec3 &v1, const vec3 &v2);

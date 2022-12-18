@@ -35,8 +35,13 @@ struct CachedField {
   float liquidHeight = MIN_WORLD_HEIGHT;
   float liquidFactor = 0.f;
 
+  float hash = 0.f;
   float wetness = 0.f;
   float grass = 0.f;
+  bool rock = false;
+  bool stone = false;
+  bool tree = false;
+  bool flower = false;
 };
 
 class Heightfield
