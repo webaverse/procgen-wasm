@@ -116,3 +116,8 @@ bool UberNoise::stoneVisibility(float x, float z)
 {
   return GLSL::stoneVisibility(vm::vec2(x, z));
 }
+
+vm::vec3 UberNoise::flowNoise(float x, float z)
+{
+  return GLSL::flowNoise(vm::vec2(x, z));
+}

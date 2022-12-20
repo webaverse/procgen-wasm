@@ -255,7 +255,7 @@ void PGInstance::createChunkMesh(
         (generateFlags & GF_HEIGHTFIELD))
     {
         heightfields = heightfieldGenerator.getHeightfields(worldPosition.x, worldPosition.y, lod, lodArray);
-        polygonizer.calculateSurfaceNormals(heightfields, lod, lodArray, chunkSize);
+        polygonizer.calculateSurfaceNormals<Heightfield>(heightfields, lod, lodArray, chunkSize);
         heightfieldGenerator.applyMaterials(worldPosition.x, worldPosition.y, lod, lodArray, heightfields);
     }
 
@@ -284,7 +284,8 @@ void PGInstance::createChunkMesh(
     {
         WaterGeometry waterGeometry;
 
-        const std::vector<Waterfield> &waterfields = *((std::vector<Waterfield> *)&heightfields);
+        std::vector<Waterfield> &waterfields = *((std::vector<Waterfield> *)&heightfields);
+        polygonizer.calculateSurfaceNormals<Waterfield>(waterfields, lod, lodArray, chunkSize);
 
         polygonizer.generateWaterGeometry(
             worldPosition,

@@ -51,6 +51,8 @@ public:
   float riverNoise(float x, float z, float ocean);
   bool waterVisibilityNoise(float x, float z);
 
+  vm::vec3 flowNoise(float x, float z);
+
   template <uint8_t T>
   bool instanceVisibility(float x, float z, const Heightfield &heightfield)
   {

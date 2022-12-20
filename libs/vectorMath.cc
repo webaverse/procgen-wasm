@@ -1016,93 +1016,13 @@ vm::ivec4 &vm::operator/=(vm::ivec4 &v1, const int _m)
 }
 
 // ^= operator
-vm::vec2 &vm::operator^=(vm::vec2 &v1, const vm::vec2 &v2)
-{
-    v1.x = v1.x * v2.x - v1.y * v2.y;
-    v1.y = v1.x * v2.y + v1.y * v2.x;
-    return v1;
-}
 vm::vec3 &vm::operator^=(vm::vec3 &v1, const vm::vec3 &v2)
 {
-    v1.x = v1.x * v2.x - v1.y * v2.y - v1.z * v2.z;
-    v1.y = v1.x * v2.y + v1.y * v2.x + v1.z * v2.z;
-    v1.z = v1.x * v2.z + v1.y * v2.z + v1.z * v2.x;
+    v1.x = v1.y * v2.z - v2.y * v1.z;
+    v1.y = v1.z * v2.x - v2.z * v1.x;
+    v1.z = v1.x * v2.y - v2.x * v1.y;
     return v1;
 }
-vm::vec4 &vm::operator^=(vm::vec4 &v1, const vm::vec4 &v2)
-{
-    v1.x = v1.x * v2.x - v1.y * v2.y - v1.z * v2.z - v1.w * v2.w;
-    v1.y = v1.x * v2.y + v1.y * v2.x + v1.z * v2.z + v1.w * v2.w;
-    v1.z = v1.x * v2.z + v1.y * v2.z + v1.z * v2.x + v1.w * v2.w;
-    v1.w = v1.x * v2.w + v1.y * v2.w + v1.z * v2.w + v1.w * v2.x;
-    return v1;
-}
-vm::ivec2 &vm::operator^=(vm::ivec2 &v1, const vm::ivec2 &v2)
-{
-    v1.x = v1.x * v2.x - v1.y * v2.y;
-    v1.y = v1.x * v2.y + v1.y * v2.x;
-    return v1;
-}
-
-vm::ivec3 &vm::operator^=(vm::ivec3 &v1, const vm::ivec3 &v2)
-{
-    v1.x = v1.x * v2.x - v1.y * v2.y - v1.z * v2.z;
-    v1.y = v1.x * v2.y + v1.y * v2.x + v1.z * v2.z;
-    v1.z = v1.x * v2.z + v1.y * v2.z + v1.z * v2.x;
-    return v1;
-}
-vm::ivec4 &vm::operator^=(vm::ivec4 &v1, const vm::ivec4 &v2)
-{
-    v1.x = v1.x * v2.x - v1.y * v2.y - v1.z * v2.z - v1.w * v2.w;
-    v1.y = v1.x * v2.y + v1.y * v2.x + v1.z * v2.z + v1.w * v2.w;
-    v1.z = v1.x * v2.z + v1.y * v2.z + v1.z * v2.x + v1.w * v2.w;
-    v1.w = v1.x * v2.w + v1.y * v2.w + v1.z * v2.w + v1.w * v2.x;
-    return v1;
-}
-
-vm::vec2 &vm::operator^=(vm::vec2 &v1, const float _m)
-{
-    v1.x = v1.x * _m - v1.y * _m;
-    v1.y = v1.x * _m + v1.y * _m;
-    return v1;
-}
-vm::vec3 &vm::operator^=(vm::vec3 &v1, const float _m)
-{
-    v1.x = v1.x * _m - v1.y * _m - v1.z * _m;
-    v1.y = v1.x * _m + v1.y * _m + v1.z * _m;
-    v1.z = v1.x * _m + v1.y * _m + v1.z * _m;
-    return v1;
-}
-vm::vec4 &vm::operator^=(vm::vec4 &v1, const float _m)
-{
-    v1.x = v1.x * _m - v1.y * _m - v1.z * _m - v1.w * _m;
-    v1.y = v1.x * _m + v1.y * _m + v1.z * _m + v1.w * _m;
-    v1.z = v1.x * _m + v1.y * _m + v1.z * _m + v1.w * _m;
-    v1.w = v1.x * _m + v1.y * _m + v1.z * _m + v1.w * _m;
-    return v1;
-}
-vm::ivec2 &vm::operator^=(vm::ivec2 &v1, const int _m)
-{
-    v1.x = v1.x * _m - v1.y * _m;
-    v1.y = v1.x * _m + v1.y * _m;
-    return v1;
-}
-vm::ivec3 &vm::operator^=(vm::ivec3 &v1, const int _m)
-{
-    v1.x = v1.x * _m - v1.y * _m - v1.z * _m;
-    v1.y = v1.x * _m + v1.y * _m + v1.z * _m;
-    v1.z = v1.x * _m + v1.y * _m + v1.z * _m;
-    return v1;
-}
-vm::ivec4 &vm::operator^=(vm::ivec4 &v1, const int _m)
-{
-    v1.x = v1.x * _m - v1.y * _m - v1.z * _m - v1.w * _m;
-    v1.y = v1.x * _m + v1.y * _m + v1.z * _m + v1.w * _m;
-    v1.z = v1.x * _m + v1.y * _m + v1.z * _m + v1.w * _m;
-    v1.w = v1.x * _m + v1.y * _m + v1.z * _m + v1.w * _m;
-    return v1;
-}
-
 // == operator
 bool vm::operator==(const vm::vec2 &v1, const vm::vec2 &v2)
 {
