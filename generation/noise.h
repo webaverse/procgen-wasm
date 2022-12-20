@@ -51,6 +51,8 @@ public:
   float riverNoise(float x, float z, float ocean);
   bool waterVisibilityNoise(float x, float z);
 
+  vm::vec3 flowNoise(float x, float z);
+
   template <uint8_t T>
   bool instanceVisibility(float x, float z, const Heightfield &heightfield)
   {
@@ -58,13 +60,11 @@ public:
     {
     case (uint8_t)INSTANCE::TREE:
     {
-      const float wetness = heightfield.field.wetness;
-      return treeVisibility(x, z, wetness);
+      return heightfield.field.tree;
     }
     case (uint8_t)INSTANCE::FLOWER:
     {
-      const float grass = heightfield.field.grass;
-      return flowerVisibility(x, z, grass);
+      return heightfield.field.flower;
     }
     case (uint8_t)INSTANCE::GRASS:
     {
@@ -72,54 +72,144 @@ public:
       return getNoiseVisibility(grass, GRASS_THRESHOLD);
     }
     case (uint8_t)INSTANCE::ROCK:
-      return rockVisibility(x, z);
+      return heightfield.field.rock;
     case (uint8_t)INSTANCE::STONE:
-      return stoneVisibility(x, z);
+      return heightfield.field.stone;
     default:
-      std::cerr << "Unknown instance type" << std::endl;
-      break;
+      return false;
     }
-
-    return false;
   }
 
   template <uint8_t T>
   float scaleNoise(float x, float z, const Heightfield &heightfield)
   {
+    const float hash = (hashNoise(x, z) * 2.0 - 1.0);
+
     switch (T)
     {
     case (uint8_t)INSTANCE::TREE:
     {
       const float wetness = heightfield.field.wetness;
-      return TREE_BASE_SCALE + wetness + TREE_SCALE_RANGE * (hashNoise(x, z) * 2.0 - 1.0);
+      return TREE_BASE_SCALE + wetness + TREE_SCALE_RANGE * hash;
     }
     case (uint8_t)INSTANCE::FLOWER:
     {
       const float wetness = heightfield.field.wetness;
-      return FLOWER_BASE_SCALE + wetness + FLOWER_SCALE_RANGE * (hashNoise(x, z) * 2.0 - 1.0);
+      return FLOWER_BASE_SCALE + wetness + FLOWER_SCALE_RANGE * hash;
     }
     case (uint8_t)INSTANCE::GRASS:
     {
-      return GRASS_BASE_SCALE + GRASS_SCALE_RANGE * (hashNoise(x, z) * 2.0 - 1.0);
+      return GRASS_BASE_SCALE + GRASS_SCALE_RANGE * hash;
     }
     case (uint8_t)INSTANCE::ROCK:
     {
       const float dryness = 1.0 - heightfield.field.wetness;
-      return ROCK_BASE_SCALE + dryness + ROCK_SCALE_RANGE * (hashNoise(x, z) * 2.0 - 1.0);
+      return ROCK_BASE_SCALE + dryness + ROCK_SCALE_RANGE * hash;
     }
     case (uint8_t)INSTANCE::STONE:
     {
       const float dryness = 1.0 - heightfield.field.wetness;
-      return STONE_BASE_SCALE + dryness + STONE_SCALE_RANGE * (hashNoise(x, z) * 2.0 - 1.0);
+      return STONE_BASE_SCALE + dryness + STONE_SCALE_RANGE * hash;
     }
     default:
     {
-      std::cerr << "Unknown instance type" << std::endl;
+      return 0.f;
+    }
+    }
+  }
+
+  template <uint8_t T>
+  vm::vec3 rotationNoise(float x, float z, const Heightfield &heightfield)
+  {
+    vm::vec3 rotation;
+
+    const float TAU = 2.0f * M_PI;
+    const float hash1 = hashNoise(x, z) * 2.0f - 1.0f;
+    const float hash2 = hashNoise(x + 20.f, z - 30.f) * 2.0f - 1.0f;
+    const float hash3 = hashNoise(x - 10.f, z + 5.f) * 2.0f - 1.0f;
+
+    switch (T)
+    {
+    case (uint8_t)INSTANCE::TREE:
+    {
+      rotation = vm::vec3{0.f, hash1, 0.f};
+      break;
+    }
+    case (uint8_t)INSTANCE::FLOWER:
+    {
+      rotation = vm::vec3{hash1 / 1.5f, hash2, hash3 / 1.3f} / TAU;
+      break;
+    }
+    case (uint8_t)INSTANCE::GRASS:
+    {
+      rotation = vm::vec3{hash3 / 1.7f, hash1 / 1.5f, hash3 / 1.6f} / TAU;
+      break;
+    }
+    case (uint8_t)INSTANCE::ROCK:
+    {
+      rotation = vm::vec3{hash1 / 1.5f, hash3, hash2 / 1.3f};
+      break;
+    }
+    case (uint8_t)INSTANCE::STONE:
+    {
+      rotation = vm::vec3{hash2 / 1.1f, hash3 / 1.5f, hash1 / 1.5f};
+      break;
+    }
+    default:
+    {
+      rotation = vm::vec3{0.f, hash1, 0.f};
       break;
     }
     }
 
-    return 0.f;
+    return rotation * TAU;
+  }
+
+  template <uint8_t T>
+  vm::vec3 colorNoise(float x, float z, const Heightfield &heightfield)
+  {
+    vm::vec3 color;
+
+    const float simplexm15 = simplexNoise(x * 15.f ,z * 15.f ) * 2.0f - 1.0f;
+
+    switch (T)
+    {
+    case (uint8_t)INSTANCE::TREE:
+    {
+      color = vm::vec3{0.f, 0.f, 0.f};
+      break;
+    }
+    case (uint8_t)INSTANCE::FLOWER:
+    {
+      color = vm::vec3{0.f, 0.f, 0.f};
+      break;
+    }
+    case (uint8_t)INSTANCE::GRASS:
+    {
+      const float colorVariationNoise = vm::clamp(GRASS_COLOR_VARIATION_BASE + simplexm15 * GRASS_COLOR_VARIATION_RANGE, 0.0f, 1.f + GRASS_COLOR_VARIATION_RANGE);
+      const float randomBladeFactor = heightfield.field.hash * 2.f - 1.f;
+      color = (vm::vec3{colorVariationNoise / 1.4f, colorVariationNoise / 1.6f, colorVariationNoise / 1.75f} +
+               vm::vec3{randomBladeFactor / 8.f, randomBladeFactor / 10.f, randomBladeFactor / 12.f});
+      break;
+    }
+    case (uint8_t)INSTANCE::ROCK:
+    {
+      color = vm::vec3{0.f, 0.f, 0.f};
+      break;
+    }
+    case (uint8_t)INSTANCE::STONE:
+    {
+      color = vm::vec3{0.f, 0.f, 0.f};
+      break;
+    }
+    default:
+    {
+      color = vm::vec3{0.f, 0.f, 0.f};
+      break;
+    }
+    }
+
+    return color;
   }
 
   bool flowerVisibility(float x, float z, float grass);

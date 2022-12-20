@@ -4,15 +4,7 @@ void normalizeNormals(std::vector<vm::vec3> &normals)
 {
     for (size_t i = 0, il = normals.size(); i < il; i++)
     {
-        Vec vec{
-            normals[i].x,
-            normals[i].y,
-            normals[i].z};
-        vec.normalize();
-        // normals.setXYZ(i, vec.x, vec.y, vec.z);
-        normals[i].x = vec.x;
-        normals[i].y = vec.y;
-        normals[i].z = vec.z;
+        normals[i] = vm::normalize(normals[i]);
     }
 }
 void computeFaceNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3> &normals, std::vector<uint32_t> &indices)
@@ -24,271 +16,47 @@ void computeFaceNormals(std::vector<vm::vec3> &positions, std::vector<vm::vec3> 
         const uint32_t &vB = indices[i + 1];
         const uint32_t &vC = indices[i + 2];
 
-        Vec pA{
-            positions[vA].x,
-            positions[vA].y,
-            positions[vA].z};
-        Vec pB{
-            positions[vB].x,
-            positions[vB].y,
-            positions[vB].z};
-        Vec pC{
-            positions[vC].x,
-            positions[vC].y,
-            positions[vC].z};
+        const vm::vec3 &pA = positions[vA];
+        const vm::vec3 &pB = positions[vB];
+        const vm::vec3 &pC = positions[vC];
 
-        Vec cb = pC - pB;
-        Vec ab = pA - pB;
+        vm::vec3 cb = pC - pB;
+        vm::vec3 ab = pA - pB;
         cb ^= ab;
 
-        Vec nA{
-            normals[vA].x,
-            normals[vA].y,
-            normals[vA].z};
-        Vec nB{
-            normals[vB].x,
-            normals[vB].y,
-            normals[vB].z};
-        Vec nC{
-            normals[vC].x,
-            normals[vC].y,
-            normals[vC].z};
+        vm::vec3 &nA = normals[vA];
+        vm::vec3 &nB = normals[vB];
+        vm::vec3 &nC = normals[vC];
 
         nA += cb;
         nB += cb;
         nC += cb;
-
-        normals[vA].x = nA.x;
-        normals[vA].y = nA.y;
-        normals[vA].z = nA.z;
-        normals[vB].x = nB.x;
-        normals[vB].y = nB.y;
-        normals[vB].z = nB.z;
-        normals[vC].x = nC.x;
-        normals[vC].y = nC.y;
-        normals[vC].z = nC.z;
     }
 
     normalizeNormals(normals);
 }
 
-template <typename T>
-vm::vec3 calculateCenterPointNormal(const int &x, const int &y, const std::vector<T> &heightfields, const int &rowSize)
+void computeFlowDirections(std::vector<vm::vec3> &flows, std::vector<vm::vec3> &normals)
 {
-    const int Lx = (x - 1) + 1;
-    const int Ly = y + 1;
-    const int Lindex = Lx + Ly * rowSize;
-    const float Lheight = heightfields[Lindex].getHeight();
-
-    const int Rx = (x + 1) + 1;
-    const int Ry = y + 1;
-    const int Rindex = Rx + Ry * rowSize;
-    const float Rheight = heightfields[Rindex].getHeight();
-
-    const int Ux = x + 1;
-    const int Uy = (y - 1) + 1;
-    const int Uindex = Ux + Uy * rowSize;
-    const float Uheight = heightfields[Uindex].getHeight();
-
-    const int Dx = x + 1;
-    const int Dy = (y + 1) + 1;
-    const int Dindex = Dx + Dy * rowSize;
-    const float Dheight = heightfields[Dindex].getHeight();
-
-    return vm::normalize(vm::vec3{Lheight - Rheight, 2.0f, Uheight - Dheight});
-}
-
-template <typename T>
-vm::vec3 calculateBottomPointNormal(const int &x, const int &y, const std::vector<T> &heightfields, const int &heightfieldsCenterDataReadOffset, const int &gridWidth)
-{
-    const int gridWidthP3 = gridWidth + 3;
-    const int Lx = x - 1;
-    const int Ly = y;
-    const int Lindex =
-        heightfieldsCenterDataReadOffset +
-        (Ly * gridWidthP3) +
-        Lx;
-    const float Lheight = heightfields[Lindex].getHeight();
-
-    const int Rx = x + 1;
-    const int Ry = y;
-    const int Rindex =
-        heightfieldsCenterDataReadOffset +
-        (Ry * gridWidthP3) +
-        Rx;
-    const float Rheight = heightfields[Rindex].getHeight();
-
-    const int Ux = x;
-    const int Uy = y - 1;
-    const int Uindex =
-        heightfieldsCenterDataReadOffset +
-        (Uy * gridWidthP3) +
-        Ux;
-    const float Uheight = heightfields[Uindex].getHeight();
-
-    const int Dx = x;
-    const int Dy = y + 1;
-    const int Dindex =
-        heightfieldsCenterDataReadOffset +
-        (Dy * gridWidthP3) +
-        Dx;
-    const float Dheight = heightfields[Dindex].getHeight();
-
-    return vm::normalize(vm::vec3{Lheight - Rheight, 2.0f, Uheight - Dheight});
-}
-
-template <typename T>
-vm::vec3 calculateRightPointNormal(const int &x, const int &y, const std::vector<T> &heightfields, const int &heightfieldsCenterDataReadOffset, const int &gridWidth, const int &gridHeight)
-{
-    const int gridWidthP3 = gridWidth + 3;
-    const int gridHeightP3 = gridHeight + 3;
-
-    const int Lx = x - 1;
-    const int Ly = y;
-    const int Lindex =
-        heightfieldsCenterDataReadOffset +
-        (3 * gridWidthP3) +
-        (Lx * gridHeightP3) +
-        Ly;
-    const float Lheight = heightfields[Lindex].getHeight();
-
-    const int Rx = x + 1;
-    const int Ry = y;
-    const int Rindex =
-        heightfieldsCenterDataReadOffset +
-        (3 * gridWidthP3) +
-        (Rx * gridHeightP3) +
-        Ry;
-    const float Rheight = heightfields[Rindex].getHeight();
-
-    const int Ux = x;
-    const int Uy = y - 1;
-    const int Uindex =
-        heightfieldsCenterDataReadOffset +
-        (3 * gridWidthP3) +
-        (Ux * gridHeightP3) +
-        Uy;
-    const float Uheight = heightfields[Uindex].getHeight();
-
-    const int Dx = x;
-    const int Dy = y + 1;
-    const int Dindex =
-        heightfieldsCenterDataReadOffset +
-        (3 * gridWidthP3) +
-        (Dx * gridHeightP3) +
-        Dy;
-    const float Dheight = heightfields[Dindex].getHeight();
-
-    return vm::normalize(vm::vec3{Lheight - Rheight, 2.0f, Uheight - Dheight});
-}
-
-template <typename T>
-void calculateCenterNormals(std::vector<T> &heightfields, const int &chunkSize, const int &rowSize)
-{
-    auto pushCenterPointNormal = [&](const int &x, const int &y) -> void
+    for (size_t i = 0; i < flows.size(); i++)
     {
-        const int dx = x + 1;
-        const int dy = y + 1;
-        const int index = dx + dy * rowSize;
-        T &v = heightfields[index];
-        v.normal = calculateCenterPointNormal<T>(x, y, heightfields, rowSize);
-    };
+        vm::vec3 &flow = flows[i];
+        vm::vec3 &normal = normals[i];
 
-    for (int y = 0; y < chunkSize; y++)
-    {
-        for (int x = 0; x < chunkSize; x++)
-        {
-            pushCenterPointNormal(x, y);
-        }
+        // const vm::vec3 crossGravity = vm::cross(normal, vm::vec3{0.0f, -1.0f, 0.0f});
+        // const vm::vec3 crossFlow = vm::cross(crossGravity, normal);
+
+        // const vm::vec3 crossFlowNormalized = vm::normalize(crossFlow);
+        // const float flowDown = crossFlowNormalized.y;
+        // flow.y = flowDown;
+
+        // flow.y = (1.f - normal.y);
+        // flow.x = 0.f;
+
+        // flow = vm::normalize(flow);
+        // flow = crossFlowNormalized;
     }
 }
-
-template <typename T>
-void calculateSeamNormals(std::vector<T> &heightfields,
-                          const int &lod,
-                          const std::array<int, 2> &lodArray,
-                          const int &chunkSize,
-                          const int &rowSize)
-{
-    const int &bottomLod = lodArray[0];
-    const int &rightLod = lodArray[1];
-
-    const int gridWidth = chunkSize * lod / bottomLod;
-    const int gridWidthP1 = gridWidth + 1;
-    const int gridWidthP3 = gridWidth + 3;
-
-    const int gridHeight = chunkSize * lod / rightLod;
-    const int gridHeightP1 = gridHeight + 1;
-    const int gridHeightP3 = gridHeight + 3;
-
-    const int heightfieldsCenterDataReadOffset = rowSize * rowSize;
-
-    auto pushBottomPointNormal = [&](const int &x, const int &y) -> void
-    {
-        const int dx = x + 1;
-        const int dy = y + 1;
-        const int index =
-            heightfieldsCenterDataReadOffset +
-            (dy * gridWidthP3) +
-            dx;
-        T &v = heightfields[index];
-
-        v.normal = calculateBottomPointNormal(dx, dy, heightfields, heightfieldsCenterDataReadOffset, gridWidth);
-    };
-
-    // bottom
-    {
-        const int y = 0;
-        for (int x = 0; x < gridWidthP1; x++)
-        {
-            pushBottomPointNormal(x, y);
-        }
-    }
-
-    auto pushRightPointNormal = [&](const int &x, const int &y) -> void
-    {
-        const int dx = x + 1;
-        const int dy = y + 1;
-        const int index =
-            heightfieldsCenterDataReadOffset +
-            (3 * gridWidthP3) +
-            (dx * gridHeightP3) +
-            dy;
-        T &v = heightfields[index];
-
-        v.normal = calculateRightPointNormal(dx, dy, heightfields, heightfieldsCenterDataReadOffset, gridWidth, gridHeight);
-    };
-
-    // right
-    {
-        const int x = 0;
-        for (int y = 0; y < gridHeightP1; y++)
-        {
-            pushRightPointNormal(x, y);
-        }
-    }
-}
-
-void Polygonizer::calculateSurfaceNormals(std::vector<Heightfield> &heightfields,
-                             const int &lod,
-                             const std::array<int, 2> &lodArray,
-                             const int &chunkSize)
-{
-
-    const int rowSize = chunkSize + 2;
-
-    // TODO : This is not the best way to calculate normals (it lacks precision)
-    calculateCenterNormals<Heightfield>(heightfields, chunkSize, rowSize);
-    calculateSeamNormals<Heightfield>(heightfields, lod, lodArray, chunkSize, rowSize);
-}
-
-/* void fillVec3(std::vector<vm::vec3> &array, const vm::vec3 &v) {
-    for (size_t i = 0, il = array.size(); i < il; i++) {
-        array[i] = v;
-    }
-} */
-
-//
 
 enum class WindingDirection
 {
@@ -343,36 +111,6 @@ void createPlaneGeometry(
             (float)ax,
             height,
             (float)ay});
-
-        // materials
-        const MaterialsArray &materials = v0.materials;
-        const MaterialsWeightsArray &materialsWeights = v0.materialsWeights;
-
-        geometry.materials.push_back(vm::ivec4{
-            materials[0],
-            materials[1],
-            materials[2],
-            materials[3]});
-        geometry.materialsWeights.push_back(vm::vec4{
-            materialsWeights[0],
-            materialsWeights[1],
-            materialsWeights[2],
-            materialsWeights[3]});
-
-        // materials
-        const LiquidsArray &liquids = v0.liquids;
-        const LiquidsWeightsArray &liquidsWeights = v0.liquidsWeights;
-
-        geometry.liquids.push_back(vm::ivec4{
-            liquids[0],
-            liquids[1],
-            liquids[2],
-            liquids[3]});
-        geometry.liquidsWeights.push_back(vm::vec4{
-            liquidsWeights[0],
-            liquidsWeights[1],
-            liquidsWeights[2],
-            liquidsWeights[3]});
 
         // normal
         const vm::vec3 &normal = v0.normal;
@@ -486,36 +224,6 @@ void createPlaneSeamsGeometry(
             height,
             (float)ay});
 
-        const MaterialsArray &materials = v0.materials;
-        const MaterialsWeightsArray &materialsWeights = v0.materialsWeights;
-
-        geometry.materials.push_back(vm::ivec4{
-            materials[0],
-            materials[1],
-            materials[2],
-            materials[3]});
-
-        geometry.materialsWeights.push_back(vm::vec4{
-            materialsWeights[0],
-            materialsWeights[1],
-            materialsWeights[2],
-            materialsWeights[3]});
-
-        const LiquidsArray &liquids = v0.liquids;
-        const LiquidsWeightsArray &liquidsWeights = v0.liquidsWeights;
-
-        geometry.liquids.push_back(vm::ivec4{
-            liquids[0],
-            liquids[1],
-            liquids[2],
-            liquids[3]});
-
-        geometry.liquidsWeights.push_back(vm::vec4{
-            liquidsWeights[0],
-            liquidsWeights[1],
-            liquidsWeights[2],
-            liquidsWeights[3]});
-
         // normal
         const vm::vec3 &normal = v0.normal;
         geometry.normals.push_back(normal);
@@ -544,36 +252,6 @@ void createPlaneSeamsGeometry(
             (float)ax,
             height,
             (float)ay});
-
-        const MaterialsArray &materials = v0.materials;
-        const MaterialsWeightsArray &materialsWeights = v0.materialsWeights;
-
-        geometry.materials.push_back(vm::ivec4{
-            materials[0],
-            materials[1],
-            materials[2],
-            materials[3]});
-
-        geometry.materialsWeights.push_back(vm::vec4{
-            materialsWeights[0],
-            materialsWeights[1],
-            materialsWeights[2],
-            materialsWeights[3]});
-
-        const LiquidsArray &liquids = v0.liquids;
-        const LiquidsWeightsArray &liquidsWeights = v0.liquidsWeights;
-
-        geometry.liquids.push_back(vm::ivec4{
-            liquids[0],
-            liquids[1],
-            liquids[2],
-            liquids[3]});
-
-        geometry.liquidsWeights.push_back(vm::vec4{
-            liquidsWeights[0],
-            liquidsWeights[1],
-            liquidsWeights[2],
-            liquidsWeights[3]});
 
         // normal
         const vm::vec3 &normal = v0.normal;
@@ -1433,7 +1111,8 @@ void Polygonizer::generateWaterGeometry(
     generateWaterfieldCenterMesh(lod, chunkSize, waterfields, geometry);
     generateWaterfieldSeamsMesh(lod, lodArray, chunkSize, waterfields, geometry);
     offsetGeometry(geometry, worldPosition);
-    computeFaceNormals(geometry.positions, geometry.normals, geometry.indices);
+    // computeFaceNormals(geometry.positions, geometry.normals, geometry.indices);
+    computeFlowDirections(geometry.flows, geometry.normals);
 }
 
 Polygonizer::Polygonizer()

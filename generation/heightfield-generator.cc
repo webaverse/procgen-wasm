@@ -24,6 +24,7 @@ uint8_t HeightfieldGenerator::getBiome(float bx, float bz)
 {
     uint8_t biome = 0xFF;
 
+    // ! Supporting only one biome for now
     // const auto &noise = getBiomeNoiseField(bx, bz);
     // const float temperature = noise.temperature;
     // const float coldness = 1.f - temperature;
@@ -57,15 +58,15 @@ uint8_t HeightfieldGenerator::getLiquid(float bx, float bz, uint8_t biome)
     const float ocean = noise.ocean;
     const float river = noise.river;
 
-    const bool oceanVisibility = getNoiseVisibility(ocean, OCEAN_THRESHOLD, 1.f);
-    const bool riverVisibility = getNoiseVisibility(river, RIVER_THRESHOLD, 1.f);
+    const bool isOcean = getNoiseVisibility(ocean, OCEAN_THRESHOLD, 1.f);
+    const bool isRiver = getNoiseVisibility(river, RIVER_THRESHOLD, 1.f);
 
-    if (oceanVisibility)
+    if (isOcean)
     {
         liquid = (uint8_t)LIQUID::OCEAN;
     }
 
-    if (riverVisibility)
+    if (isRiver)
     {
         if (biome == (uint8_t)BIOME::DESERT)
         {
@@ -74,8 +75,9 @@ uint8_t HeightfieldGenerator::getLiquid(float bx, float bz, uint8_t biome)
 
         if (liquid == (uint8_t)LIQUID::OCEAN)
         {
-            const bool deepOceanVisibility = getNoiseVisibility(ocean, OCEAN_THRESHOLD + DEEP_OCEAN_AND_WATERFALL_DIFF, 1.f);
-            if(deepOceanVisibility) {
+            const bool isDeepOcean = getNoiseVisibility(ocean, OCEAN_THRESHOLD + DEEP_OCEAN_AND_WATERFALL_DIFF, 1.f);
+            if (isDeepOcean)
+            {
                 liquid = (uint8_t)LIQUID::OCEAN;
             }
             else
@@ -223,6 +225,38 @@ std::vector<uint8_t> sortWeightedTypes(const std::vector<float> &weights)
     return seenTypes;
 }
 
+void generateCachedField(Heightfield &localHeightfield, const vm::vec2 &position, Noises &noises)
+{
+    // ! For now we don't use any noise in the water ( nothing exists below the water )
+    // TODO : Implement life below water ( shark, fish, coral, etc... ) 🦈
+    if (!localHeightfield.hasWater())
+    {
+        // terrain field
+        localHeightfield.field.hash = noises.uberNoise.hashNoise(position.x, position.y);
+        localHeightfield.field.rock = noises.uberNoise.rockVisibility(position.x, position.y);
+        localHeightfield.field.stone = noises.uberNoise.stoneVisibility(position.x, position.y);
+
+        localHeightfield.field.wetness = noises.uberNoise.wetnessNoise(position.x, position.y);
+
+        // vegetation only grows on wet fields
+        if (localHeightfield.isWet())
+        {
+            localHeightfield.field.tree = noises.uberNoise.treeVisibility(position.x, position.y, localHeightfield.field.wetness);
+            // if bigger objects exist on the field, we don't want to add grass or flowers
+            if (!localHeightfield.hasObject())
+            {
+                localHeightfield.field.grass = noises.uberNoise.grassMaterialNoise(position.x, position.y, localHeightfield.field.wetness);
+                localHeightfield.field.flower = noises.uberNoise.flowerVisibility(position.x, position.y, localHeightfield.field.grass);
+            }
+        }
+    }
+    else
+    {
+        // liquid field
+        localHeightfield.field.flow = noises.uberNoise.flowNoise(position.x, position.y);
+    }
+}
+
 Heightfield HeightfieldGenerator::getHeightField(float bx, float bz)
 {
     Heightfield localHeightfield;
@@ -349,11 +383,8 @@ Heightfield HeightfieldGenerator::getHeightField(float bx, float bz)
         localHeightfield.field.liquidHeight = liquidElevationSum;
     }
 
-    // extra noises
-    {
-        localHeightfield.field.wetness = noises.uberNoise.wetnessNoise(fWorldPosition.x, fWorldPosition.y);
-        localHeightfield.field.grass = noises.uberNoise.grassMaterialNoise(fWorldPosition.x, fWorldPosition.y, localHeightfield.field.wetness);
-    }
+    // caching noises
+    generateCachedField(localHeightfield, fWorldPosition, noises);
 
     return localHeightfield;
 }
@@ -651,10 +682,10 @@ void HeightfieldGenerator::getComputedMaterials(Heightfield &localHeightfield, s
             const float SLOPE_AMPLIFIER = 2.5f;
             const float mountainAndGroundBlend = vm::clamp(localHeightfield.getSlope() * SLOPE_AMPLIFIER, 0.f, 1.f);
 
-            const float grassWeight = (grassMaterial) * bw * (1.f - mountainAndGroundBlend);
+            const float grassWeight = (grassMaterial)*bw * (1.f - mountainAndGroundBlend);
             const float dirtWeight = (1.f - grassMaterial) * bw * (1.f - mountainAndGroundBlend);
 
-            const float stoneWeight = (stiffness) * mountainAndGroundBlend * bw;
+            const float stoneWeight = (stiffness)*mountainAndGroundBlend * bw;
             const float rockWeight = (1.f - stiffness) * mountainAndGroundBlend * bw;
 
             MaterialWeightAccumulator &grassWeightAcc = materialWeightAccumulators[GRASS];

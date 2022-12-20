@@ -29,19 +29,29 @@ typedef std::array<float, 4> MaterialsWeightsArray;
 typedef std::array<uint8_t, 4> LiquidsArray;
 typedef std::array<float, 4> LiquidsWeightsArray;
 
-struct CachedField {
+struct CachedField
+{
   float height = 0.0f;
 
-  float liquidHeight = MIN_WORLD_HEIGHT;
-  float liquidFactor = 0.f;
-
+  // terrain field
+  float hash = 0.f;
   float wetness = 0.f;
   float grass = 0.f;
+  bool rock = false;
+  bool stone = false;
+  bool tree = false;
+  bool flower = false;
+
+  // liquid field
+  float liquidHeight = MIN_WORLD_HEIGHT;
+  float liquidFactor = 0.f;
+  vm::vec3 flow{0.f, 0.f, 0.f}; // flow direction
 };
 
 class Heightfield
 {
 public:
+  // cached noise field
   CachedField field;
 
   vm::vec3 normal{0.f, 1.f, 0.f};
@@ -62,6 +72,18 @@ public:
   bool hasWater() const
   {
     return field.liquidFactor > 0.f;
+  }
+  bool hasObject() const
+  {
+    return field.grass > 0.f || field.rock || field.stone || field.tree || field.flower;
+  }
+  bool isWet() const
+  {
+    return field.wetness > 0.f;
+  }
+  bool hasRock() const
+  {
+    return field.rock;
   }
   float getSlope() const
   {

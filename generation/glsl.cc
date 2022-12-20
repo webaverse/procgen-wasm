@@ -353,6 +353,11 @@ float warpNoise2Layer_4(vec2 position)
 
 // terrain noises
 
+vec3 getWaterFlow(vec2 position)
+{
+    return vec3(1.f, 0.f, 0.0f);
+}
+
 float getOceanNoise(vec2 position)
 {
     return clamp(simplex(position / 8.f) * 2.f, 0.f, 1.f);
@@ -429,7 +434,7 @@ float getWetness(vec2 position)
 float getGrassMaterial(vec2 position, float wetness)
 {
     float noise = warpNoise1Layer_2(position * 10.f) * wetness;
-    return clamp(noise + 0.1f, 0.f, 1.f);
+    return clamp(noise, 0.f, 1.f);
 }
 
 float getGrassObject(vec2 position, float wetness)
@@ -689,6 +694,11 @@ float GLSL::oceanNoise(const vec2 &position)
 float GLSL::riverNoise(const vec2 &position, const float &ocean)
 {
     return getRiverNoise(position, ocean);
+}
+
+vm::vec3 GLSL::flowNoise(const vec2 &position)
+{
+    return getWaterFlow(position);
 }
 
 bool GLSL::flowerVisibility(const vec2 &position, const float &grass)

@@ -30,6 +30,8 @@ namespace GLSL
     float oceanNoise(const vec2 &position);
     float riverNoise(const vec2 &position, const float &ocean);
 
+    vm::vec3 flowNoise(const vec2 &position);
+
     bool flowerVisibility(const vec2 &position, const float &grass);
     bool grassVisibility(const vec2 &position, const float &wetness);
     bool treeVisibility(const vec2 &position, const float &wetness);

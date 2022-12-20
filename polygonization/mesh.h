@@ -29,6 +29,7 @@ typedef std::vector<vm::ivec4> MaterialsBuffer;
 typedef std::vector<vm::ivec4> LiquidsBuffer;
 typedef std::vector<vm::vec4> MaterialsWeightBuffer;
 typedef std::vector<vm::vec4> LiquidsWeightBuffer;
+typedef std::vector<vm::vec3> FlowBuffer;
 typedef std::vector<vm::vec4> MaterialsSplatBuffer;
 typedef std::vector<std::array<UV, 2>> BiomesUvsBuffer;
 typedef std::vector<uint32_t> IndexBuffer;
@@ -54,9 +55,6 @@ public:
     MaterialsBuffer materials;
     MaterialsWeightBuffer materialsWeights;
 
-    LiquidsBuffer liquids;
-    LiquidsWeightBuffer liquidsWeights;
-
     // SeedBuffer seeds;
 
     // LightBuffer skylights;
@@ -79,11 +77,10 @@ public:
 
     FactorBuffer factors;
 
-    MaterialsBuffer materials;
-    MaterialsWeightBuffer materialsWeights;
-
     LiquidsBuffer liquids;
     LiquidsWeightBuffer liquidsWeights;
+    FlowBuffer flows;
+
     // PeekBuffer peeks;
 
     void pushPointMetadata(const Waterfield &fieldValue);
@@ -99,20 +96,25 @@ public:
     std::vector<float> ps;
     std::vector<float> qs;
     std::vector<float> scales;
+    std::vector<float> colors;
 
-    void set(const vm::vec3 &position, const float &rot, const float &scale)
+    void set(const vm::vec3 &position, const vm::vec3 &rot, const float &scale, const vm::vec3 &color)
     {
         ps.push_back(position.x);
         ps.push_back(position.y);
         ps.push_back(position.z);
 
-        const Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rot);
+        Quat q = Quat().setFromAxisAngle(Vec{1, 0, 0}, rot.x).setFromAxisAngle(Vec{0, 1, 0}, rot.y).setFromAxisAngle(Vec{0, 0, 1}, rot.z);
         qs.push_back(q.x);
         qs.push_back(q.y);
         qs.push_back(q.z);
         qs.push_back(q.w);
 
         scales.push_back(scale);
+
+        colors.push_back(color.x);
+        colors.push_back(color.y);
+        colors.push_back(color.z);
     }
 };
 class SplatInstanceGeometry {
