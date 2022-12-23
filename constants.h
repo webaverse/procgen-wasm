@@ -39,7 +39,7 @@ constexpr float ROCK_NOISE_SHARPNESS = 85.0;
 // grass
 constexpr int MAX_NUM_GRASSES_PER_CHUNK = 2048;
 constexpr int MAX_NUM_FLOWERS_PER_CHUNK = 2048;
-constexpr float GRASS_THRESHOLD = 0.05;
+constexpr float GRASS_THRESHOLD = 0.65;
 constexpr float GRASS_HEIGHT_VARIATION_RANGE = 0.5;
 constexpr float GRASS_COLOR_VARIATION_BASE = 1.0;
 constexpr float GRASS_COLOR_VARIATION_RANGE = 0.3;

@@ -431,15 +431,21 @@ float getWetness(vec2 position)
     return clamp(simplex(position / 2.f) + 0.2f, 0.f, 1.f);
 }
 
-float getGrassMaterial(vec2 position, float wetness)
+float getGrassNoise(vec2 position, float wetness)
 {
     float noise = warpNoise1Layer_2(position * 10.f) * wetness;
+    return noise * 9.5f;
+}
+
+float getGrassMaterial(vec2 position, float wetness)
+{
+    float noise = getGrassNoise(position, wetness);
     return clamp(noise, 0.f, 1.f);
 }
 
 float getGrassObject(vec2 position, float wetness)
 {
-    return getGrassMaterial(position, wetness);
+    return getGrassNoise(position, wetness);
 }
 
 bool getGrassVisibility(vec2 position, float wetness)

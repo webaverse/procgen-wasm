@@ -176,7 +176,22 @@ public:
     {
     case (uint8_t)INSTANCE::TREE:
     {
-      color = vm::vec3{0.f, 0.f, 0.f};
+      const float hash = (hashNoise(x * 3.f, z * 3.f) * 2.0 - 1.0);
+      const float colorVariationNoise = vm::clamp(GRASS_COLOR_VARIATION_BASE + simplexm15 * GRASS_COLOR_VARIATION_RANGE, 0.0f, 1.f + GRASS_COLOR_VARIATION_RANGE);
+      const float randomBladeFactor = heightfield.field.hash * 2.f - 1.f;
+      color = (vm::vec3{colorVariationNoise / 1.0f, colorVariationNoise / 1.0f, colorVariationNoise / 1.3f} +
+               vm::vec3{randomBladeFactor / 10.f, randomBladeFactor / 7.f, randomBladeFactor / 12.f}) +
+               vm::vec3{hash, hash / 3.f, -hash} / 7.f;
+      break;
+    }
+    case (uint8_t)INSTANCE::BUSH:
+    {
+      const float hash = (hashNoise(x * 6.f, z * 6.f) * 2.0 - 1.0);
+      const float colorVariationNoise = vm::clamp(GRASS_COLOR_VARIATION_BASE + simplexm15 * GRASS_COLOR_VARIATION_RANGE, 0.0f, 1.f + GRASS_COLOR_VARIATION_RANGE);
+      const float randomBladeFactor = heightfield.field.hash * 2.f - 1.f;
+      color = (vm::vec3{colorVariationNoise / 1.3f, colorVariationNoise / 1.0f, colorVariationNoise / 1.1f} +
+               vm::vec3{randomBladeFactor / 12.f, randomBladeFactor / 6.f, randomBladeFactor / 10.f}) +
+               vm::vec3{hash, -hash / 2.f, -hash / 2.f} / 6.f;
       break;
     }
     case (uint8_t)INSTANCE::FLOWER:
@@ -188,8 +203,8 @@ public:
     {
       const float colorVariationNoise = vm::clamp(GRASS_COLOR_VARIATION_BASE + simplexm15 * GRASS_COLOR_VARIATION_RANGE, 0.0f, 1.f + GRASS_COLOR_VARIATION_RANGE);
       const float randomBladeFactor = heightfield.field.hash * 2.f - 1.f;
-      color = (vm::vec3{colorVariationNoise / 1.4f, colorVariationNoise / 1.6f, colorVariationNoise / 1.75f} +
-               vm::vec3{randomBladeFactor / 8.f, randomBladeFactor / 10.f, randomBladeFactor / 12.f});
+      color = (vm::vec3{colorVariationNoise / 2.05f, colorVariationNoise / 1.6f, colorVariationNoise / 2.1f} +
+               vm::vec3{randomBladeFactor / 13.f, randomBladeFactor / 9.f, randomBladeFactor / 14.f});
       break;
     }
     case (uint8_t)INSTANCE::ROCK:
