@@ -38,7 +38,6 @@ public:
 
 class TaskQueue {
 public:
-    // DCInstance *inst;
     std::deque<Task *> tasks;
     
     Mutex taskMutex;

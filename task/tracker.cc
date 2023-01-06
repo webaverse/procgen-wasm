@@ -2,94 +2,6 @@
 #include "../instance.h"
 #include <iostream>
 
-/*
-tracker = await dcWorkerManager.createTracker(3, 2, true); trackerUpdate = await dcWorkerManager.trackerUpdate(tracker, new THREE.Vector3(1, 2, 3));
-*/
-
-//
-
-// std::atomic<int> nextTrackerId(0);
-
-//
-
-/* bool TrackerTask::isNop() const {
-  auto task = this;
-  return task->newNodes.size() == task->oldNodes.size() &&
-    std::all_of(task->newNodes.begin(), task->newNodes.end(), [&](OctreeNodePtr newNode) -> bool {
-      return std::any_of(task->oldNodes.begin(), task->oldNodes.end(), [&](OctreeNodePtr oldNode) -> bool {
-        return equalsNodeLod(*oldNode, *newNode);
-      });
-    });
-}
-std::vector<uint8_t> TrackerTask::getBuffer() const {
-  size_t size = 0;
-  // header
-  size += sizeof(int); // id
-  size += sizeof(int); // type
-  // max lod node
-  size += sizeof(vm::ivec3); // min
-  size += sizeof(int); // lod
-  size += sizeof(int); // isLeaf
-  size += sizeof(int[8]); // lodArray
-  // old nodes
-  size += sizeof(uint32_t); // numOldNodes
-  size += sizeof(vm::ivec3) * oldNodes.size(); // min
-  size += sizeof(int) * oldNodes.size(); // lod
-  size += sizeof(int) * oldNodes.size(); // isLeaf
-  size += sizeof(int[8]) * oldNodes.size(); // lodArray
-  // new nodes
-  size += sizeof(uint32_t); // numNewNodes
-  size += sizeof(vm::ivec3) * newNodes.size(); // min
-  size += sizeof(int) * newNodes.size(); // lod
-  size += sizeof(int) * newNodes.size(); // isLeaf
-  size += sizeof(int[8]) * newNodes.size(); // lodArray
-
-  std::vector<uint8_t> result(size);
-  int index = 0;
-  // id
-  *((int *)(result.data() + index)) = id;
-  index += sizeof(int);
-  // type
-  *((int *)(result.data() + index)) = type;
-  index += sizeof(int);
-  // max lod node
-  std::memcpy(result.data() + index, &maxLodNode->min, sizeof(vm::ivec3));
-  index += sizeof(vm::ivec3);
-  *((int *)(result.data() + index)) = maxLodNode->size;
-  index += sizeof(int);
-  *((int *)(result.data() + index)) = (maxLodNode->type == Node_Leaf) ? 1 : 0;
-  index += sizeof(int);
-  std::memcpy(result.data() + index, &maxLodNode->lodArray[0], sizeof(int[8]));
-  index += sizeof(int[8]);
-  // old nodes
-  *((uint32_t *)(result.data() + index)) = oldNodes.size();
-  index += sizeof(uint32_t);
-  for (auto oldNode : oldNodes) {
-    std::memcpy(result.data() + index, &oldNode->min, sizeof(vm::ivec3));
-    index += sizeof(vm::ivec3);
-    *((int *)(result.data() + index)) = oldNode->size;
-    index += sizeof(int);
-    *((int *)(result.data() + index)) = (oldNode->type == Node_Leaf) ? 1 : 0;
-    index += sizeof(int);
-    std::memcpy(result.data() + index, &oldNode->lodArray[0], sizeof(int[8]));
-    index += sizeof(int[8]);
-  }
-  // new nodes
-  *((uint32_t *)(result.data() + index)) = newNodes.size();
-  index += sizeof(uint32_t);
-  for (auto newNode : newNodes) {
-    std::memcpy(result.data() + index, &newNode->min, sizeof(vm::ivec3));
-    index += sizeof(vm::ivec3);
-    *((int *)(result.data() + index)) = newNode->size;
-    index += sizeof(int);
-    *((int *)(result.data() + index)) = (newNode->type == Node_Leaf) ? 1 : 0;
-    index += sizeof(int);
-    std::memcpy(result.data() + index, &newNode->lodArray[0], sizeof(int[8]));
-    index += sizeof(int[8]);
-  }
-
-  return result;
-} */
 void serializeOctreeNodes(const std::vector<OctreeNodePtr> &datas, uint8_t *ptr, int &index) {
   // std::cout << "serialize octree nodes" << datas.size() << std::endl;
   
@@ -107,6 +19,7 @@ void serializeOctreeNodes(const std::vector<OctreeNodePtr> &datas, uint8_t *ptr,
     index += sizeof(int[2]);
   }
 }
+
 void serializeDataRequests(const std::vector<DataRequestPtr> &datas, uint8_t *ptr, int &index) {
   // std::cout << "serialize data requests" << datas.size() << std::endl;
 
@@ -124,10 +37,6 @@ void serializeDataRequests(const std::vector<DataRequestPtr> &datas, uint8_t *pt
     index += sizeof(int[2]);
   }
 }
-/* void serializeChunkPosition(const vm::ivec2 &chunkPosition, uint8_t *ptr, int &index) {
-  memcpy(ptr + index, &chunkPosition, sizeof(chunkPosition));
-  index += sizeof(vm::ivec2);
-} */
 
 uint8_t *TrackerUpdate::getBuffer() const {
   // compute size
@@ -157,7 +66,6 @@ uint8_t *TrackerUpdate::getBuffer() const {
   serializeDataRequests(newDataRequests, ptr, index);
   serializeDataRequests(keepDataRequests, ptr, index);
   serializeDataRequests(cancelDataRequests, ptr, index);
-  // serializeChunkPosition(chunkPosition, ptr, index);
 
   return ptr;
 }
@@ -188,11 +96,6 @@ bool equalsNodeLod(const OctreeNode &node, const OctreeNode &other) {
     if (node.lod != other.lod) {
       return false;
     }
-    /* for (size_t i = 0; i < node.lodArray.size(); i++) {
-      if (node.lodArray[i] != other.lodArray[i]) {
-        return false;
-      }
-    } */
     return true;
   } else {
     return false;
@@ -207,48 +110,17 @@ bool equalsNodeLodArray(const OctreeNode &node, const OctreeNode &other) {
       return false;
     }
     return true;
-  } else {
-    return false;
   }
+
+  return false;
 }
-/* bool intersectsNode(const OctreeNode &node, const OctreeNode &other) {
-  return containsNode(node, other) || containsNode(other, node);
-} */
-// returns whether the box of min1 + lod1 intersects the box of min2 + lod2
+
 bool chunksIntersect(const vm::ivec2 &min1, const int lod1, const vm::ivec2 &min2, const int lod2) {
   return min1.x < min2.x + lod2 && min1.x + lod1 > min2.x &&
     min1.y < min2.y + lod2 && min1.y + lod1 > min2.y;
 }
 
-//
-
-/* std::array<vm::ivec3, 8> lodOffsets = {
-    vm::ivec3{0, 0, 0},
-    vm::ivec3{1, 0, 0},
-    vm::ivec3{0, 0, 1},
-    vm::ivec3{1, 0, 1},
-    vm::ivec3{0, 1, 0},
-    vm::ivec3{1, 1, 0},
-    vm::ivec3{0, 1, 1},
-    vm::ivec3{1, 1, 1}
-}; */
-// OctreeNodeAllocator octreeNodeAllocator;
-
-//
-
-/* OctreeNodeAllocator::OctreeNodeAllocator() {
-  for (int i = 0; i < rawNodes.size(); i++) {
-    OctreeNode *node = &rawNodes[i];
-    nodes.push_back(node);
-  }
-  this->deleter = [this](void *ptr) -> void {
-    this->nodes.push_back((OctreeNode *)ptr);
-  };
-} */
 OctreeNodePtr OctreeNodeAllocator::alloc(const vm::ivec2 &min, int lod) {
-  // OctreeNode *octreeNode = new OctreeNode(min, lod);
-  // octreeNode->min = min;
-  // octreeNode->lod = lod;
   return std::make_shared<OctreeNode>(min, lod);
 }
 
@@ -273,17 +145,6 @@ std::vector<OctreeNodePtr> OctreeContext::getLeafNodes() {
   return leafNodes;
 }
 
-//
-
-/* OctreeNodePtr getLeafNodeFromPoint(const std::vector<OctreeNodePtr> &leafNodes, const vm::ivec2 &p) {
-  for (size_t i = 0; i < leafNodes.size(); i++) {
-      auto leafNode = leafNodes[i];
-      if (containsPoint(*leafNode, p)) {
-          return leafNode;
-      }
-  }
-  return nullptr;
-} */
 std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>>::iterator getNodeIter(OctreeContext &octreeContext, const vm::ivec2 &min, int lod) {
   auto &nodeMap = octreeContext.nodeMap;
 
@@ -316,31 +177,7 @@ OctreeNodePtr getOrCreateNode(OctreeContext &octreeContext, const vm::ivec2 &min
   }
   return node;
 }
-/* OctreeNodePtr scanForNode(OctreeContext &octreeContext, const vm::ivec2 &min, int minSearchLod, int maxSearchLod) {  
-  for (int lod = minSearchLod; lod <= maxSearchLod; lod *= 2) {
-    vm::ivec2 snapPosition{
-      (min.x / lod) * lod,
-      (min.y / lod) * lod
-    };
-    auto node = getNode(octreeContext, snapPosition, lod);
-    if (node) {
-      return node;
-    }
-  }
-  return nullptr;
-} */
-/* OctreeNodePtr findContainingNode(OctreeContext &octreeContext, const vm::ivec2 &min) {
-  auto &nodeMap = octreeContext.nodeMap;
 
-  std::vector<OctreeNodePtr> leafNodes;
-  for (const auto &iter : nodeMap) {
-    auto node = iter.second;
-    if (containsPoint(*node, min)) {
-      return node;
-    }
-  }
-  return nullptr;
-} */
 std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>>::iterator findNodeIterAtPoint(OctreeContext &octreeContext, const vm::ivec2 &position) {
   auto &nodeMap = octreeContext.nodeMap;
 
@@ -379,48 +216,7 @@ bool removeNode(OctreeContext &octreeContext, OctreeNodePtr node) {
     return false;
   }
 }
-/* void ensureChildren(OctreeContext &octreeContext, OctreeNode *parentNode) {
-    // auto &nodeMap = octreeContext.nodeMap;
 
-    const vm::ivec3 &lodMin = parentNode->min;
-    const int &lod = parentNode->size;
-
-    for (int dx = 0; dx < 2; dx++) {
-      for (int dy = 0; dy < 2; dy++) {
-        for (int dz = 0; dz < 2; dz++) {
-           int childIndex = dx + 2 * (dy + 2 * dz);
-           if (parentNode->children[childIndex] == nullptr) {
-              parentNode->children[childIndex] = createNode(
-                octreeContext,
-                lodMin + vm::ivec3{dx, dy, dz} * (lod / 2),
-                lod / 2,
-                true
-              ).get();
-              // parentNode->children[childIndex].parent = parentNode;
-           }
-        }
-      }
-    }
-} */
-/* void ensureChildLayer(OctreeContext &octreeContext, OctreeNodePtr parentNode) {
-  const vm::ivec2 &parentPosition = parentNode->min;
-  int childLod = parentNode->lod / 2;
-  
-  for (int i = 0; i < parentNode->children.size(); i++) {
-    // if (!parentNode->children[i]) {
-      vm::ivec2 childPosition{
-        parentPosition.x + (i % 2) * childLod,
-        parentPosition.y + (i / 2) * childLod
-      };
-      OctreeNodePtr childNode = getOrCreateNode(
-        octreeContext,
-        childPosition,
-        childLod
-      );
-      parentNode->children[i] = childNode;
-    // }
-  }
-} */
 void splitPointToLod(
   OctreeContext &octreeContext,
   const vm::ivec2 &absolutePosition,
@@ -594,166 +390,10 @@ std::vector<OctreeNodePtr> constructOctreeForLeaf(
   // return
   return leafNodes;
 }
-/* std::vector<OctreeNodePtr> constructOctreeForSeed(const vm::ivec2 &maxLodCenter, const int maxLod, const std::vector<std::pair<vm::ivec2, int>> &lodSplits) {
-  OctreeContext octreeContext;
 
-  constructSeedTree(
-    octreeContext,
-    currentCoord,
-    lod1Range,
-    minLod,
-    maxLod
-  );
-  
-  std::vector<OctreeNodePtr> leafNodes = octreeContext.getLeafNodes();
-  
-  return leafNodes;
-} */
-/* OctreeNodePtr getMaxLodNode(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes, const vm::ivec3 &min) {
-    auto newLeafNode = getLeafNodeFromPoint(newLeafNodes, min);
-    auto oldLeafNode = getLeafNodeFromPoint(oldLeafNodes, min);
-    if (newLeafNode != nullptr && oldLeafNode != nullptr) {
-      return newLeafNode->size > oldLeafNode->size ? newLeafNode : oldLeafNode;
-    } else if (newLeafNode != nullptr) {
-      return newLeafNode;
-    } else if (oldLeafNode != nullptr) {
-      return oldLeafNode;
-    } else {
-      return nullptr;
-    }
-} */
-/* std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes) {
-  // map from min lod hash to task containing new nodes and old nodes
-  std::unordered_map<uint64_t, TrackerTaskPtr> taskMap;
-
-  for (OctreeNodePtr newNode : newLeafNodes) {
-    OctreeNodePtr maxLodNode = getMaxLodNode(newLeafNodes, oldLeafNodes, newNode->min);
-    const uint64_t hash = hashOctreeMinLod(maxLodNode->min, maxLodNode->size);
-    
-    TrackerTaskPtr task;
-    const auto &iter = taskMap.find(hash);
-    if (iter != taskMap.end()) {
-      task = iter->second;
-    } else {
-      TrackerTask *trackerTask = new TrackerTask();
-      trackerTask->id = ++nextTrackerId;
-      // std::cout << "increment 1 " << trackerTask->id << std::endl;
-      // trackerTask->maxLodNode = maxLodNode;
-      // trackerTask->type = TrackerTaskType::ADD;
-      
-      task = std::shared_ptr<TrackerTask>(trackerTask);
-      
-      taskMap[hash] = task;
-    }
-    task->newNodes.push_back(newNode);
-  }
-  for (OctreeNodePtr oldNode : oldLeafNodes) {
-    OctreeNodePtr maxLodNode = getMaxLodNode(newLeafNodes, oldLeafNodes, oldNode->min);
-    const uint64_t hash = hashOctreeMinLod(maxLodNode->min, maxLodNode->size);
-    
-    TrackerTaskPtr task;
-    const auto &iter = taskMap.find(hash);
-    if (iter != taskMap.end()) {
-      task = iter->second;
-    } else {
-      TrackerTask *trackerTask = new TrackerTask();
-      trackerTask->id = ++nextTrackerId;
-      // std::cout << "increment 2 " << trackerTask->id << std::endl;
-      // trackerTask->maxLodNode = maxLodNode;
-      // trackerTask->type = TrackerTaskType::REMOVE;
-      
-      task = std::shared_ptr<TrackerTask>(trackerTask);
-      
-      taskMap[hash] = task;
-    }
-    task->oldNodes.push_back(oldNode);
-  }
-
-  std::vector<TrackerTaskPtr> tasks;
-  for (const auto &iter : taskMap) {
-    tasks.push_back(iter.second);
-  }
-  return tasks;
-} */
-/* // sort tasks by distance to world position of the central max lod node
-std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTaskPtr> &tasks, const vm::vec3 &worldPosition) {
-  std::vector<std::pair<TrackerTaskPtr, float>> taskDistances;
-  taskDistances.reserve(tasks.size());
-
-  for (const auto &task : tasks) {
-    const vm::ivec3 &min = task->maxLodNode->min;
-    const int &lod = task->maxLodNode->size;
-
-    vm::vec3 center = vm::vec3{(float)min.x, (float)min.y, (float)min.z} +
-      vm::vec3{0.5, 0.5, 0.5} * (float)lod;
-    vm::vec3 delta = worldPosition - center;
-    float distance = vm::lengthSq(delta);
-
-    taskDistances.push_back(std::pair<TrackerTaskPtr, float>(task, distance));
-  }
-
-  std::sort(
-    taskDistances.begin(),
-    taskDistances.end(),
-    [](const std::pair<TrackerTaskPtr, float> &a, const std::pair<TrackerTaskPtr, float> &b) -> bool {
-      return a.second < b.second;
-    }
-  );
-
-  std::vector<TrackerTaskPtr> sortedTasks;
-  for (const auto &iter : taskDistances) {
-    sortedTasks.push_back(iter.first);
-  }
-  return sortedTasks;
-} */
-/* std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(const std::vector<OctreeNodePtr> &oldChunks, const std::vector<TrackerTaskPtr> &tasks) {
-  std::vector<OctreeNodePtr> newChunks = oldChunks;
-  
-  // swap old chunks for new chunks
-  for (TrackerTaskPtr task : tasks) {
-    if (!task->isNop()) {
-      const std::vector<OctreeNodePtr> &newNodes = task->newNodes;
-      const std::vector<OctreeNodePtr> &oldNodes = task->oldNodes;
-
-      for (OctreeNodePtr oldNode : oldNodes) {
-        const auto &iter = std::find_if(
-          newChunks.begin(),
-          newChunks.end(),
-          [&](auto &chunk) -> bool {
-            return equalsNode(*chunk, *oldNode);
-          }
-        );
-        if (iter != newChunks.end()) {
-          newChunks.erase(iter);
-        } else {
-          std::cout << "failed to erase old node" << std::endl;
-          abort();
-        }
-      }
-      for (OctreeNodePtr newNode : newNodes) {
-        newChunks.push_back(newNode);
-      }
-    }
-  }
-
-  // compute extra tasks for outdated chunks
-  std::vector<TrackerTaskPtr> extraTasks;
-
-  return std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>>(
-    std::move(newChunks),
-    std::move(extraTasks)
-  );
-} */
-
-//
 
 Tracker::Tracker(PGInstance *inst) :
   inst(inst)
-  /* lastCoord{
-    INT32_MAX,
-    INT32_MAX
-  }, */
-  // lastEpoch(0)
 {}
 // static methods
 vm::ivec2 getCurrentCoord(const vm::vec3 &position, int chunkSize) {
@@ -761,52 +401,7 @@ vm::ivec2 getCurrentCoord(const vm::vec3 &position, int chunkSize) {
   const int cz = std::floor(position.z / (float)chunkSize);
   return vm::ivec2{cx, cz};
 }
-/* bool duplicateTask(const std::vector<TrackerTaskPtr> &tasks) {
-  std::unordered_map<int, bool> seen;
 
-  for (TrackerTaskPtr task : tasks) {
-    int id = task->id;
-    if (seen.find(id) == seen.end()) {
-      seen[id] = true;
-    } else {
-      std::cout << "duplicate task: " <<
-        task->maxLodNode->min.x << " " << task->maxLodNode->min.y <<
-        id << std::endl;
-      abort();
-      return true;
-    }
-  }
-  return false;
-}
-bool duplicateTask(const std::vector<TrackerTaskPtr> &tasks, const std::vector<TrackerTaskPtr> &tasks2) {
-  std::unordered_map<int, bool> seen;
-
-  for (TrackerTaskPtr task : tasks) {
-    int id = task->id;
-    if (seen.find(id) == seen.end()) {
-      seen[id] = true;
-    } else {
-      std::cout << "duplicate task: " <<
-        task->maxLodNode->min.x << " " << task->maxLodNode->min.y <<
-        id << std::endl;
-      abort();
-      return true;
-    }
-  }
-  for (TrackerTaskPtr task : tasks2) {
-    int id = task->id;
-    if (seen.find(id) == seen.end()) {
-      seen[id] = true;
-    } else {
-      std::cout << "duplicate task: " <<
-        task->maxLodNode->min.x << " " << task->maxLodNode->min.y << " " << task->maxLodNode->min.z << " " <<
-        id << std::endl;
-      abort();
-      return true;
-    }
-  }
-  return false;
-} */
 // dynamic methods
 // sort nodes by distance to world position of the central max lod node
 void Tracker::sortNodes(std::vector<OctreeNodePtr> &nodes) {
@@ -838,19 +433,6 @@ void Tracker::sortNodes(std::vector<OctreeNodePtr> &nodes) {
 
   sort<OctreeNodePtr>(nodes, worldPosition, frustum);
 }
-
-/* const OctreeNodePtr findLeafNodeForPosition(
-  const std::vector<OctreeNodePtr> &nodes,
-  const vm::ivec3 &p
-) {
-  for (auto iter = nodes.begin(); iter != nodes.end(); iter++) {
-    const OctreeNodePtr &node = *iter;
-    if (containsPoint(*node, p)) {
-      return node;
-    }
-  }
-  return nullptr;
-} */
 
 DataRequestUpdate Tracker::updateDataRequests(
   const std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
@@ -914,8 +496,6 @@ TrackerUpdate Tracker::update(PGInstance *inst, const vm::vec3 &position, int mi
   // new octrees
   const int chunkSize = this->inst->heightfieldGenerator.getChunkSize();
   vm::ivec2 currentCoord = getCurrentCoord(position, chunkSize); // in chunk space
-  // int minLodInt = 1 << (minLod - 1);
-  // int maxLodInt = 1 << (maxLod - 1);
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(
     currentCoord,
     lod1Range,
@@ -928,16 +508,12 @@ TrackerUpdate Tracker::update(PGInstance *inst, const vm::vec3 &position, int mi
 
   dataRequests = std::move(dataRequestUpdate.dataRequests);
 
-  //
-
   TrackerUpdate result;
 
   result.leafNodes = std::move(octreeLeafNodes);
   result.newDataRequests = std::move(dataRequestUpdate.newDataRequests);
   result.keepDataRequests = std::move(dataRequestUpdate.keepDataRequests);
   result.cancelDataRequests = std::move(dataRequestUpdate.cancelDataRequests);
-
-  //
 
   return result;
 }
