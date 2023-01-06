@@ -162,72 +162,6 @@ uint8_t *TrackerUpdate::getBuffer() const {
   return ptr;
 }
 
-//
-
-/* std::vector<uint8_t> DataRequest::getBuffer() const {
-  size_t size = 0;
-  size += sizeof(vm::ivec3); // min
-  size += sizeof(int); // lod
-
-  std::vector<uint8_t> result(size);
-  int index = 0;
-  
-  // min
-  std::memcpy(result.data() + index, &node->min, sizeof(vm::ivec3));
-  index += sizeof(vm::ivec3);
-  
-  // lod
-  *((int *)(result.data() + index)) = node->lod;
-  index += sizeof(int);
-  
-  return result;
-}
-
-std::vector<uint8_t> DataRequestUpdate::getBuffer() const {
-  return std::vector<uint8_t>(); // XXX
-} */
-
-//
-
-Dominator::Dominator(OctreeNodePtr node) :
-  node(node)
-  {}
-
-//
-
-std::vector<uint8_t> Dominator::getBuffer() const {
-  size_t size = 0;
-  size += sizeof(uint32_t); // numNewChunks
-  size += sizeof(uint32_t); // numOldChunks
-  size += sizeof(uint32_t) * newChunks.size(); // new chunk hashes
-  size += sizeof(uint32_t) * oldChunks.size(); // old chunk hashes
-
-  std::vector<uint8_t> result(size);
-  int index = 0;
-  // numNewChunks
-  *((uint32_t *)(result.data() + index)) = newChunks.size();
-  index += sizeof(uint32_t);
-  // numOldChunks
-  *((uint32_t *)(result.data() + index)) = oldChunks.size();
-  index += sizeof(uint32_t);
-  // new chunk hashes
-  for (auto chunk : newChunks) {
-    uint64_t hash = hashOctreeMinLod(chunk->min, chunk->lod);
-    *((uint32_t *)(result.data() + index)) = hash;
-    index += sizeof(uint32_t);
-  }
-  // old chunk hashes
-  for (auto chunk : oldChunks) {
-    uint64_t hash = hashOctreeMinLod(chunk->min, chunk->lod);
-    *((uint32_t *)(result.data() + index)) = hash;
-    index += sizeof(uint32_t);
-  }
-
-  return result;
-}
-
-//
-
 bool containsPoint(const vm::ivec2 &min, const int lod, const vm::ivec2 &p) {
   return p.x >= min.x && p.x < min.x + lod &&
     p.y >= min.y && p.y < min.y + lod;
@@ -973,52 +907,7 @@ DataRequestUpdate Tracker::updateDataRequests(
 
   return dataRequestUpdate;
 }
-/* std::unordered_map<uint64_t, Dominator> Tracker::updateDominators(
-  const std::vector<OctreeNodePtr> &oldRenderedChunks,
-  const std::vector<OctreeNodePtr> &newRenderedChunks
-) {
-  // compute dominators. a dominator is a chunk lod that contains a a transform from old chunks to new chunks.
-  std::unordered_map<uint64_t, Dominator> dominators;
-  auto addChunk = [&](const OctreeNodePtr &chunk, bool isNew) -> void {
-    OctreeNodePtr oldLeafNode = findLeafNodeForPosition(oldRenderedChunks, chunk->min);
-    OctreeNodePtr newLeafNode = findLeafNodeForPosition(newRenderedChunks, chunk->min);
-    OctreeNodePtr maxLodChunk = nullptr;
-    if (oldLeafNode != nullptr && newLeafNode != nullptr) {
-      maxLodChunk = oldLeafNode->size > newLeafNode->size ? oldLeafNode : newLeafNode;
-    } else if (oldLeafNode != nullptr) {
-      maxLodChunk = oldLeafNode;
-    } else if (newLeafNode != nullptr) {
-      maxLodChunk = newLeafNode;
-    } else {
-      std::cout << "no chunk match in any leaf set" << std::endl;
-      abort();
-    }
 
-    uint64_t maxLodHash = hashOctreeMinLod(maxLodChunk->min, maxLodChunk->lod);
-    auto dominatorIter = dominators.find(maxLodHash);
-    if (dominatorIter == dominators.end()) {
-      auto insertResult = dominators.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(maxLodHash),
-        std::forward_as_tuple(maxLodChunk)
-      );
-      dominatorIter = insertResult.first;
-    }
-    Dominator &dominator = dominatorIter->second;
-    if (isNew) {
-      dominator.newChunks.push_back(chunk);
-    } else {
-      dominator.oldChunks.push_back(chunk);
-    }
-  };
-  for (auto chunk : oldRenderedChunks) {
-    addChunk(chunk, false);
-  }
-  for (auto chunk : newRenderedChunks) {
-    addChunk(chunk, true);
-  }
-  return dominators;
-} */
 TrackerUpdate Tracker::update(PGInstance *inst, const vm::vec3 &position, int minLod, int maxLod, int lod1Range) {
   std::lock_guard<std::mutex> lock(mutex);
   

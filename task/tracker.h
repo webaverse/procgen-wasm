@@ -50,21 +50,6 @@ public:
   std::vector<uint8_t> getBuffer() const;
 };
 
-//
-
-class Dominator {
-public:
-  OctreeNodePtr node;
-  std::vector<OctreeNodePtr> newChunks;
-  std::vector<OctreeNodePtr> oldChunks;
-
-  Dominator(OctreeNodePtr node);
-
-  std::vector<uint8_t> getBuffer() const;
-};
-
-//
-
 extern std::atomic<int> nextTrackerId;
 
 class TrackerUpdate {
@@ -148,10 +133,6 @@ public:
     const std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
     const std::vector<OctreeNodePtr> &leafNodes
   );
-  /* std::unordered_map<uint64_t, Dominator> updateDominators(
-    const std::vector<OctreeNodePtr> &oldRenderedChunks,
-    std::unordered_map<uint64_t, DataRequestPtr> &dataRequests
-  ); */
   TrackerUpdate update(PGInstance *inst, const vm::vec3 &position, int minLod, int maxLod, int lod1Range);
 };
 
