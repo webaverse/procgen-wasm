@@ -16,12 +16,14 @@ class PGInstance;
 
 constexpr size_t numCachedOctreeNodes = 64 * 1024;
 
-class OctreeNodeAllocator {
-public: 
+class OctreeNodeAllocator
+{
+public:
   static OctreeNodePtr alloc(const vm::ivec2 &min, int lod);
 };
 
-class OctreeContext {
+class OctreeContext
+{
 public:
   std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>> nodeMap;
 
@@ -31,20 +33,27 @@ public:
 
 //
 
-class DataRequest {
+class DataRequest
+{
 public:
+  DataRequest(const OctreeNodePtr &octreeNode) : node(octreeNode)
+  {
+    // nothing
+  }
+
   OctreeNodePtr node;
-  
+
   std::vector<uint8_t> getBuffer() const;
 };
 
 typedef std::shared_ptr<DataRequest> DataRequestPtr;
 
-class DataRequestUpdate {
+class DataRequestUpdate
+{
 public:
   std::unordered_map<uint64_t, DataRequestPtr> dataRequests;
   std::vector<DataRequestPtr> newDataRequests;
-  std::vector<DataRequestPtr> keepDataRequests;
+  std::vector<DataRequestPtr> replacingRequests;
   std::vector<DataRequestPtr> cancelDataRequests;
 
   std::vector<uint8_t> getBuffer() const;
@@ -52,13 +61,14 @@ public:
 
 extern std::atomic<int> nextTrackerId;
 
-class TrackerUpdate {
+class TrackerUpdate
+{
 public:
   PGInstance *inst;
   std::vector<OctreeNodePtr> leafNodes;
 
   std::vector<DataRequestPtr> newDataRequests;
-  std::vector<DataRequestPtr> keepDataRequests;
+  std::vector<DataRequestPtr> replacingRequests;
   std::vector<DataRequestPtr> cancelDataRequests;
 
   uint8_t *getBuffer() const;
@@ -70,17 +80,15 @@ bool containsPoint(const vm::ivec2 &min, const int lod, const vm::ivec2 &p);
 bool containsPoint(const vm::vec2 &min, const int lod, const vm::vec2 &p);
 bool containsPoint(const OctreeNode &node, const vm::ivec2 &p);
 bool containsNode(const OctreeNode &node, const OctreeNode &other);
-bool equalsNode(const OctreeNode &node, const OctreeNode &other);
-bool equalsNodeLod(const OctreeNode &node, const OctreeNode &other);
+bool equalsNodeMinLod(const OctreeNode &node, const OctreeNode &other);
 // bool intersectsNode(const OctreeNode &node, const OctreeNode &other);
 bool chunksIntersect(const vm::ivec2 &min1, const int lod1, const vm::ivec2 &min2, const int lod2);
 
 void constructSeedTree(
-  OctreeContext &octreeContext,
-  const std::vector<vm::ivec2> &maxLodChunkPositions,
-  const int maxLod,
-  const std::vector<std::pair<vm::ivec2, int>> &lodSplits
-);
+    OctreeContext &octreeContext,
+    const std::vector<vm::ivec2> &maxLodChunkPositions,
+    const int maxLod,
+    const std::vector<std::pair<vm::ivec2, int>> &lodSplits);
 // std::vector<OctreeNodePtr> constructOctreeForSeed(const vm::ivec2 &maxLodCenter, const int maxLod, const std::vector<std::pair<vm::ivec2, int>> &lodSplits);
 std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>>::iterator findNodeIterAtPoint(OctreeContext &octreeContext, const vm::ivec2 &position);
 
@@ -113,10 +121,11 @@ OctreeNodePtr getMaxLodNode(const std::vector<OctreeNodePtr> &newLeafNodes, cons
 
 //
 
-class Tracker {
+class Tracker
+{
 public:
   PGInstance *inst;
-  
+
   // vm::ivec2 lastCoord;
   std::unordered_map<uint64_t, DataRequestPtr> dataRequests;
   // int lastEpoch;
@@ -130,9 +139,8 @@ public:
 
   void sortNodes(std::vector<OctreeNodePtr> &nodes);
   DataRequestUpdate updateDataRequests(
-    const std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
-    const std::vector<OctreeNodePtr> &leafNodes
-  );
+      const std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
+      const std::vector<OctreeNodePtr> &leafNodes);
   TrackerUpdate update(PGInstance *inst, const vm::vec3 &position, int minLod, int maxLod, int lod1Range);
 };
 

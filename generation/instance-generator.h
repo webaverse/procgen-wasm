@@ -163,6 +163,7 @@ public:
                         {
                             if (noises.uberNoise.instanceVisibility<I>(ax, az, heightfield))
                             {
+                                // ! Remove numInstances ?
                                 const int instanceId = (int)std::round(dis(rng) * (float)(numInstances - 1));
                                 const float scale = noises.uberNoise.scaleNoise<I>(ax, az, heightfield);
                                 const vm::vec3 rot = noises.uberNoise.rotationNoise<I>(ax, az, heightfield);

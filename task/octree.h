@@ -22,25 +22,35 @@
 //
 
 
-const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p, const int &lod);
-const vm::ivec3 chunkMinForPosition(const vm::vec3 &p, const int &lod);
+vm::ivec2 chunkMinForPosition(const vm::ivec2 &p, const int &lod);
 
 uint64_t hashOctreeMin(const vm::ivec2 &min);
 uint64_t hashOctreeMin(const vm::ivec3 &min);
 uint64_t hashOctreeMinLod(const vm::ivec2 &min, int lod);
 uint64_t hashOctreeMinLod(const vm::ivec3 &min, int lod);
 
+enum class REPLACING : int 
+{
+  NON,
+  BIGGER,
+  SMALLER,
+};
+
 class OctreeNodeSpec {
 public:
     vm::ivec2 min;
     int lod;
     int lodArray[2];
+    int replacing = (int)REPLACING::NON;
 };
 
 class OctreeNode : public OctreeNodeSpec {
 public:
-    OctreeNode(const vm::ivec2 &min, int lod) :
+    OctreeNode(const vm::ivec2 &min, const int &lod) :
       OctreeNodeSpec{min, lod, {0, 0}}
+      {}
+    OctreeNode(const vm::ivec2 &min, const int &lod, const int &replacing) :
+      OctreeNodeSpec{min, lod, {0, 0}, replacing}
       {}
     int getPriority() const {
         return 0;

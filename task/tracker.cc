@@ -2,13 +2,15 @@
 #include "../instance.h"
 #include <iostream>
 
-void serializeOctreeNodes(const std::vector<OctreeNodePtr> &datas, uint8_t *ptr, int &index) {
+void serializeOctreeNodes(const std::vector<OctreeNodePtr> &datas, uint8_t *ptr, int &index)
+{
   // std::cout << "serialize octree nodes" << datas.size() << std::endl;
-  
-  *((int32_t *)(ptr + index)) = datas.size();  
+
+  *((int32_t *)(ptr + index)) = datas.size();
   index += sizeof(int32_t);
 
-  for (const auto &data : datas) {
+  for (const auto &data : datas)
+  {
     std::memcpy(ptr + index, &data->min, sizeof(vm::ivec2));
     index += sizeof(vm::ivec2);
 
@@ -20,25 +22,31 @@ void serializeOctreeNodes(const std::vector<OctreeNodePtr> &datas, uint8_t *ptr,
   }
 }
 
-void serializeDataRequests(const std::vector<DataRequestPtr> &datas, uint8_t *ptr, int &index) {
+void serializeDataRequests(const std::vector<DataRequestPtr> &datas, uint8_t *ptr, int &index)
+{
   // std::cout << "serialize data requests" << datas.size() << std::endl;
 
-  *((int32_t *)(ptr + index)) = datas.size();  
+  *((int32_t *)(ptr + index)) = datas.size();
   index += sizeof(int32_t);
 
-  for (const auto &data : datas) {
+  for (const auto &data : datas)
+  {
     std::memcpy(ptr + index, &data->node->min, sizeof(vm::ivec2));
     index += sizeof(vm::ivec2);
 
     *((int *)(ptr + index)) = data->node->lod;
     index += sizeof(int);
-    
+
     std::memcpy(ptr + index, data->node->lodArray, sizeof(int[2]));
     index += sizeof(int[2]);
+
+    *((int *)(ptr + index)) = data->node->replacing;
+    index += sizeof(int);
   }
 }
 
-uint8_t *TrackerUpdate::getBuffer() const {
+uint8_t *TrackerUpdate::getBuffer() const
+{
   // compute size
   size_t size = 0;
 
@@ -50,8 +58,8 @@ uint8_t *TrackerUpdate::getBuffer() const {
   size += sizeof(int32_t); // numNewDataRequests
   size += octreeNodeSize * newDataRequests.size();
 
-  size += sizeof(int32_t); // numKeepDataRequests
-  size += octreeNodeSize * keepDataRequests.size();
+  size += sizeof(int32_t); // numReplacingRequests
+  size += octreeNodeSize * replacingRequests.size();
 
   size += sizeof(int32_t); // numCancelDataRequests
   size += octreeNodeSize * cancelDataRequests.size();
@@ -64,105 +72,114 @@ uint8_t *TrackerUpdate::getBuffer() const {
 
   serializeOctreeNodes(leafNodes, ptr, index);
   serializeDataRequests(newDataRequests, ptr, index);
-  serializeDataRequests(keepDataRequests, ptr, index);
+  serializeDataRequests(replacingRequests, ptr, index);
   serializeDataRequests(cancelDataRequests, ptr, index);
 
   return ptr;
 }
 
-bool containsPoint(const vm::ivec2 &min, const int lod, const vm::ivec2 &p) {
+bool containsPoint(const vm::ivec2 &min, const int lod, const vm::ivec2 &p)
+{
   return p.x >= min.x && p.x < min.x + lod &&
-    p.y >= min.y && p.y < min.y + lod;
+         p.y >= min.y && p.y < min.y + lod;
 }
-bool containsPoint(const vm::vec2 &min, const int lod, const vm::vec2 &p) {
+bool containsPoint(const vm::vec2 &min, const int lod, const vm::vec2 &p)
+{
   return p.x >= min.x && p.x < min.x + (float)lod &&
-    p.y >= min.y && p.y < min.y + (float)lod;
+         p.y >= min.y && p.y < min.y + (float)lod;
 }
-bool containsPoint(const OctreeNode &node, const vm::ivec2 &p) {
+bool containsPoint(const OctreeNode &node, const vm::ivec2 &p)
+{
   return containsPoint(node.min, node.lod, p);
 }
-bool containsNode(const OctreeNode &node, const OctreeNode &other) {
+bool containsNode(const OctreeNode &node, const OctreeNode &other)
+{
   return containsPoint(node, other.min);
 }
-bool equalsNode(const OctreeNode &node, const OctreeNode &other) {
-  if (node.min == other.min && node.lod == other.lod) {
-    return true;
-  } else {
-    return false;
-  }
+bool equalsNodeMin(const OctreeNode &node, const OctreeNode &other)
+{
+  return node.min == other.min;
 }
-bool equalsNodeLod(const OctreeNode &node, const OctreeNode &other) {
-  if (equalsNode(node, other)) {
-    if (node.lod != other.lod) {
-      return false;
-    }
-    return true;
-  } else {
-    return false;
-  }
-}
-bool equalsNodeLodArray(const OctreeNode &node, const OctreeNode &other) {
-  if (equalsNode(node, other)) {
-    if (
-      (node.lod != other.lod) ||
-      (node.lodArray[0] != other.lodArray[0] || node.lodArray[1] != other.lodArray[1])
-    ) {
-      return false;
-    }
-    return true;
-  }
-
-  return false;
+bool equalsLod(const OctreeNode &node, const OctreeNode &other)
+{
+  return node.lod == other.lod;
 }
 
-bool chunksIntersect(const vm::ivec2 &min1, const int lod1, const vm::ivec2 &min2, const int lod2) {
+bool equalsNodeMinLod(const OctreeNode &node, const OctreeNode &other)
+{
+  return equalsNodeMin(node, other) && equalsLod(node, other);
+}
+
+bool equalsLodArray(const OctreeNode &node, const OctreeNode &other)
+{
+  return (node.lodArray[0] == other.lodArray[0]) && (node.lodArray[1] == other.lodArray[1]);
+}
+
+bool equalsNode(const OctreeNode &node, const OctreeNode &other)
+{
+  return equalsNodeMinLod(node, other) && equalsLodArray(node, other);
+}
+
+bool chunksIntersect(const vm::ivec2 &min1, const int lod1, const vm::ivec2 &min2, const int lod2)
+{
   return min1.x < min2.x + lod2 && min1.x + lod1 > min2.x &&
-    min1.y < min2.y + lod2 && min1.y + lod1 > min2.y;
+         min1.y < min2.y + lod2 && min1.y + lod1 > min2.y;
 }
 
-OctreeNodePtr OctreeNodeAllocator::alloc(const vm::ivec2 &min, int lod) {
+OctreeNodePtr OctreeNodeAllocator::alloc(const vm::ivec2 &min, int lod)
+{
   return std::make_shared<OctreeNode>(min, lod);
 }
 
-OctreeNodePtr OctreeContext::alloc(const vm::ivec2 &min, int lod) {
+OctreeNodePtr OctreeContext::alloc(const vm::ivec2 &min, int lod)
+{
   auto node = OctreeNodeAllocator::alloc(min, lod);
-  if (node) {
+  if (node)
+  {
     node->min = min;
     node->lod = lod;
-    
+
     uint64_t hash = hashOctreeMinLod(min, lod);
     nodeMap[hash] = node;
   }
   return node;
 }
 // OctreeContext::OctreeContext() {}
-std::vector<OctreeNodePtr> OctreeContext::getLeafNodes() {
+std::vector<OctreeNodePtr> OctreeContext::getLeafNodes()
+{
   std::vector<OctreeNodePtr> leafNodes;
-  for (const auto &iter : nodeMap) {
+  for (const auto &iter : nodeMap)
+  {
     auto node = iter.second;
     leafNodes.push_back(node);
   }
   return leafNodes;
 }
 
-std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>>::iterator getNodeIter(OctreeContext &octreeContext, const vm::ivec2 &min, int lod) {
+std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>>::iterator getNodeIter(OctreeContext &octreeContext, const vm::ivec2 &min, int lod)
+{
   auto &nodeMap = octreeContext.nodeMap;
 
   uint64_t hash = hashOctreeMinLod(min, lod);
   auto iter = nodeMap.find(hash);
   return iter;
 }
-OctreeNodePtr getNode(OctreeContext &octreeContext, const vm::ivec2 &min, int lod) {
+OctreeNodePtr getNode(OctreeContext &octreeContext, const vm::ivec2 &min, int lod)
+{
   auto &nodeMap = octreeContext.nodeMap;
 
   auto iter = getNodeIter(octreeContext, min, lod);
-  if (iter != nodeMap.end()) {
+  if (iter != nodeMap.end())
+  {
     return iter->second;
-  } else {
+  }
+  else
+  {
     return nullptr;
   }
 }
-OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec2 &min, int lod) {
+OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec2 &min, int lod)
+{
   auto &nodeMap = octreeContext.nodeMap;
 
   auto node = OctreeNodeAllocator::alloc(min, lod);
@@ -170,47 +187,59 @@ OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec2 &min, int
   nodeMap[hash] = node;
   return node;
 }
-OctreeNodePtr getOrCreateNode(OctreeContext &octreeContext, const vm::ivec2 &min, int lod) {
+OctreeNodePtr getOrCreateNode(OctreeContext &octreeContext, const vm::ivec2 &min, int lod)
+{
   OctreeNodePtr node = getNode(octreeContext, min, lod);
-  if (!node) {
-      node = createNode(octreeContext, min, lod);
+  if (!node)
+  {
+    node = createNode(octreeContext, min, lod);
   }
   return node;
 }
 
-std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>>::iterator findNodeIterAtPoint(OctreeContext &octreeContext, const vm::ivec2 &position) {
+std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>>::iterator findNodeIterAtPoint(OctreeContext &octreeContext, const vm::ivec2 &position)
+{
   auto &nodeMap = octreeContext.nodeMap;
 
   // std::vector<OctreeNodePtr> leafNodes;
-  for (auto iter = nodeMap.begin(); iter != nodeMap.end(); iter++) {
+  for (auto iter = nodeMap.begin(); iter != nodeMap.end(); iter++)
+  {
     auto node = iter->second;
-    if (containsPoint(node->min, node->lod, position)) {
+    if (containsPoint(node->min, node->lod, position))
+    {
       return iter;
     }
   }
   return nodeMap.end();
 }
-OctreeNodePtr findContainedNode(OctreeContext &octreeContext, const vm::ivec2 &min, const int lod) {
+OctreeNodePtr findContainedNode(OctreeContext &octreeContext, const vm::ivec2 &min, const int lod)
+{
   auto &nodeMap = octreeContext.nodeMap;
 
   // std::vector<OctreeNodePtr> leafNodes;
-  for (const auto &iter : nodeMap) {
+  for (const auto &iter : nodeMap)
+  {
     auto node = iter.second;
-    if (containsPoint(min, lod, node->min)) {
+    if (containsPoint(min, lod, node->min))
+    {
       return node;
     }
   }
   return nullptr;
 }
-bool removeNode(OctreeContext &octreeContext, OctreeNodePtr node) {
+bool removeNode(OctreeContext &octreeContext, OctreeNodePtr node)
+{
   auto &nodeMap = octreeContext.nodeMap;
 
   uint64_t hash = hashOctreeMinLod(node->min, node->lod);
   auto iter = nodeMap.find(hash);
-  if (iter != nodeMap.end()) {
+  if (iter != nodeMap.end())
+  {
     nodeMap.erase(iter);
     return true;
-  } else {
+  }
+  else
+  {
     std::cerr << "erase node not found: " << node->min.x << " " << node->min.y << " " << node->lod << std::endl;
     abort();
     return false;
@@ -218,19 +247,22 @@ bool removeNode(OctreeContext &octreeContext, OctreeNodePtr node) {
 }
 
 void splitPointToLod(
-  OctreeContext &octreeContext,
-  const vm::ivec2 &absolutePosition,
-  int targetLod
-) {
+    OctreeContext &octreeContext,
+    const vm::ivec2 &absolutePosition,
+    int targetLod)
+{
   auto &nodeMap = octreeContext.nodeMap;
 
-  for (;;) {
+  for (;;)
+  {
     auto iter = findNodeIterAtPoint(octreeContext, absolutePosition);
-    if (iter != nodeMap.end()) {
+    if (iter != nodeMap.end())
+    {
       OctreeNodePtr node = iter->second;
       int parentLod = node->lod;
-      
-      if (parentLod > targetLod) {
+
+      if (parentLod > targetLod)
+      {
         const vm::ivec2 &parentPosition = node->min;
         int childLod = parentLod / 2;
 
@@ -238,27 +270,32 @@ void splitPointToLod(
 
         nodeMap.erase(iter);
 
-        for (int dx = 0; dx < 2; dx++) {
-          for (int dy = 0; dy < 2; dy++) {
+        for (int dx = 0; dx < 2; dx++)
+        {
+          for (int dy = 0; dy < 2; dy++)
+          {
             vm::ivec2 min{
-              parentPosition.x + dx * childLod,
-              parentPosition.y + dy * childLod
-            };
-            
+                parentPosition.x + dx * childLod,
+                parentPosition.y + dy * childLod};
+
             OctreeNodePtr childNode = createNode(
-              octreeContext,
-              min,
-              childLod
-            );
+                octreeContext,
+                min,
+                childLod);
           }
         }
-      } else {
+      }
+      else
+      {
         break;
       }
-    } else {
+    }
+    else
+    {
       std::cerr << "could not find split point node: " << absolutePosition.x << " " << absolutePosition.y << std::endl;
       std::cout << "existing nodes: ";
-      for (auto iter = nodeMap.begin(); iter != nodeMap.end(); iter++) {
+      for (auto iter = nodeMap.begin(); iter != nodeMap.end(); iter++)
+      {
         auto node = iter->second;
         std::cout << node->min.x << " " << node->min.y << " " << node->lod << ", ";
       }
@@ -267,24 +304,24 @@ void splitPointToLod(
     }
   }
 }
-void initializeLodArrays(OctreeContext &octreeContext) {
+void initializeLodArrays(OctreeContext &octreeContext)
+{
   auto &nodeMap = octreeContext.nodeMap;
-  
-  for (auto iter = nodeMap.begin(); iter != nodeMap.end(); iter++) {
+
+  for (auto iter = nodeMap.begin(); iter != nodeMap.end(); iter++)
+  {
     auto &node = iter->second;
     auto &min = node->min;
     auto &lod = node->lod;
-    
+
     vm::ivec2 bottomNodePosition{
-      min.x,
-      min.y + lod
-    };
+        min.x,
+        min.y + lod};
     auto bottomNodeIter = findNodeIterAtPoint(octreeContext, bottomNodePosition);
 
     vm::ivec2 rightNodePosition{
-      min.x + lod,
-      min.y
-    };
+        min.x + lod,
+        min.y};
     auto rightNodeIter = findNodeIterAtPoint(octreeContext, rightNodePosition);
 
     node->lodArray[0] = bottomNodeIter != nodeMap.end() ? bottomNodeIter->second->lod : (lod * 2);
@@ -292,12 +329,12 @@ void initializeLodArrays(OctreeContext &octreeContext) {
   }
 }
 void constructLodTree(
-  OctreeContext &octreeContext,
-  const vm::ivec2 &currentCoord,
-  int lod1Range,
-  int minLod,
-  int maxLod
-) {
+    OctreeContext &octreeContext,
+    const vm::ivec2 &currentCoord,
+    int lod1Range,
+    int minLod,
+    int maxLod)
+{
   auto &nodeMap = octreeContext.nodeMap;
 
   int minLodInt = 1 << (minLod - 1);
@@ -305,36 +342,37 @@ void constructLodTree(
 
   // initialize max lod
   vm::ivec2 maxLodCenter{
-    (int)std::floor((float)currentCoord.x / (float)maxLodInt) * maxLodInt,
-    (int)std::floor((float)currentCoord.y / (float)maxLodInt) * maxLodInt
-  };
-  for (int dx = -lod1Range * maxLodInt; dx <= lod1Range * maxLodInt; dx += maxLodInt) {
-    for (int dy = -lod1Range * maxLodInt; dy <= lod1Range * maxLodInt; dy += maxLodInt) {
+      (int)std::floor((float)currentCoord.x / (float)maxLodInt) * maxLodInt,
+      (int)std::floor((float)currentCoord.y / (float)maxLodInt) * maxLodInt};
+  for (int dx = -lod1Range * maxLodInt; dx <= lod1Range * maxLodInt; dx += maxLodInt)
+  {
+    for (int dy = -lod1Range * maxLodInt; dy <= lod1Range * maxLodInt; dy += maxLodInt)
+    {
       vm::ivec2 childPosition{
-        maxLodCenter.x + dx,
-        maxLodCenter.y + dy
-      };
+          maxLodCenter.x + dx,
+          maxLodCenter.y + dy};
       OctreeNodePtr childNode = getOrCreateNode(
-        octreeContext,
-        childPosition,
-        maxLodInt
-      );
+          octreeContext,
+          childPosition,
+          maxLodInt);
     }
   }
 
   // initialize other lods
-  if (minLod != maxLod) {
-    for (int lod = minLodInt; lod <= maxLodInt; lod *= 2) {
-      for (int dx = -lod1Range * lod; dx <= lod1Range * lod; dx += lod) {
-        for (int dz = -lod1Range * lod; dz <= lod1Range * lod; dz += lod) {
+  if (minLod != maxLod)
+  {
+    for (int lod = minLodInt; lod <= maxLodInt; lod *= 2)
+    {
+      for (int dx = -lod1Range * lod; dx <= lod1Range * lod; dx += lod)
+      {
+        for (int dz = -lod1Range * lod; dz <= lod1Range * lod; dz += lod)
+        {
           vm::ivec2 currentCoordSnappedToLod{
-            (int)std::floor((float)currentCoord.x / (float)lod) * lod,
-            (int)std::floor((float)currentCoord.y / (float)lod) * lod
-          };
+              (int)std::floor((float)currentCoord.x / (float)lod) * lod,
+              (int)std::floor((float)currentCoord.y / (float)lod) * lod};
           vm::ivec2 splitPosition{
-            currentCoordSnappedToLod.x + dx,
-            currentCoordSnappedToLod.y + dz
-          };
+              currentCoordSnappedToLod.x + dx,
+              currentCoordSnappedToLod.y + dz};
           splitPointToLod(octreeContext, splitPosition, lod);
         }
       }
@@ -344,45 +382,45 @@ void constructLodTree(
   initializeLodArrays(octreeContext);
 }
 void constructSeedTree(
-  OctreeContext &octreeContext,
-  const std::vector<vm::ivec2> &maxLodChunkPositions,
-  const int maxLod,
-  const std::vector<std::pair<vm::ivec2, int>> &lodSplits
-) {
+    OctreeContext &octreeContext,
+    const std::vector<vm::ivec2> &maxLodChunkPositions,
+    const int maxLod,
+    const std::vector<std::pair<vm::ivec2, int>> &lodSplits)
+{
   auto &nodeMap = octreeContext.nodeMap;
 
   // initialize base lods
-  for (size_t i = 0; i < maxLodChunkPositions.size(); i++) {
+  for (size_t i = 0; i < maxLodChunkPositions.size(); i++)
+  {
     const vm::ivec2 &nodePos = maxLodChunkPositions[i];
     OctreeNodePtr childNode = getOrCreateNode(
-      octreeContext,
-      nodePos,
-      maxLod
-    );
+        octreeContext,
+        nodePos,
+        maxLod);
   }
 
   // initialize other lods
-  for (const std::pair<vm::ivec2, int> &lodSplit : lodSplits) {
+  for (const std::pair<vm::ivec2, int> &lodSplit : lodSplits)
+  {
     const vm::ivec2 &splitPosition = lodSplit.first;
     const int &lod = lodSplit.second;
     splitPointToLod(octreeContext, splitPosition, lod);
   }
 }
 std::vector<OctreeNodePtr> constructOctreeForLeaf(
-  const vm::ivec2 &currentCoord,
-  int lod1Range,
-  int minLod,
-  int maxLod
-) {
+    const vm::ivec2 &currentCoord,
+    int lod1Range,
+    int minLod,
+    int maxLod)
+{
   OctreeContext octreeContext;
 
   constructLodTree(
-    octreeContext,
-    currentCoord,
-    lod1Range,
-    minLod,
-    maxLod
-  );
+      octreeContext,
+      currentCoord,
+      lod1Range,
+      minLod,
+      maxLod);
 
   // collect all nodes in the nodeMap
   std::vector<OctreeNodePtr> leafNodes = octreeContext.getLeafNodes();
@@ -391,12 +429,12 @@ std::vector<OctreeNodePtr> constructOctreeForLeaf(
   return leafNodes;
 }
 
-
-Tracker::Tracker(PGInstance *inst) :
-  inst(inst)
-{}
+Tracker::Tracker(PGInstance *inst) : inst(inst)
+{
+}
 // static methods
-vm::ivec2 getCurrentCoord(const vm::vec3 &position, int chunkSize) {
+vm::ivec2 getCurrentCoord(const vm::vec3 &position, int chunkSize)
+{
   const int cx = std::floor(position.x / (float)chunkSize);
   const int cz = std::floor(position.z / (float)chunkSize);
   return vm::ivec2{cx, cz};
@@ -404,104 +442,214 @@ vm::ivec2 getCurrentCoord(const vm::vec3 &position, int chunkSize) {
 
 // dynamic methods
 // sort nodes by distance to world position of the central max lod node
-void Tracker::sortNodes(std::vector<OctreeNodePtr> &nodes) {
+void Tracker::sortNodes(std::vector<OctreeNodePtr> &nodes)
+{
   const vm::vec3 &worldPosition = inst->renderingInfo.worldPosition;
   const vm::vec3 &cameraPosition = inst->renderingInfo.cameraPosition;
   const Quat &cameraQuaternion = inst->renderingInfo.cameraQuaternion;
   std::array<float, 16> &projectionMatrix = inst->renderingInfo.projectionMatrix;
-  
+
   // compute frustum
   Matrix matrixWorld(
-    Vec{
-      cameraPosition.x,
-      cameraPosition.y,
-      cameraPosition.z
-    },
-    Quat{
-      cameraQuaternion.x,
-      cameraQuaternion.y,
-      cameraQuaternion.z,
-      cameraQuaternion.w
-    },
-    Vec{1, 1, 1}
-  );
+      Vec{
+          cameraPosition.x,
+          cameraPosition.y,
+          cameraPosition.z},
+      Quat{
+          cameraQuaternion.x,
+          cameraQuaternion.y,
+          cameraQuaternion.z,
+          cameraQuaternion.w},
+      Vec{1, 1, 1});
   Matrix matrixWorldInverse(matrixWorld);
   matrixWorldInverse.invert();
   Frustum frustum = Frustum::fromMatrix(
-    Matrix::fromArray(projectionMatrix.data()) *= matrixWorldInverse
-  );
+      Matrix::fromArray(projectionMatrix.data()) *= matrixWorldInverse);
 
   sort<OctreeNodePtr>(nodes, worldPosition, frustum);
 }
 
 DataRequestUpdate Tracker::updateDataRequests(
-  const std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
-  const std::vector<OctreeNodePtr> &leafNodes
-) {
+    const std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
+    const std::vector<OctreeNodePtr> &leafNodes)
+{
   DataRequestUpdate dataRequestUpdate;
   dataRequestUpdate.dataRequests = dataRequests;
 
-  // cancel old data requests
-  for (auto iter = dataRequestUpdate.dataRequests.begin(); iter != dataRequestUpdate.dataRequests.end();) {
+  std::vector<uint64_t> replacingNodes;
+
+  // util lambda functions
+  auto createNewDataRequest = [&](const OctreeNodePtr &node, const uint64_t &hash) -> DataRequestPtr 
+  {
+    DataRequestPtr dataRequest = std::make_shared<DataRequest>(node);
+    dataRequestUpdate.dataRequests[hash] = dataRequest;
+    return dataRequest;
+  };
+  auto cancelDataRequest = [](DataRequestUpdate &dataRequestUpdate, const DataRequestPtr &oldDataRequest, auto &iter)
+  {
+    dataRequestUpdate.cancelDataRequests.push_back(oldDataRequest);
+    // forget the data request
+    auto currentIter = iter;
+    auto nextIter = iter;
+    nextIter++;
+    dataRequestUpdate.dataRequests.erase(currentIter);
+    iter = nextIter;
+  };
+  auto addReplacingRequest = [&](const OctreeNodePtr &node)
+  {
+    uint64_t hash = hashOctreeMinLod(node->min, node->lod);
+    replacingNodes.push_back(hash);
+    const DataRequestPtr dataRequest = createNewDataRequest(node, hash);
+    dataRequestUpdate.replacingRequests.push_back(dataRequest);
+  };
+
+  // cancel old data requests, and add replacing data requests
+  for (auto iter = dataRequestUpdate.dataRequests.begin(); iter != dataRequestUpdate.dataRequests.end();)
+  {
     const uint64_t &hash = iter->first;
     const DataRequestPtr &oldDataRequest = iter->second;
 
-    auto matchingLeafNodeIter = std::find_if(
-      leafNodes.begin(),
-      leafNodes.end(),
-      [&](const OctreeNodePtr &leafNode) -> bool {
-        return equalsNodeLodArray(*leafNode, *oldDataRequest->node);
-      }
-    );
-    if (matchingLeafNodeIter != leafNodes.end()) {
-      // keep the data request
-      dataRequestUpdate.keepDataRequests.push_back(oldDataRequest);
+    auto matchingMinLeafNodeIter = std::find_if(
+        leafNodes.begin(),
+        leafNodes.end(),
+        [&](const OctreeNodePtr &leafNode) -> bool
+        {
+          return equalsNodeMin(*leafNode, *oldDataRequest->node);
+        });
 
-      iter++;
-    } else {
-      // cancel the data request
-      dataRequestUpdate.cancelDataRequests.push_back(oldDataRequest);
-      // forget the data request
-      auto currentIter = iter;
-      auto nextIter = iter;
-      nextIter++;
-      dataRequestUpdate.dataRequests.erase(currentIter);
-      iter = nextIter;
+    if (matchingMinLeafNodeIter != leafNodes.end())
+    {
+      const OctreeNode newNode = **matchingMinLeafNodeIter;
+      const OctreeNode oldNode = *oldDataRequest->node;
+
+      if (equalsLod(newNode, oldNode))
+      {
+        if (equalsLodArray(newNode, oldNode))
+        {
+          // keep the data request
+          iter++;
+        }
+        else
+        {
+          cancelDataRequest(dataRequestUpdate, oldDataRequest, iter);
+        }
+      }
+      else
+      {
+        cancelDataRequest(dataRequestUpdate, oldDataRequest, iter);
+
+        const float LOD_BALANCE = 1.f;
+        const float lodRatio = (float)newNode.lod / (float)oldNode.lod;
+
+        if (lodRatio > LOD_BALANCE)
+        {
+          // new chunk is bigger than the old chunk
+          /* ...........      ...........
+             . -  . -  .      .         .
+             ...........  ->  .    +    .
+             . -  .  - .      .         .
+             ...........      ...........  */
+
+          const vm::ivec2 min = newNode.min;
+          const int lod = newNode.lod;
+          const OctreeNodePtr node = std::make_shared<OctreeNode>(min, lod, (int)REPLACING::SMALLER);
+
+          addReplacingRequest(node);
+
+          // std::cout << "-4 -> +1 = " << lodRatio << std::endl;
+
+          // in every chunk, we have an addition set, and a removal set
+          // const additionSet = [newNode];
+          // const removalSet = [oldNode1, oldNode2, oldNode3, oldNode4];
+          // the new node is responsible for removal of the old nodes
+
+          // replaceFunc -> if 1 is ready -> (removeNodes() + addNode())
+
+          // in every chunk, we have an addition count, and a removal count
+          // when the addition count reaches its limit we add the chunk
+          // when the removal count reaches its limit we remove the chunk
+
+          // we have the Min so we can use that to get the replaced nodes set
+          // we need to wait for the new chunk to get "Ready" and then we can remove the old ones
+        }
+        else
+        {
+          // old chunk is bigger than the new chunk
+
+          /* ...........      ...........
+             .         .      . +  . +  .
+             .    -    .  ->  ...........
+             .         .      . +  .  + .
+             ...........      ........... */
+
+          const int DIMENSION = 2;
+
+          for (int y = 0; y < DIMENSION; y++)
+          {
+            for (int x = 0; x < DIMENSION; x++)
+            {
+              const vm::ivec2 min = newNode.min + vm::ivec2{x, y} * newNode.lod;
+              const int lod = newNode.lod;
+              const OctreeNodePtr node = std::make_shared<OctreeNode>(min, lod, (int)REPLACING::BIGGER);
+
+              addReplacingRequest(node);
+            }
+          }
+
+          // std::cout << "-1 -> +4 = " << lodRatio << std::endl;
+
+          // the new nodes are responsible for the removal of the old node
+
+          // replaceFunc -> if 4 ready -> (removeNode() + addNodes())
+
+          // store the four replacing chunks in the removal function of the bigger one,
+          // when removal is called four times add the set, remove the old one
+          // in JS once the four chunks are ready, kill the one big chunk
+
+          // const vm::ivec2 testMin = vm::ivec2{newNode.min.x, newNode.min.y} + newNode.lod;
+          // const vm::ivec2 rootMin = chunkMinForPosition(testMin, oldNode.lod);
+          // const vm::ivec2 baseMin = oldNode.min;
+        }
+      }
+    }
+    else
+    {
+      cancelDataRequest(dataRequestUpdate, oldDataRequest, iter);
     }
   }
 
   // add new data requests
-  for (auto chunk : leafNodes) {
-    uint64_t hash = hashOctreeMinLod(chunk->min, chunk->lod);
+  for (auto node : leafNodes)
+  {
+    uint64_t hash = hashOctreeMinLod(node->min, node->lod);
     auto dataRequestIter = dataRequestUpdate.dataRequests.find(hash);
-    if (dataRequestIter == dataRequestUpdate.dataRequests.end()) {
-      DataRequestPtr dataRequest(new DataRequest{chunk});
-
-      dataRequestUpdate.newDataRequests.push_back(dataRequest);
-
-      dataRequestUpdate.dataRequests.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(hash),
-        std::forward_as_tuple(dataRequest)
-      );
+    if (dataRequestIter == dataRequestUpdate.dataRequests.end())
+    {
+      const DataRequestPtr dataRequest = createNewDataRequest(node, hash);
+      const bool isReplacing = std::find(replacingNodes.begin(), replacingNodes.end(), hash) != replacingNodes.end();
+      // replacing nodes won't get added right away, they get added once the data is ready (handled in Javascript)
+      if (!isReplacing)
+      {
+        dataRequestUpdate.newDataRequests.push_back(dataRequest);
+      }
     }
   }
 
   return dataRequestUpdate;
 }
 
-TrackerUpdate Tracker::update(PGInstance *inst, const vm::vec3 &position, int minLod, int maxLod, int lod1Range) {
+TrackerUpdate Tracker::update(PGInstance *inst, const vm::vec3 &position, int minLod, int maxLod, int lod1Range)
+{
   std::lock_guard<std::mutex> lock(mutex);
-  
+
   // new octrees
   const int chunkSize = this->inst->heightfieldGenerator.getChunkSize();
   vm::ivec2 currentCoord = getCurrentCoord(position, chunkSize); // in chunk space
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(
-    currentCoord,
-    lod1Range,
-    minLod,
-    maxLod
-  );
+      currentCoord,
+      lod1Range,
+      minLod,
+      maxLod);
   sortNodes(octreeLeafNodes);
 
   DataRequestUpdate dataRequestUpdate = updateDataRequests(this->dataRequests, octreeLeafNodes);
@@ -512,7 +660,7 @@ TrackerUpdate Tracker::update(PGInstance *inst, const vm::vec3 &position, int mi
 
   result.leafNodes = std::move(octreeLeafNodes);
   result.newDataRequests = std::move(dataRequestUpdate.newDataRequests);
-  result.keepDataRequests = std::move(dataRequestUpdate.keepDataRequests);
+  result.replacingRequests = std::move(dataRequestUpdate.replacingRequests);
   result.cancelDataRequests = std::move(dataRequestUpdate.cancelDataRequests);
 
   return result;
