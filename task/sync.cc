@@ -20,15 +20,6 @@ void Mutex::unlock() {
 bool Mutex::try_lock() {
   return mutex.try_lock();
 }
-/* bool Mutex::test() {
-  return !flag.test();
-}
-void Mutex::wait() {
-  lock();
-  unlock();
-} */
-
-//
 
 Semaphore::Semaphore(int count) : count(count) {}
 void Semaphore::signal() {
@@ -43,11 +34,3 @@ void Semaphore::wait() {
     }
     count--;
 }
-/* bool Semaphore::try_wait() {
-    std::lock_guard<decltype(mutex_)> lock(mutex_);
-    if(count_) {
-        --count_;
-        return true;
-    }
-    return false;
-} */

@@ -122,75 +122,18 @@ void TaskQueue::pushTask(Task *task) {
   }
   taskSemaphore.signal();
 }
-// std::atomic<int> numActiveThreads(NUM_THREADS);
-Task *TaskQueue::popLockTask() {
-  /* EM_ASM(
-    console.log('pop lock task 1');
-  ); */
-  // int currentNumActiveThreads = numActiveThreads.fetch_sub(1) - 1;
 
-  /* EM_ASM({
-    console.log('try to pop task', $0);
-  }, currentNumActiveThreads); */
-  
-  /* EM_ASM({
-    globalThis.lockStartTime = performance.now();
-  }); */
-  
-  /* if (currentNumActiveThreads < 2) {
-    std::cout << "pop task 1 " << currentNumActiveThreads << std::endl;
-  } */
+Task *TaskQueue::popLockTask() {
   taskSemaphore.wait();
   
-  /* double time = EM_ASM_DOUBLE({
-    const lockEndTime = performance.now();
-    return lockEndTime - globalThis.lockStartTime;
-  });
-  int currentNumActiveThreads2 = numActiveThreads.fetch_add(1) + 1;
-  if (currentNumActiveThreads2 < 2) {
-    std::cout << "pop task 2 " << currentNumActiveThreads2 << " " << time << std::endl;
-  } */
-
-  /* EM_ASM({
-    // console.time('pop task ' + $0);
-    globalThis.requestStartTime = performance.now();
-  }); */
-
-  /* EM_ASM({
-    console.timeEnd('pop task ' + $0);
-    console.log('num active threads', $1, $2, $3);
-  }, pthread_self(), currentNumActiveThreads, currentNumActiveThreads2, tasks.size()); */
-
-  /* EM_ASM(
-    console.log('pop lock sema waited');
-  ); */
-
   Task *task;
   {
     std::unique_lock<Mutex> lock(taskMutex);
-    // lock.lock();
-
-    /* if (lockedTasks.size() == 0) {
-      abort();
-    } */
 
     task = tasks.front();
     tasks.pop_front();
-
-    /* if (currentNumActiveThreads < 8) {
-      EM_ASM({
-        console.log('fewer than 8 threads', $0, $1);
-      }, currentNumActiveThreads, tasks.size());
-    } */
-
-    // task->ensurePop();
   }
-  /* if (task == nullptr) {
-    EM_ASM(
-      console.log('failed to pop task!');
-    );
-    abort();
-  } */
+  
   return task;
 }
 void TaskQueue::cancelTask(uint32_t taskId) {
@@ -198,19 +141,12 @@ void TaskQueue::cancelTask(uint32_t taskId) {
   for (auto it = tasks.begin(); it != tasks.end(); it++) {
     Task *task = (*it);
     if (task->id == taskId && task->live) {
-      /* EM_ASM({
-        console.log('cancel task', $0);
-      }, task->id); */
       task->cancel();
       break;
     }
   }
 }
 void TaskQueue::runLoop() {
-  /* EM_ASM(
-    console.log('run loop');
-  ); */
-  // {
     for (;;) {
       Task *task = popLockTask();
       if (!task) {
@@ -220,19 +156,13 @@ void TaskQueue::runLoop() {
       if (task->live) {
         task->run();
       }
-      /* EM_ASM({
-        console.log('done running task');
-      }); */
       delete task;
-      // task = nullptr;
     }
-  // }
-  /* EM_ASM(
-    console.log('thread exited due to no task!');
-  ); */
+
   std::cout << "main loop exited" << std::endl;
   abort();
 }
+
 void TaskQueue::setCamera(const vm::vec3 &worldPosition, const vm::vec3 &cameraPosition, const Quat &cameraQuaternion, const std::array<float, 16> &projectionMatrix) {
   std::unique_lock<Mutex> lock(taskMutex);
 
@@ -293,24 +223,4 @@ void TaskQueue::sortTasksInternal() {
   Frustum frustum = getFrustum();
 
   sort<Task *>(tasks, worldPosition, frustum);
-
-  /* std::vector<std::pair<Task *, float>> taskDistances;
-  taskDistances.reserve(tasks.size());
-  for (size_t i = 0; i < tasks.size(); i++) {
-    Task *task = tasks[i];
-    float distance = getTaskDistance(task, frustum);
-    taskDistances.push_back(std::pair<Task *, float>(task, distance));
-  }
-
-  std::sort(
-    taskDistances.begin(),
-    taskDistances.end(),
-    [&](const std::pair<Task *, float> &a, const std::pair<Task *, float> &b) -> bool {
-      return a.second < b.second;
-    }
-  );
-
-  for (size_t i = 0; i < taskDistances.size(); i++) {
-    tasks[i] = taskDistances[i].first;
-  } */
 }

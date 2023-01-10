@@ -1,6 +1,14 @@
 #include "octree.h"
 #include <cmath>
 
+vm::ivec2 chunkMinForPosition(const vm::ivec2 &p, const int &lod)
+{
+    return vm::ivec2{
+        (int)std::floor((float)p.x / (float)lod) * lod,
+        (int)std::floor((float)p.y / (float)lod) * lod
+    };
+}
+
 uint64_t hashOctreeMin(const vm::ivec2 &min)
 {
     uint64_t result = uint16_t(min.x);
