@@ -40,7 +40,7 @@ void serializeDataRequests(const std::vector<DataRequestPtr> &datas, uint8_t *pt
     std::memcpy(ptr + index, data->node->lodArray, sizeof(int[2]));
     index += sizeof(int[2]);
 
-    *((int *)(ptr + index)) = data->node->replacing;
+    *((int *)(ptr + index)) = (int)data->node->replacing;
     index += sizeof(int);
   }
 }
@@ -50,7 +50,8 @@ uint8_t *TrackerUpdate::getBuffer() const
   // compute size
   size_t size = 0;
 
-  constexpr size_t octreeNodeSize = sizeof(vm::ivec2) + sizeof(int) + sizeof(int[2]);
+  constexpr size_t leafNodeSize = sizeof(vm::ivec2) + sizeof(int) + sizeof(int[2]);
+  constexpr size_t octreeNodeSize = sizeof(vm::ivec2) + sizeof(int) + sizeof(int[2]) + sizeof(int);
 
   size += sizeof(int32_t); // numLeafNodes
   size += octreeNodeSize * leafNodes.size();
@@ -139,7 +140,7 @@ OctreeNodePtr OctreeContext::alloc(const vm::ivec2 &min, int lod)
     node->min = min;
     node->lod = lod;
 
-    uint64_t hash = hashOctreeMinLod(min, lod);
+    const uint64_t hash = hashOctreeMinLod(min, lod);
     nodeMap[hash] = node;
   }
   return node;
@@ -160,7 +161,7 @@ std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>>::iterator getNodeIter(
 {
   auto &nodeMap = octreeContext.nodeMap;
 
-  uint64_t hash = hashOctreeMinLod(min, lod);
+  const uint64_t hash = hashOctreeMinLod(min, lod);
   auto iter = nodeMap.find(hash);
   return iter;
 }
@@ -183,7 +184,7 @@ OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec2 &min, int
   auto &nodeMap = octreeContext.nodeMap;
 
   auto node = OctreeNodeAllocator::alloc(min, lod);
-  uint64_t hash = hashOctreeMinLod(min, lod);
+  const uint64_t hash = hashOctreeMinLod(min, lod);
   nodeMap[hash] = node;
   return node;
 }
@@ -231,7 +232,7 @@ bool removeNode(OctreeContext &octreeContext, OctreeNodePtr node)
 {
   auto &nodeMap = octreeContext.nodeMap;
 
-  uint64_t hash = hashOctreeMinLod(node->min, node->lod);
+  const uint64_t hash = hashOctreeMinLod(node->min, node->lod);
   auto iter = nodeMap.find(hash);
   if (iter != nodeMap.end())
   {
@@ -469,6 +470,193 @@ void Tracker::sortNodes(std::vector<OctreeNodePtr> &nodes)
   sort<OctreeNodePtr>(nodes, worldPosition, frustum);
 }
 
+template <REPLACING_SIZE r>
+void addReplacingNode(std::unordered_map<uint64_t, OctreeNode> &replacingNodes, const vm::ivec2 &min, const int &lod)
+{
+  const OctreeNode node(min, lod, r);
+  const uint64_t hash = hashOctreeMinLod(min, lod);
+  replacingNodes.emplace(hash, node);
+}
+
+DataRequestPtr createNewDataRequest(DataRequestUpdate &dataRequestUpdate, const OctreeNodePtr &node, const bool &isReplacing)
+{
+  const uint64_t hash = hashOctreeMinLod(node->min, node->lod);
+  DataRequestPtr dataRequest = std::make_shared<DataRequest>(node);
+  dataRequestUpdate.dataRequests[hash] = dataRequest;
+  if (isReplacing)
+  {
+    dataRequestUpdate.replacingRequests.push_back(dataRequest);
+  }
+  return dataRequest;
+}
+
+void addNewDataRequest(DataRequestUpdate &dataRequestUpdate, const DataRequestPtr &dataRequest, const bool &isReplacing)
+{
+  // replacing nodes won't get added right away, they get added once the data is ready (handled in Javascript)
+  if (!isReplacing)
+  {
+    dataRequestUpdate.newDataRequests.push_back(dataRequest);
+  }
+}
+
+void injectReplacingInfo(OctreeNodePtr &node, const auto &replacingNodeIter, const bool &isReplacing)
+{
+  // if node is replacing, inject replacing info
+  if (isReplacing)
+  {
+    const OctreeNode *nodeInfo = &replacingNodeIter->second;
+    node->replacing = nodeInfo->replacing;
+  }
+}
+
+template <REPLACING_SIZE r>
+void handleReplacingRequest(DataRequestUpdate &dataRequestUpdate, std::unordered_map<uint64_t, OctreeNode> &replacingNodes, const OctreeNode &oldNode, const OctreeNode &newNode)
+{
+  switch (r)
+  {
+  case REPLACING_SIZE::SAME:
+  {
+    // replacing chunk, same size
+    const vm::ivec2 min = newNode.min;
+    const int lod = newNode.lod;
+
+    addReplacingNode<r>(replacingNodes, min, lod);
+    break;
+  }
+  case REPLACING_SIZE::SMALLER:
+  {
+    // new chunk is bigger than the old chunk
+    /* ...........      ...........
+       . -  . -  .      .         .
+       ...........  ->  .    +    .
+       . -  .  - .      .         .
+       ...........      ...........  */
+
+    const vm::ivec2 min = newNode.min;
+    const int lod = newNode.lod;
+
+    addReplacingNode<r>(replacingNodes, min, lod);
+    break;
+  }
+  case REPLACING_SIZE::BIGGER:
+  {
+    // old chunk is bigger than the new chunk
+
+    /* ...........      ...........
+       .         .      . +  . +  .
+       .    -    .  ->  ...........
+       .         .      . +  .  + .
+       ...........      ........... */
+
+    const int DIMENSION = 2;
+
+    for (int y = 0; y < DIMENSION; y++)
+    {
+      for (int x = 0; x < DIMENSION; x++)
+      {
+        const vm::ivec2 min = newNode.min + vm::ivec2{x, y} * newNode.lod;
+        const int lod = newNode.lod;
+
+        addReplacingNode<r>(replacingNodes, min, lod);
+      }
+    }
+    break;
+  }
+  default:
+    std::cerr << "unknown replacing type" << std::endl;
+    break;
+  }
+}
+
+void eraseDataRequest(DataRequestUpdate &dataRequestUpdate, auto &iter)
+{
+  // forget the data request
+  auto currentIter = iter;
+  auto nextIter = iter;
+  nextIter++;
+  dataRequestUpdate.dataRequests.erase(currentIter);
+  iter = nextIter;
+}
+
+template <bool isReplacing>
+void cancelDataRequest(DataRequestUpdate &dataRequestUpdate, const DataRequestPtr &oldDataRequest, auto &iter)
+{
+  if (!isReplacing)
+  {
+    dataRequestUpdate.cancelDataRequests.push_back(oldDataRequest);
+  }
+  eraseDataRequest(dataRequestUpdate, iter);
+}
+
+void handleMatchingLodNodes(DataRequestUpdate &dataRequestUpdate,
+                            std::unordered_map<uint64_t, OctreeNode> &replacingNodes,
+                            const OctreeNode &oldNode,
+                            const OctreeNode &newNode,
+                            auto &iter)
+{
+  if (equalsLodArray(newNode, oldNode))
+  {
+    // keep the data request
+    iter++;
+  }
+  else
+  {
+    // replacing due to lod array change
+    handleReplacingRequest<REPLACING_SIZE::SAME>(dataRequestUpdate, replacingNodes, oldNode, newNode);
+  }
+}
+
+void handleUnbalancedLodNodes(DataRequestUpdate &dataRequestUpdate,
+                              std::unordered_map<uint64_t, OctreeNode> &replacingNodes,
+                              const OctreeNode &oldNode,
+                              const OctreeNode &newNode,
+                              auto &iter)
+{
+  const float LOD_BALANCE = 1.f;
+  const float lodRatio = (float)newNode.lod / (float)oldNode.lod;
+
+  if (lodRatio > LOD_BALANCE)
+  {
+    // replacing smaller chunk
+    handleReplacingRequest<REPLACING_SIZE::SMALLER>(dataRequestUpdate, replacingNodes, oldNode, newNode);
+  }
+  else
+  {
+    // replacing bigger chunk
+    handleReplacingRequest<REPLACING_SIZE::BIGGER>(dataRequestUpdate, replacingNodes, oldNode, newNode);
+  }
+}
+void handleMatchingMinNodes(DataRequestUpdate &dataRequestUpdate,
+                            std::unordered_map<uint64_t, OctreeNode> &replacingNodes,
+                            const OctreeNode &oldNode,
+                            const OctreeNode &newNode,
+                            auto &iter)
+{
+  if (equalsLod(newNode, oldNode))
+  {
+    handleMatchingLodNodes(dataRequestUpdate, replacingNodes, oldNode, newNode, iter);
+  }
+  else
+  {
+    handleUnbalancedLodNodes(dataRequestUpdate, replacingNodes, oldNode, newNode, iter);
+  }
+}
+
+void createDataRequestFromLeafNode(OctreeNodePtr &node, DataRequestUpdate &dataRequestUpdate, std::unordered_map<uint64_t, OctreeNode> &replacingNodes)
+{
+  const uint64_t hash = hashOctreeMinLod(node->min, node->lod);
+  auto dataRequestIter = dataRequestUpdate.dataRequests.find(hash);
+  if (dataRequestIter == dataRequestUpdate.dataRequests.end())
+  {
+    auto foundReplacingNode = replacingNodes.find(hash);
+    bool isReplacing = foundReplacingNode != replacingNodes.end();
+
+    injectReplacingInfo(node, foundReplacingNode, isReplacing);
+    const DataRequestPtr dataRequest = createNewDataRequest(dataRequestUpdate, node, isReplacing);
+    addNewDataRequest(dataRequestUpdate, dataRequest, isReplacing);
+  }
+}
+
 DataRequestUpdate Tracker::updateDataRequests(
     const std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
     const std::vector<OctreeNodePtr> &leafNodes)
@@ -476,32 +664,7 @@ DataRequestUpdate Tracker::updateDataRequests(
   DataRequestUpdate dataRequestUpdate;
   dataRequestUpdate.dataRequests = dataRequests;
 
-  std::vector<uint64_t> replacingNodes;
-
-  // util lambda functions
-  auto createNewDataRequest = [&](const OctreeNodePtr &node, const uint64_t &hash) -> DataRequestPtr 
-  {
-    DataRequestPtr dataRequest = std::make_shared<DataRequest>(node);
-    dataRequestUpdate.dataRequests[hash] = dataRequest;
-    return dataRequest;
-  };
-  auto cancelDataRequest = [](DataRequestUpdate &dataRequestUpdate, const DataRequestPtr &oldDataRequest, auto &iter)
-  {
-    dataRequestUpdate.cancelDataRequests.push_back(oldDataRequest);
-    // forget the data request
-    auto currentIter = iter;
-    auto nextIter = iter;
-    nextIter++;
-    dataRequestUpdate.dataRequests.erase(currentIter);
-    iter = nextIter;
-  };
-  auto addReplacingRequest = [&](const OctreeNodePtr &node)
-  {
-    uint64_t hash = hashOctreeMinLod(node->min, node->lod);
-    replacingNodes.push_back(hash);
-    const DataRequestPtr dataRequest = createNewDataRequest(node, hash);
-    dataRequestUpdate.replacingRequests.push_back(dataRequest);
-  };
+  std::unordered_map<uint64_t, OctreeNode> replacingNodes;
 
   // cancel old data requests, and add replacing data requests
   for (auto iter = dataRequestUpdate.dataRequests.begin(); iter != dataRequestUpdate.dataRequests.end();)
@@ -522,117 +685,19 @@ DataRequestUpdate Tracker::updateDataRequests(
       const OctreeNode newNode = **matchingMinLeafNodeIter;
       const OctreeNode oldNode = *oldDataRequest->node;
 
-      if (equalsLod(newNode, oldNode))
-      {
-        if (equalsLodArray(newNode, oldNode))
-        {
-          // keep the data request
-          iter++;
-        }
-        else
-        {
-          cancelDataRequest(dataRequestUpdate, oldDataRequest, iter);
-        }
-      }
-      else
-      {
-        cancelDataRequest(dataRequestUpdate, oldDataRequest, iter);
-
-        const float LOD_BALANCE = 1.f;
-        const float lodRatio = (float)newNode.lod / (float)oldNode.lod;
-
-        if (lodRatio > LOD_BALANCE)
-        {
-          // new chunk is bigger than the old chunk
-          /* ...........      ...........
-             . -  . -  .      .         .
-             ...........  ->  .    +    .
-             . -  .  - .      .         .
-             ...........      ...........  */
-
-          const vm::ivec2 min = newNode.min;
-          const int lod = newNode.lod;
-          const OctreeNodePtr node = std::make_shared<OctreeNode>(min, lod, (int)REPLACING::SMALLER);
-
-          addReplacingRequest(node);
-
-          // std::cout << "-4 -> +1 = " << lodRatio << std::endl;
-
-          // in every chunk, we have an addition set, and a removal set
-          // const additionSet = [newNode];
-          // const removalSet = [oldNode1, oldNode2, oldNode3, oldNode4];
-          // the new node is responsible for removal of the old nodes
-
-          // replaceFunc -> if 1 is ready -> (removeNodes() + addNode())
-
-          // in every chunk, we have an addition count, and a removal count
-          // when the addition count reaches its limit we add the chunk
-          // when the removal count reaches its limit we remove the chunk
-
-          // we have the Min so we can use that to get the replaced nodes set
-          // we need to wait for the new chunk to get "Ready" and then we can remove the old ones
-        }
-        else
-        {
-          // old chunk is bigger than the new chunk
-
-          /* ...........      ...........
-             .         .      . +  . +  .
-             .    -    .  ->  ...........
-             .         .      . +  .  + .
-             ...........      ........... */
-
-          const int DIMENSION = 2;
-
-          for (int y = 0; y < DIMENSION; y++)
-          {
-            for (int x = 0; x < DIMENSION; x++)
-            {
-              const vm::ivec2 min = newNode.min + vm::ivec2{x, y} * newNode.lod;
-              const int lod = newNode.lod;
-              const OctreeNodePtr node = std::make_shared<OctreeNode>(min, lod, (int)REPLACING::BIGGER);
-
-              addReplacingRequest(node);
-            }
-          }
-
-          // std::cout << "-1 -> +4 = " << lodRatio << std::endl;
-
-          // the new nodes are responsible for the removal of the old node
-
-          // replaceFunc -> if 4 ready -> (removeNode() + addNodes())
-
-          // store the four replacing chunks in the removal function of the bigger one,
-          // when removal is called four times add the set, remove the old one
-          // in JS once the four chunks are ready, kill the one big chunk
-
-          // const vm::ivec2 testMin = vm::ivec2{newNode.min.x, newNode.min.y} + newNode.lod;
-          // const vm::ivec2 rootMin = chunkMinForPosition(testMin, oldNode.lod);
-          // const vm::ivec2 baseMin = oldNode.min;
-        }
-      }
+      cancelDataRequest<true>(dataRequestUpdate, oldDataRequest, iter);
+      handleMatchingMinNodes(dataRequestUpdate, replacingNodes, oldNode, newNode, iter);
     }
     else
     {
-      cancelDataRequest(dataRequestUpdate, oldDataRequest, iter);
+      cancelDataRequest<false>(dataRequestUpdate, oldDataRequest, iter);
     }
   }
 
   // add new data requests
   for (auto node : leafNodes)
   {
-    uint64_t hash = hashOctreeMinLod(node->min, node->lod);
-    auto dataRequestIter = dataRequestUpdate.dataRequests.find(hash);
-    if (dataRequestIter == dataRequestUpdate.dataRequests.end())
-    {
-      const DataRequestPtr dataRequest = createNewDataRequest(node, hash);
-      const bool isReplacing = std::find(replacingNodes.begin(), replacingNodes.end(), hash) != replacingNodes.end();
-      // replacing nodes won't get added right away, they get added once the data is ready (handled in Javascript)
-      if (!isReplacing)
-      {
-        dataRequestUpdate.newDataRequests.push_back(dataRequest);
-      }
-    }
+    createDataRequestFromLeafNode(node, dataRequestUpdate, replacingNodes);
   }
 
   return dataRequestUpdate;
@@ -645,11 +710,13 @@ TrackerUpdate Tracker::update(PGInstance *inst, const vm::vec3 &position, int mi
   // new octrees
   const int chunkSize = this->inst->heightfieldGenerator.getChunkSize();
   vm::ivec2 currentCoord = getCurrentCoord(position, chunkSize); // in chunk space
+
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(
       currentCoord,
       lod1Range,
       minLod,
       maxLod);
+
   sortNodes(octreeLeafNodes);
 
   DataRequestUpdate dataRequestUpdate = updateDataRequests(this->dataRequests, octreeLeafNodes);

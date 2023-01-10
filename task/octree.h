@@ -29,9 +29,9 @@ uint64_t hashOctreeMin(const vm::ivec3 &min);
 uint64_t hashOctreeMinLod(const vm::ivec2 &min, int lod);
 uint64_t hashOctreeMinLod(const vm::ivec3 &min, int lod);
 
-enum class REPLACING : int 
+enum class REPLACING_SIZE : int 
 {
-  NON,
+  SAME,
   BIGGER,
   SMALLER,
 };
@@ -41,7 +41,7 @@ public:
     vm::ivec2 min;
     int lod;
     int lodArray[2];
-    int replacing = (int)REPLACING::NON;
+    REPLACING_SIZE replacing = REPLACING_SIZE::SAME;
 };
 
 class OctreeNode : public OctreeNodeSpec {
@@ -49,7 +49,7 @@ public:
     OctreeNode(const vm::ivec2 &min, const int &lod) :
       OctreeNodeSpec{min, lod, {0, 0}}
       {}
-    OctreeNode(const vm::ivec2 &min, const int &lod, const int &replacing) :
+    OctreeNode(const vm::ivec2 &min, const int &lod, const REPLACING_SIZE &replacing) :
       OctreeNodeSpec{min, lod, {0, 0}, replacing}
       {}
     int getPriority() const {
