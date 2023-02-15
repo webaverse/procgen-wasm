@@ -29,6 +29,7 @@ emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=100MB -pthr
   libs/NoiseTools.cpp \
   libs/NoiseBase.cpp \
   utils/util.cc \
+  meshoptimizer/*.cpp \
   -I. \
   -o bin/pg.js
 
