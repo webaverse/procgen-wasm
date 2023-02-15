@@ -2,6 +2,7 @@
 // #include "DualContouring/tracker.h"
 // #include "DualContouring/main.h"
 #include "procgen.h"
+#include "meshoptimizer/meshoptimizer.h"
 
 extern "C" {
 
@@ -239,6 +240,27 @@ EMSCRIPTEN_KEEPALIVE void doFree(void *ptr, PGInstance *inst) {
 
 EMSCRIPTEN_KEEPALIVE void runLoop() {
     ProcGen::runLoop();
+}
+
+//
+
+EMSCRIPTEN_KEEPALIVE void meshoptSimplify(
+  const unsigned int* indices,
+  size_t index_count,
+  const float* vertex_positions,
+  size_t vertex_count,
+  // const float* uvs,
+  size_t target_index_count,
+  float target_error,
+  unsigned int **destination,
+  unsigned int *numDestinations
+) {
+  *destination = (unsigned int *)malloc(sizeof(unsigned int) * index_count);
+  
+  const size_t vertex_positions_stride = 3 * sizeof(float);
+  constexpr unsigned int options = 0;
+  float result_error;
+  *numDestinations = meshopt_simplify(*destination, indices, index_count, vertex_positions, vertex_count, vertex_positions_stride, target_index_count, target_error, options, &result_error);
 }
 
 //
